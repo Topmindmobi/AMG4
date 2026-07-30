@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+  /* Redesign v2 — navy + orange */
+  --forest: #0e1a63;
+  --forest-deep: #0a1350;
+  --navy-glow: #3a2f7a;
+  --sand: #eef1f6;
+  --sand-light: #eef1f6;
+  --charcoal: #101a3d;
+  --ink-soft: #5b6472;
+  --ember: #f0672e;
+  --ember-deep: #d9541f;
+  --crimson: #c8102e;
+  --mist: #f2f4f8;
+  --line: #dbe1ea;
+  --background: var(--mist);
+  --foreground: var(--charcoal);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-forest: var(--forest);
+  --color-forest-deep: var(--forest-deep);
+  --color-navy-glow: var(--navy-glow);
+  --color-sand: var(--sand);
+  --color-sand-light: var(--sand-light);
+  --color-charcoal: var(--charcoal);
+  --color-ink-soft: var(--ink-soft);
+  --color-ember: var(--ember);
+  --color-ember-deep: var(--ember-deep);
+  --color-crimson: var(--crimson);
+  --color-mist: var(--mist);
+  --color-line: var(--line);
+  --font-sans: var(--font-work-sans);
+  --font-display: var(--font-fraunces);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-work-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cart-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+@keyframes ride {
+  0% {
+    offset-distance: 0%;
+  }
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s ease-out both;
+}
+
+.animate-fade-up-delay {
+  animation: fade-up 0.7s ease-out 0.15s both;
+}
+
+.animate-cart-pulse {
+  animation: cart-pulse 0.5s ease;
+}
+
+.hero-mesh {
+  background:
+    radial-gradient(60% 70% at 78% 20%, rgba(240, 103, 46, 0.16), transparent 60%),
+    radial-gradient(70% 90% at 15% 90%, var(--navy-glow), transparent 65%),
+    linear-gradient(155deg, var(--forest) 0%, var(--forest-deep) 100%);
+}
+
+.boda-ride {
+  offset-path: path("M20,90 C 90,10 150,170 220,90 S 340,10 400,90");
+  animation: ride 6s linear infinite;
+}
+
+.cat-card-hover {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.cat-card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(14, 26, 99, 0.1);
+  border-color: var(--forest);
+}

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 110" role="img" aria-label="AMG">
+  <!-- Icon -->
+  <g>
+    <polygon fill="#FF7417" points="8,10 95,10 48,58 8,58"/>
+    <polygon fill="#C8102E" points="8,68 55,68 8,100"/>
+    <polygon fill="#FFFFFF" points="62,10 105,10 30,100 8,100 48,58 95,10"/>
+  </g>
+  <!-- A (no bar) -->
+  <path fill="#1C1C1C" d="M135 88 L164 22h20l29 66h-22l-8-20h-18l-8 20zm27-34h12l-6-16z"/>
+  <!-- M -->
+  <path fill="#1C1C1C" d="M228 22h20l26 44V22h18v66h-20L246 44v44h-18V22z"/>
+  <!-- G -->
+  <path fill="#1C1C1C" d="M304 22h46c20 0 34 12 34 32 0 16-8 26-22 30l26 36h-24l-24-32h-18v32h-18V22zm18 18v20h24c8 0 14-4 14-10s-6-10-14-10h-24z"/>
+</svg>

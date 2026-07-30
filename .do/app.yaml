@@ -1,0 +1,41 @@
+# DigitalOcean App Platform spec for AMG.COM
+# Replace github.repo with your org/repo, then set SECRET values in the DO UI
+# (or via doctl). Do not commit real keys.
+name: amg-com
+region: fra
+
+services:
+  - name: web
+    github:
+      repo: Topmindmobi/amg-com
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+    http_port: 3000
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: NEXT_PUBLIC_DEMO_MODE
+        scope: RUN_AND_BUILD_TIME
+        value: "false"
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_ACCOUNT_SID
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_AUTH_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_PHONE_NUMBER
+        scope: RUN_TIME
+        type: SECRET
+      - key: NODE_ENV
+        scope: RUN_TIME
+        value: production
