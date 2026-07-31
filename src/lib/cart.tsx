@@ -42,8 +42,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setItems(loadCart());
-    setReady(true);
+    void Promise.resolve().then(() => {
+      setItems(loadCart());
+      setReady(true);
+    });
   }, []);
 
   useEffect(() => {

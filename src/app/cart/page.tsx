@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart";
 import { formatKes } from "@/lib/format";
 
 export default function CartPage() {
   const { items, total, updateQty, removeItem } = useCart();
+  const router = useRouter();
 
   if (items.length === 0) {
     return (
@@ -69,14 +71,23 @@ export default function CartPage() {
           </li>
         ))}
       </ul>
-      <div className="mt-6 flex items-center justify-between gap-4">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <p className="text-lg font-bold">Total {formatKes(total)}</p>
-        <Link
-          href="/checkout"
-          className="rounded-lg bg-ember px-[22px] py-[13px] text-[15px] font-semibold text-white hover:bg-ember-deep"
-        >
-          Checkout
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/shop"
+            className="rounded-lg border-[1.5px] border-line bg-white px-[22px] py-[13px] text-[15px] font-semibold text-forest hover:border-forest"
+          >
+            Continue shopping
+          </Link>
+          <button
+            type="button"
+            onClick={() => router.push("/checkout")}
+            className="rounded-lg bg-ember px-[22px] py-[13px] text-[15px] font-semibold text-white hover:bg-ember-deep"
+          >
+            Checkout
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import {
   money,
   ReportBar,
@@ -9,6 +9,7 @@ import {
   ReportStat,
   ReportTable,
   ReportTabs,
+  useReportData,
   useReportRange,
 } from "@/components/admin/reports/ReportUI";
 import { ORDER_STATUS_LABELS } from "@/lib/format";
@@ -16,15 +17,9 @@ import { getLogisticsReport } from "@/lib/reports-data";
 
 function Body() {
   const range = useReportRange();
-  const [data, setData] = useState<ReturnType<typeof getLogisticsReport> | null>(
-    null,
-  );
+  const data = useReportData(getLogisticsReport, range);
 
-  useEffect(() => {
-    setData(getLogisticsReport(range));
-  }, [range.from, range.to]);
-
-  if (!data) return <p className="mt-8 text-sand/50">Loading…</p>;
+  if (!data) return <p className="mt-8 text-ink-soft">Loading…</p>;
 
   const maxTown = Math.max(...data.byTown.map((t) => t.orders), 1);
 
@@ -86,10 +81,12 @@ function Body() {
       </ReportSection>
 
       <ReportSection title="Supplier logistics">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <ReportStat label="Supply requests" value={String(data.supply.total)} />
-          <ReportStat label="Pending with suppliers" value={String(data.supply.pending)} />
-          <ReportStat label="Supplier confirmed" value={String(data.supply.confirmed)} />
+          <ReportStat label="New (pending)" value={String(data.supply.pending)} />
+          <ReportStat label="Confirmed" value={String(data.supply.confirmed)} />
+          <ReportStat label="Dispatched to AMG" value={String(data.supply.dispatched)} />
+          <ReportStat label="Fulfilled (AMG certified)" value={String(data.supply.fulfilled)} />
           <ReportStat label="Supply value" value={money(data.supply.value)} />
         </div>
       </ReportSection>
@@ -100,8 +97,8 @@ function Body() {
 export default function LogisticsReportPage() {
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">Logistics report</h1>
-      <p className="mt-2 text-sm text-sand/55">
+      <h1 className="font-display text-3xl text-charcoal">Logistics report</h1>
+      <p className="mt-2 text-sm text-ink-soft">
         Delivery towns, pipeline stages, and supplier fulfillment.
       </p>
       <Suspense fallback={null}>

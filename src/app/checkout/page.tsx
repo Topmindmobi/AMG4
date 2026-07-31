@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { CheckoutAuthGate } from "@/components/shop/CheckoutAuthGate";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart";
 import { listDropoffPoints } from "@/lib/data/delivery";
@@ -24,8 +25,9 @@ type PayState = "idle" | "processing" | "paid" | "failed";
 
 export default function CheckoutPage() {
   const { items, total, clear } = useCart();
-  const { user, email } = useAuth();
+  const { user, email, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [guestCheckout, setGuestCheckout] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [payment, setPayment] = useState<PaymentMethod>("cod");
@@ -36,6 +38,8 @@ export default function CheckoutPage() {
   const [mpesaPhone, setMpesaPhone] = useState(user?.phone ?? "");
   const [payState, setPayState] = useState<PayState>("idle");
   const [payMessage, setPayMessage] = useState<string | null>(null);
+
+  const needsAuthChoice = !authLoading && !user && !guestCheckout;
 
   useEffect(() => {
     let cancelled = false;
@@ -105,12 +109,18 @@ export default function CheckoutPage() {
       return;
     }
 
-    setLoading(true);
     const fd = new FormData(e.currentTarget);
     const dropoff = dropoffPoints.find((p) => p.id === dropoffPointId) ?? null;
     const guestEmail = String(fd.get("email") || "").trim() || null;
     let userId = user?.id ?? null;
     let accountNotice: AccountCreatedNotice | null = null;
+
+    if (!userId && !guestEmail) {
+      setError("Email is required for guest checkout so we can create your temporary login.");
+      return;
+    }
+
+    setLoading(true);
 
     // Guest checkout with email: create account if needed (additive — never blocks order).
     if (guestEmail && !userId) {
@@ -275,19 +285,44 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-xl px-5 py-10">
+      <CheckoutAuthGate open={needsAuthChoice} onCheckoutAsGuest={() => setGuestCheckout(true)} />
+
       <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Checkout</h1>
       <p className="mt-2 text-[14.5px] text-ink-soft">
         Delivery by motorcycle in Homabay, Mbita &amp; Migori
       </p>
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-5">
+      {guestCheckout && !user && (
+        <div className="mt-5 rounded-lg border border-forest/20 bg-forest/5 px-4 py-3 text-sm text-charcoal">
+          <p className="font-semibold text-forest-deep">Guest checkout</p>
+          <p className="mt-1 text-ink-soft">
+            Enter your email below. We&apos;ll create a temporary account so you can monitor this
+            order at{" "}
+            <Link href="/account/orders" className="font-semibold text-forest underline">
+              My orders
+            </Link>
+            . Your login details appear on the confirmation page after you place the order.
+          </p>
+        </div>
+      )}
+
+      <form
+        onSubmit={onSubmit}
+        className={`mt-8 space-y-5 ${needsAuthChoice || authLoading ? "pointer-events-none opacity-40" : ""}`}
+        aria-hidden={needsAuthChoice || authLoading}
+      >
         <Field label="Full name" name="customer_name" defaultValue={user?.full_name ?? ""} required />
         <Field label="Phone" name="phone" defaultValue={user?.phone ?? ""} required />
         <Field
-          label="Email (optional — creates an account for order tracking)"
+          label={
+            user
+              ? "Email"
+              : "Email (required — temporary login for order monitoring)"
+          }
           name="email"
           type="email"
           defaultValue={email ?? ""}
+          required={!user}
         />
         <label className="block text-xs font-semibold uppercase tracking-wide text-ink-soft">
           Delivery town
@@ -296,7 +331,7 @@ export default function CheckoutPage() {
             required
             value={town}
             onChange={(e) => setTown(e.target.value as Town)}
-            className="mt-1 w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-forest"
+            className="amg-select mt-1 w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal outline-none focus:border-forest"
           >
             {TOWNS.map((t) => (
               <option key={t} value={t}>
@@ -356,7 +391,7 @@ export default function CheckoutPage() {
                 value={dropoffPointId}
                 onChange={(e) => setDropoffPointId(e.target.value)}
                 required
-                className="mt-1 w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm normal-case outline-none focus:border-forest"
+                className="amg-select mt-1 w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal normal-case outline-none focus:border-forest"
               >
                 {dropoffPoints.length === 0 && <option value="">No points available in {town}</option>}
                 {dropoffPoints.map((p) => (

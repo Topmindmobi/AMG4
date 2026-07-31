@@ -25,7 +25,9 @@ type AuthContextValue = {
   loading: boolean;
   isAdmin: boolean;
   isSupplier: boolean;
+  isRider: boolean;
   supplierId: string | null;
+  riderId: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, fullName: string) => Promise<void>;
   signInWithGoogle: (nextPath?: string) => Promise<void>;
@@ -36,10 +38,11 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function roleHome(user: Profile | null): string {
+export function roleHomePath(user: Profile | null): string {
   if (!user) return "/";
   if (user.role === "admin") return "/admin";
   if (user.role === "supplier") return "/supplier";
+  if (user.role === "rider") return "/rider";
   return "/account";
 }
 
@@ -49,8 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => {
     if (isDemoMode()) {
-      setSession(getDemoSession());
-      setLoading(false);
+      void Promise.resolve().then(() => {
+        setSession(getDemoSession());
+        setLoading(false);
+      });
       return;
     }
     void (async () => {
@@ -79,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: "customer",
             town: null,
             supplier_id: null,
+            rider_id: null,
             created_at: new Date().toISOString(),
           },
           email: data.user.email ?? "",
@@ -165,13 +171,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isAdmin: session?.user.role === "admin",
       isSupplier: session?.user.role === "supplier",
+      isRider: session?.user.role === "rider",
       supplierId: session?.user.supplier_id ?? null,
+      riderId: session?.user.rider_id ?? null,
       login,
       signup,
       signInWithGoogle,
       logout,
       refresh,
-      homePathForRole: () => roleHome(session?.user ?? null),
+      homePathForRole: () => roleHomePath(session?.user ?? null),
     }),
     [session, loading, login, signup, signInWithGoogle, logout, refresh],
   );

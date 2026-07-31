@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { RiderDeliveryTracker } from "@/components/orders/RiderDeliveryTracker";
+import { useAuth } from "@/lib/auth-context";
 import { DELIVERY_METHOD_LABELS, formatKes } from "@/lib/format";
 import {
   readAccountCreatedNotice,
@@ -29,6 +31,7 @@ function currentStepIndex(status: OrderStatus): number {
 
 export default function OrderConfirmationPage() {
   const params = useParams<{ id: string }>();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [accountNotice, setAccountNotice] = useState<AccountCreatedNotice | null>(null);
@@ -78,7 +81,7 @@ export default function OrderConfirmationPage() {
     };
   }, [params.id]);
 
-  if (loading) {
+  if (loading || authLoading) {
     return <div className="mx-auto max-w-xl px-5 py-16 text-ink-soft">Loading order…</div>;
   }
 
@@ -89,6 +92,32 @@ export default function OrderConfirmationPage() {
         <Link href="/shop" className="mt-4 inline-block font-semibold text-forest underline">
           Back to shop
         </Link>
+      </div>
+    );
+  }
+
+  // Logged-in customers may only view their own orders; guests keep post-checkout link access.
+  const isCustomer = user?.role === "customer";
+  const forbidden =
+    Boolean(user) &&
+    !isAdmin &&
+    isCustomer &&
+    Boolean(order.user_id) &&
+    order.user_id !== user!.id;
+
+  if (forbidden) {
+    return (
+      <div className="mx-auto max-w-xl px-5 py-16">
+        <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">
+          Order not available
+        </h1>
+        <p className="mt-3 text-ink-soft">
+          You can only view your own orders. Open{" "}
+          <Link href="/account/orders" className="font-semibold text-forest underline">
+            My orders
+          </Link>{" "}
+          to see your deliveries.
+        </p>
       </div>
     );
   }
@@ -106,36 +135,68 @@ export default function OrderConfirmationPage() {
       </p>
 
       {accountNotice?.created && (
-        <div className="mt-6 rounded-lg border border-forest/25 bg-forest/5 px-4 py-3 text-sm text-charcoal">
-          <p className="font-semibold text-forest-deep">Account created</p>
+        <div className="mt-6 rounded-lg border border-forest/25 bg-forest/5 px-4 py-4 text-sm text-charcoal">
+          <p className="font-semibold text-forest-deep">Your temporary login — save it now</p>
           <p className="mt-1 text-ink-soft">
-            You can sign in with <span className="font-medium text-charcoal">{accountNotice.email}</span>
-            {accountNotice.temporaryPassword ? (
-              <>
-                {" "}
-                and temporary password{" "}
-                <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs text-forest-deep">
-                  {accountNotice.temporaryPassword}
-                </code>
-                . Save it now — it won&apos;t be shown again.
-              </>
-            ) : (
-              <> — check your email for a temporary password (or use password reset if needed).</>
-            )}
+            We created an account so you can monitor this order anytime. These details are shown
+            once; keep them somewhere safe.
           </p>
-          <Link href="/auth/login" className="mt-2 inline-block font-semibold text-forest underline">
-            Sign in
+          <dl className="mt-3 space-y-2 rounded-lg border border-line bg-white px-3 py-3">
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-ink-soft">Email</dt>
+              <dd className="break-all font-medium">{accountNotice.email}</dd>
+            </div>
+            {accountNotice.temporaryPassword ? (
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                  Temporary password
+                </dt>
+                <dd>
+                  <code className="rounded bg-sand px-1.5 py-0.5 font-mono text-xs text-forest-deep">
+                    {accountNotice.temporaryPassword}
+                  </code>
+                </dd>
+              </div>
+            ) : (
+              <p className="text-ink-soft">
+                Check your email for a temporary password (or use password reset if needed).
+              </p>
+            )}
+          </dl>
+          <p className="mt-3 text-ink-soft">
+            After signing in, open{" "}
+            <Link href="/account/orders" className="font-semibold text-forest underline">
+              My orders
+            </Link>{" "}
+            to track delivery status.
+          </p>
+          <Link
+            href="/auth/login?next=/account/orders"
+            className="mt-3 inline-flex rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-deep"
+          >
+            Sign in to monitor orders
           </Link>
         </div>
       )}
       {accountNotice && !accountNotice.created && (
-        <p className="mt-6 text-sm text-ink-soft">
-          An account already exists for {accountNotice.email}.{" "}
-          <Link href="/auth/login" className="font-semibold text-forest underline">
+        <div className="mt-6 rounded-lg border border-line bg-sand px-4 py-3 text-sm text-charcoal">
+          <p className="font-semibold">Account found</p>
+          <p className="mt-1 text-ink-soft">
+            An account already exists for{" "}
+            <span className="font-medium text-charcoal">{accountNotice.email}</span>. Sign in to
+            monitor this order under{" "}
+            <Link href="/account/orders" className="font-semibold text-forest underline">
+              My orders
+            </Link>
+            .
+          </p>
+          <Link
+            href="/auth/login?next=/account/orders"
+            className="mt-2 inline-block font-semibold text-forest underline"
+          >
             Sign in
-          </Link>{" "}
-          to track this order.
-        </p>
+          </Link>
+        </div>
       )}
 
       {order.status === "cancelled" ? (
@@ -172,12 +233,9 @@ export default function OrderConfirmationPage() {
         </ol>
       )}
 
-      {order.status === "out_for_delivery" && order.rider_name_snapshot && (
-        <p className="mt-6 rounded-lg bg-sand px-4 py-3 text-sm text-charcoal">
-          <span className="font-semibold">{order.rider_name_snapshot}</span> is bringing your order.
-        </p>
-      )}
-      {order.status === "delivered" && (
+      <RiderDeliveryTracker order={order} audience="customer" />
+
+      {order.status === "delivered" && !order.rider_id && (
         <p className="mt-6 rounded-lg bg-forest/10 px-4 py-3 text-sm text-forest-deep">
           Delivered{order.delivered_at ? ` on ${new Date(order.delivered_at).toLocaleString()}` : ""}.
         </p>

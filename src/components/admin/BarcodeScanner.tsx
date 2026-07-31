@@ -18,14 +18,20 @@ export function BarcodeScanner({ open, onClose, onScan }: Props) {
   const [manual, setManual] = useState("");
   const handled = useRef(false);
 
-  onScanRef.current = onScan;
-  onCloseRef.current = onClose;
+  // Keep the refs pointed at the latest callbacks without restarting the
+  // camera effect below (which intentionally only depends on [open, regionId]).
+  useEffect(() => {
+    onScanRef.current = onScan;
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;
     handled.current = false;
-    setError(null);
     let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) setError(null);
+    });
 
     async function start() {
       try {
@@ -94,18 +100,18 @@ export function BarcodeScanner({ open, onClose, onScan }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="w-full max-w-lg border border-white/15 bg-forest-deep p-4 text-sand-light shadow-xl">
+      <div className="w-full max-w-lg border border-line bg-forest-deep p-4 text-charcoal shadow-xl">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-xl">Scan barcode</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-sm text-sand/60 hover:text-sand"
+            className="text-sm text-ink-soft hover:text-charcoal"
           >
             Close
           </button>
         </div>
-        <p className="mt-2 text-xs text-sand/55">
+        <p className="mt-2 text-xs text-ink-soft">
           Point the camera at a barcode or QR code. EAN, UPC, Code 128, and QR are supported.
         </p>
         <div
@@ -126,7 +132,7 @@ export function BarcodeScanner({ open, onClose, onScan }: Props) {
             value={manual}
             onChange={(e) => setManual(e.target.value)}
             placeholder="Or type barcode manually"
-            className="min-w-0 flex-1 border border-white/15 bg-white/5 px-3 py-2 text-sm text-sand"
+            className="min-w-0 flex-1 border border-line bg-white px-3 py-2 text-sm text-charcoal"
           />
           <button
             type="submit"

@@ -9,6 +9,7 @@ import {
   DEMO_PRODUCTS,
   DEMO_RIDER_USERS,
   DEMO_RIDERS,
+  DEMO_SUPPLIER_ADDRESSES,
   DEMO_SUPPLIER_USERS,
   DEMO_SUPPLIERS,
 } from "@/lib/demo-data";
@@ -22,17 +23,30 @@ import type {
   PaymentMethod,
   Product,
   Profile,
+  QuoteMarketAnalysis,
   QuoteRequest,
+  RatingScores,
+  RatingSubject,
   Rider,
+  RiderDeliveryEvent,
+  RiderDeliveryStatus,
   RiderPayout,
+  ServiceRating,
   Supplier,
+  SupplierAddress,
+  SupplierAddressLabel,
+  SupplyDispatchDetails,
+  SupplyLogisticsPlan,
   SupplyRequest,
   SupplyRequestStatus,
   Town,
 } from "@/lib/types";
+import { buildHeuristicQuoteAnalysis } from "@/lib/quote-market-analysis";
+import { averageScores } from "@/lib/ratings";
 import type {
   EnsureCustomerAccountInput,
   EnsureCustomerAccountResult,
+  GuestIdentityLookup,
 } from "@/lib/auth/ensure-customer-account";
 import { generateTemporaryPassword } from "@/lib/auth/password";
 import {
@@ -41,7 +55,15 @@ import {
   QUOTE_DELIVERY_ESTIMATE_KES,
   RIDER_PAYOUT_KES,
   slugify,
+  supplyRequestAgreed,
 } from "@/lib/format";
+import { matchSupplierProduct } from "@/lib/supplier-selection";
+import {
+  guestEmailFromPhone,
+  isGuestPhoneEmail,
+  normalizeKenyaPhone,
+  phonesMatch,
+} from "@/lib/phone";
 import { buildInstantQuote, QUOTE_CATALOG_CATEGORY_SLUG } from "@/lib/quotes";
 
 const KEYS = {
@@ -59,6 +81,8 @@ const KEYS = {
   dropoffPoints: "amg_dropoff_points_v1",
   riderPayouts: "amg_rider_payouts_v1",
   quoteRequests: "amg_quote_requests_v1",
+  supplierAddresses: "amg_supplier_addresses_v1",
+  serviceRatings: "amg_service_ratings_v1",
 };
 
 function read<T>(key: string, fallback: T): T {
@@ -82,6 +106,9 @@ function ensureSeeded() {
   if (!localStorage.getItem(KEYS.products)) write(KEYS.products, DEMO_PRODUCTS);
   if (!localStorage.getItem(KEYS.categories)) write(KEYS.categories, DEMO_CATEGORIES);
   if (!localStorage.getItem(KEYS.suppliers)) write(KEYS.suppliers, DEMO_SUPPLIERS);
+  if (!localStorage.getItem(KEYS.supplierAddresses)) {
+    write(KEYS.supplierAddresses, DEMO_SUPPLIER_ADDRESSES);
+  }
   if (!localStorage.getItem(KEYS.orders)) write(KEYS.orders, DEMO_ORDERS);
   if (!localStorage.getItem(KEYS.supplyRequests)) write(KEYS.supplyRequests, []);
   if (!localStorage.getItem(KEYS.notifications)) write(KEYS.notifications, []);
@@ -89,6 +116,7 @@ function ensureSeeded() {
   if (!localStorage.getItem(KEYS.dropoffPoints)) write(KEYS.dropoffPoints, DEMO_DROPOFF_POINTS);
   if (!localStorage.getItem(KEYS.riderPayouts)) write(KEYS.riderPayouts, []);
   if (!localStorage.getItem(KEYS.quoteRequests)) write(KEYS.quoteRequests, []);
+  if (!localStorage.getItem(KEYS.serviceRatings)) write(KEYS.serviceRatings, []);
   if (!localStorage.getItem(KEYS.profiles)) {
     write(KEYS.profiles, [
       DEMO_CUSTOMER,
@@ -241,6 +269,153 @@ export function getDemoSuppliers(): Supplier[] {
   return read<Supplier[]>(KEYS.suppliers, DEMO_SUPPLIERS);
 }
 
+export function getDemoSupplierAddresses(supplierId?: string): SupplierAddress[] {
+  ensureSeeded();
+  const list = read<SupplierAddress[]>(KEYS.supplierAddresses, DEMO_SUPPLIER_ADDRESSES);
+  const filtered = supplierId
+    ? list.filter((a) => a.supplier_id === supplierId)
+    : list;
+  return filtered.sort((a, b) => {
+    if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+    return +new Date(b.created_at) - +new Date(a.created_at);
+  });
+}
+
+function syncSupplierTownFromDefault(supplierId: string) {
+  const addresses = getDemoSupplierAddresses(supplierId);
+  const def = addresses.find((a) => a.is_default) ?? addresses[0];
+  if (!def) return;
+  const suppliers = read<Supplier[]>(KEYS.suppliers, DEMO_SUPPLIERS);
+  write(
+    KEYS.suppliers,
+    suppliers.map((s) =>
+      s.id === supplierId ? { ...s, town: def.town } : s,
+    ),
+  );
+}
+
+export type SupplierAddressInput = {
+  id?: string;
+  supplier_id: string;
+  label: SupplierAddressLabel;
+  name: string;
+  town: Town;
+  line1: string;
+  phone?: string | null;
+  maps_url?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  is_default?: boolean;
+};
+
+export function upsertDemoSupplierAddress(input: SupplierAddressInput): SupplierAddress {
+  ensureSeeded();
+  const list = read<SupplierAddress[]>(KEYS.supplierAddresses, DEMO_SUPPLIER_ADDRESSES);
+  const makeDefault = Boolean(input.is_default) || list.every((a) => a.supplier_id !== input.supplier_id);
+
+  let next: SupplierAddress[];
+  if (input.id) {
+    const existing = list.find((a) => a.id === input.id);
+    if (!existing || existing.supplier_id !== input.supplier_id) {
+      throw new Error("Address not found");
+    }
+    const updated: SupplierAddress = {
+      ...existing,
+      label: input.label,
+      name: input.name.trim(),
+      town: input.town,
+      line1: input.line1.trim(),
+      phone: input.phone?.trim() || null,
+      maps_url: input.maps_url?.trim() || null,
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
+      is_default: makeDefault ? true : existing.is_default,
+    };
+    next = list.map((a) => {
+      if (a.id === updated.id) return updated;
+      if (makeDefault && a.supplier_id === input.supplier_id) {
+        return { ...a, is_default: false };
+      }
+      return a;
+    });
+  } else {
+    const created: SupplierAddress = {
+      id: `saddr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      supplier_id: input.supplier_id,
+      label: input.label,
+      name: input.name.trim(),
+      town: input.town,
+      line1: input.line1.trim(),
+      phone: input.phone?.trim() || null,
+      maps_url: input.maps_url?.trim() || null,
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
+      is_default: makeDefault,
+      created_at: new Date().toISOString(),
+    };
+    next = list.map((a) =>
+      makeDefault && a.supplier_id === input.supplier_id
+        ? { ...a, is_default: false }
+        : a,
+    );
+    next = [created, ...next];
+  }
+
+  write(KEYS.supplierAddresses, next);
+  syncSupplierTownFromDefault(input.supplier_id);
+  if (input.id) {
+    return next.find((a) => a.id === input.id)!;
+  }
+  return next.find(
+    (a) =>
+      a.supplier_id === input.supplier_id &&
+      a.name === input.name.trim() &&
+      a.created_at === next[0]?.created_at,
+  ) ?? next[0]!;
+}
+
+export function setDemoSupplierAddressDefault(
+  addressId: string,
+  supplierId: string,
+): SupplierAddress | null {
+  ensureSeeded();
+  const list = read<SupplierAddress[]>(KEYS.supplierAddresses, DEMO_SUPPLIER_ADDRESSES);
+  const target = list.find((a) => a.id === addressId && a.supplier_id === supplierId);
+  if (!target) return null;
+  const next = list.map((a) =>
+    a.supplier_id === supplierId
+      ? { ...a, is_default: a.id === addressId }
+      : a,
+  );
+  write(KEYS.supplierAddresses, next);
+  syncSupplierTownFromDefault(supplierId);
+  return next.find((a) => a.id === addressId) ?? null;
+}
+
+export function deleteDemoSupplierAddress(
+  addressId: string,
+  supplierId: string,
+): void {
+  ensureSeeded();
+  const list = read<SupplierAddress[]>(KEYS.supplierAddresses, DEMO_SUPPLIER_ADDRESSES);
+  const remaining = list.filter(
+    (a) => !(a.id === addressId && a.supplier_id === supplierId),
+  );
+  const mine = remaining.filter((a) => a.supplier_id === supplierId);
+  if (mine.length > 0 && !mine.some((a) => a.is_default)) {
+    const first = mine[0];
+    write(
+      KEYS.supplierAddresses,
+      remaining.map((a) =>
+        a.id === first.id ? { ...a, is_default: true } : a,
+      ),
+    );
+  } else {
+    write(KEYS.supplierAddresses, remaining);
+  }
+  syncSupplierTownFromDefault(supplierId);
+}
+
 export function getDemoOrders(userId?: string): Order[] {
   ensureSeeded();
   const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS);
@@ -347,32 +522,91 @@ export function demoSignup(
   return s;
 }
 
+function demoProfileLoginEmail(profile: Profile): string {
+  if (profile.id.startsWith("user-")) return profile.id.slice("user-".length);
+  if (profile.id === DEMO_CUSTOMER.id) return "customer@amg.com";
+  if (profile.id === DEMO_ADMIN.id) return "admin@amg.com";
+  for (const [email, id] of Object.entries(SUPPLIER_LOGINS)) {
+    if (id === profile.id) return email;
+  }
+  for (const [email, id] of Object.entries(RIDER_LOGINS)) {
+    if (id === profile.id) return email;
+  }
+  if (profile.phone) {
+    const e164 = normalizeKenyaPhone(profile.phone);
+    if (e164) return guestEmailFromPhone(e164);
+  }
+  return `${profile.id}@amg.guest`;
+}
+
+function findDemoProfileByPhone(phone: string): Profile | null {
+  ensureSeeded();
+  const profiles = read<Profile[]>(KEYS.profiles, []);
+  return profiles.find((p) => phonesMatch(p.phone, phone)) ?? null;
+}
+
+function patchDemoProfile(
+  profileId: string,
+  patch: Partial<Pick<Profile, "full_name" | "phone" | "town">>,
+): Profile | null {
+  const profiles = read<Profile[]>(KEYS.profiles, []);
+  const idx = profiles.findIndex((p) => p.id === profileId);
+  if (idx < 0) return null;
+  const next = { ...profiles[idx]!, ...patch };
+  const copy = [...profiles];
+  copy[idx] = next;
+  write(KEYS.profiles, copy);
+  return next;
+}
+
+function resolveGuestTown(town?: string | null): Town | null {
+  return town === "Homabay" || town === "Mbita" || town === "Migori" ? town : null;
+}
+
 /**
- * Guest checkout: create a customer account for the email if none exists.
+ * Guest checkout: create a customer account for email and/or phone if none exists.
  * Does not sign the user in. Never throws for "already exists".
  */
 export function ensureDemoCustomerAccount(
   input: EnsureCustomerAccountInput,
 ): EnsureCustomerAccountResult {
   ensureSeeded();
-  const email = input.email.trim().toLowerCase();
-  if (!email || !email.includes("@")) {
+  const rawEmail = input.email?.trim().toLowerCase() || "";
+  const phoneE164 = input.phone ? normalizeKenyaPhone(input.phone) : null;
+  const hasEmail = Boolean(rawEmail && rawEmail.includes("@"));
+
+  if (!hasEmail && !phoneE164) {
     return {
       userId: null,
       created: false,
       existed: false,
-      email,
-      error: "Invalid email",
+      email: rawEmail,
+      phone: null,
+      error: "Email or valid Kenya phone required",
     };
   }
 
-  const existing = findDemoProfileByEmail(email);
+  const email = hasEmail
+    ? rawEmail
+    : guestEmailFromPhone(phoneE164!);
+
+  const byEmail = hasEmail ? findDemoProfileByEmail(email) : null;
+  const byPhone = phoneE164 ? findDemoProfileByPhone(phoneE164) : null;
+  const existing = byEmail ?? byPhone;
+
   if (existing) {
+    const loginEmail = byEmail ? email : demoProfileLoginEmail(existing);
+    patchDemoProfile(existing.id, {
+      full_name: input.fullName.trim() || existing.full_name,
+      phone: phoneE164 ?? existing.phone,
+      town: resolveGuestTown(input.town) ?? existing.town,
+    });
     return {
       userId: existing.id,
       created: false,
       existed: true,
-      email,
+      email: loginEmail,
+      phone: phoneE164 ?? existing.phone,
     };
   }
 
@@ -380,12 +614,13 @@ export function ensureDemoCustomerAccount(
   const profiles = read<Profile[]>(KEYS.profiles, []);
   const profile: Profile = {
     id: `user-${email}`,
-    full_name: input.fullName.trim() || email.split("@")[0] || "Customer",
-    phone: input.phone?.trim() || null,
+    full_name:
+      input.fullName.trim() ||
+      (hasEmail ? email.split("@")[0] : phoneE164) ||
+      "Customer",
+    phone: phoneE164,
     role: "customer",
-    town: (input.town === "Homabay" || input.town === "Mbita" || input.town === "Migori"
-      ? input.town
-      : null),
+    town: resolveGuestTown(input.town),
     supplier_id: null,
     rider_id: null,
     created_at: new Date().toISOString(),
@@ -398,7 +633,61 @@ export function ensureDemoCustomerAccount(
     created: true,
     existed: false,
     email,
+    phone: phoneE164,
     temporaryPassword,
+  };
+}
+
+/** Look up a returning guest by phone — profile + last order address. No password. */
+export function lookupDemoGuestByPhone(phone: string): GuestIdentityLookup {
+  ensureSeeded();
+  const phoneE164 = normalizeKenyaPhone(phone);
+  if (!phoneE164) {
+    return {
+      found: false,
+      email: null,
+      loginEmail: null,
+      fullName: null,
+      phone: null,
+      town: null,
+      address: null,
+      error: "Enter a valid Kenya phone (07…, +254…, or 254…)",
+    };
+  }
+
+  const profile = findDemoProfileByPhone(phoneE164);
+  const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS)
+    .filter((o) => phonesMatch(o.phone, phoneE164) || (profile && o.user_id === profile.id))
+    .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+  const lastOrder = orders[0] ?? null;
+
+  if (!profile && !lastOrder) {
+    return {
+      found: false,
+      email: null,
+      loginEmail: null,
+      fullName: null,
+      phone: phoneE164,
+      town: null,
+      address: null,
+      error: "No account found for that phone. Checkout as guest to create one.",
+    };
+  }
+
+  const email = profile ? demoProfileLoginEmail(profile) : lastOrder?.email ?? null;
+  const displayEmail =
+    email && !isGuestPhoneEmail(email) ? email : lastOrder?.email && !isGuestPhoneEmail(lastOrder.email)
+      ? lastOrder.email
+      : null;
+
+  return {
+    found: true,
+    email: displayEmail ?? email,
+    loginEmail: email,
+    fullName: profile?.full_name ?? lastOrder?.customer_name ?? null,
+    phone: phoneE164,
+    town: profile?.town ?? lastOrder?.town ?? null,
+    address: lastOrder?.address ?? null,
   };
 }
 
@@ -527,7 +816,7 @@ export function upsertDemoProduct(
   }
   const short = data.short_description || data.description || "";
   const product: Product = {
-    id: `prod-${Date.now()}`,
+    id: `prod-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     category_id: data.category_id,
     supplier_id: data.supplier_id ?? null,
     name: data.name,
@@ -546,6 +835,43 @@ export function upsertDemoProduct(
   };
   write(KEYS.products, [product, ...products]);
   return product;
+}
+
+/** Set absolute stock for a product. Optionally enforce supplier ownership. */
+export function adjustDemoProductStock(
+  productId: string,
+  stock: number,
+  supplierId?: string,
+): Product | null {
+  ensureSeeded();
+  const products = read<Product[]>(KEYS.products, DEMO_PRODUCTS);
+  const product = products.find((p) => p.id === productId);
+  if (!product) return null;
+  if (supplierId && product.supplier_id !== supplierId) return null;
+  const nextStock = Math.max(0, Math.round(stock));
+  const next = products.map((p) =>
+    p.id === productId ? { ...p, stock: nextStock } : p,
+  );
+  write(KEYS.products, next);
+  return next.find((p) => p.id === productId) ?? null;
+}
+
+/** Toggle or set active flag; optional supplier ownership check. */
+export function setDemoProductActive(
+  productId: string,
+  isActive: boolean,
+  supplierId?: string,
+): Product | null {
+  ensureSeeded();
+  const products = read<Product[]>(KEYS.products, DEMO_PRODUCTS);
+  const product = products.find((p) => p.id === productId);
+  if (!product) return null;
+  if (supplierId && product.supplier_id !== supplierId) return null;
+  const next = products.map((p) =>
+    p.id === productId ? { ...p, is_active: isActive } : p,
+  );
+  write(KEYS.products, next);
+  return next.find((p) => p.id === productId) ?? null;
 }
 
 export function deleteDemoProduct(id: string) {
@@ -644,12 +970,23 @@ export function markDemoNotificationRead(id: string) {
   );
 }
 
+function normalizeSupplyRequest(r: SupplyRequest): SupplyRequest {
+  return {
+    ...r,
+    logistics: r.logistics ?? null,
+    dispatch: r.dispatch ?? null,
+    dispatched_at: r.dispatched_at ?? null,
+    fulfilled_at: r.fulfilled_at ?? null,
+    fulfilled_by: r.fulfilled_by ?? null,
+  };
+}
+
 export function getDemoSupplyRequests(filters?: {
   supplierId?: string;
   orderId?: string;
 }): SupplyRequest[] {
   ensureSeeded();
-  let list = read<SupplyRequest[]>(KEYS.supplyRequests, []);
+  let list = read<SupplyRequest[]>(KEYS.supplyRequests, []).map(normalizeSupplyRequest);
   if (filters?.supplierId) {
     list = list.filter((r) => r.supplier_id === filters.supplierId);
   }
@@ -661,10 +998,8 @@ export function getDemoSupplyRequests(filters?: {
 
 export function getDemoSupplyRequest(id: string): SupplyRequest | null {
   ensureSeeded();
-  return (
-    read<SupplyRequest[]>(KEYS.supplyRequests, []).find((r) => r.id === id) ??
-    null
-  );
+  const found = read<SupplyRequest[]>(KEYS.supplyRequests, []).find((r) => r.id === id);
+  return found ? normalizeSupplyRequest(found) : null;
 }
 
 /** Admin: forward a supplier's portion of an order */
@@ -703,6 +1038,11 @@ export function requestSupplyFromSupplier(
     delivery_note: `Supply to AMG.COM client in ${order.town}. AMG will handle final dispatch.`,
     created_at: new Date().toISOString(),
     confirmed_at: null,
+    logistics: null,
+    dispatch: null,
+    dispatched_at: null,
+    fulfilled_at: null,
+    fulfilled_by: null,
   };
 
   const list = read<SupplyRequest[]>(KEYS.supplyRequests, []);
@@ -729,48 +1069,300 @@ export function requestSupplyFromSupplier(
   return request;
 }
 
-/** Supplier confirms they will supply */
-export function confirmDemoSupplyRequest(requestId: string): SupplyRequest {
+/**
+ * Admin: after comparative analysis, assign matched lines to the chosen supplier
+ * and create a supply request (reassigns product/price snapshots when substituting).
+ */
+export function fulfillOrderWithSupplier(
+  orderId: string,
+  supplierId: string,
+): SupplyRequest {
   ensureSeeded();
-  const list = read<SupplyRequest[]>(KEYS.supplyRequests, []);
-  const request = list.find((r) => r.id === requestId);
-  if (!request) throw new Error("Supply request not found");
-  if (request.status === "confirmed") return request;
+  const order = getDemoOrder(orderId);
+  if (!order) throw new Error("Order not found");
+  const supplier = getDemoSuppliers().find((s) => s.id === supplierId);
+  if (!supplier) throw new Error("Supplier not found");
 
-  const updated: SupplyRequest = {
-    ...request,
-    status: "confirmed" as SupplyRequestStatus,
-    confirmed_at: new Date().toISOString(),
+  const existing = getDemoSupplyRequests({ orderId, supplierId })[0];
+  if (existing) return existing;
+
+  const products = getDemoProducts({ activeOnly: false });
+  const catalogById = new Map(products.map((p) => [p.id, p]));
+  const theirs = products.filter((p) => p.supplier_id === supplierId);
+  const covered = (order.items ?? [])
+    .map((item) => {
+      const product = matchSupplierProduct(item, theirs, catalogById, supplierId);
+      if (!product || product.stock < 1) return null;
+      // Rival synthetic offers use id suffix __offer__ — keep the real catalog product id
+      const productId = product.id.includes("__offer__")
+        ? product.id.split("__offer__")[0]
+        : product.id;
+      return { item, product, productId };
+    })
+    .filter((m): m is { item: OrderItem; product: Product; productId: string } => Boolean(m));
+  if (covered.length === 0) throw new Error("No stock available from this supplier");
+
+  const coveredIds = new Set(covered.map((m) => m.item.id));
+  const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS);
+  const nextOrders = orders.map((o) => {
+    if (o.id !== orderId) return o;
+    const items = (o.items ?? []).map((item) => {
+      const match = covered.find((m) => m.item.id === item.id);
+      if (!match) return item;
+      return {
+        ...item,
+        product_id: match.productId,
+        name_snapshot: match.product.name,
+        price_kes: match.product.price_kes,
+        supplier_id: supplier.id,
+        supplier_name_snapshot: supplier.name,
+      };
+    });
+    const subtotal_kes = items.reduce((s, i) => s + i.price_kes * i.qty, 0);
+    const discount_kes = o.paid ? Math.round(subtotal_kes * PAY_NOW_DISCOUNT_RATE) : o.discount_kes;
+    return {
+      ...o,
+      items,
+      subtotal_kes,
+      discount_kes,
+      total_kes: subtotal_kes - discount_kes,
+    };
+  });
+  write(KEYS.orders, nextOrders);
+
+  // Prefer remapped lines; fall back to classic filter after write
+  const refreshed = getDemoOrder(orderId);
+  const lines = (refreshed?.items ?? []).filter(
+    (i) => i.supplier_id === supplierId && coveredIds.has(i.id),
+  );
+  if (lines.length === 0) throw new Error("No items for this supplier after matching");
+
+  const request: SupplyRequest = {
+    id: `sr-${Date.now()}`,
+    order_id: orderId,
+    supplier_id: supplierId,
+    supplier_name: supplier.name,
+    status: "pending",
+    items: lines.map((i) => ({
+      order_item_id: i.id,
+      product_id: i.product_id,
+      name: i.name_snapshot,
+      qty: i.qty,
+      price_kes: i.price_kes,
+    })),
+    total_kes: lines.reduce((s, i) => s + i.price_kes * i.qty, 0),
+    customer_town: order.town,
+    delivery_note: `Supply to AMG.COM client in ${order.town}. Selected via value-for-money analysis. AMG will handle final dispatch.`,
+    created_at: new Date().toISOString(),
+    confirmed_at: null,
+    logistics: null,
+    dispatch: null,
+    dispatched_at: null,
+    fulfilled_at: null,
+    fulfilled_by: null,
   };
+
+  const list = read<SupplyRequest[]>(KEYS.supplyRequests, []);
+  write(KEYS.supplyRequests, [request, ...list]);
+  updateDemoOrderStatus(orderId, "awaiting_supplier");
+
+  const supplierUser = read<Profile[]>(KEYS.profiles, []).find(
+    (p) => p.role === "supplier" && p.supplier_id === supplierId,
+  );
+  if (supplierUser) {
+    const itemSummary = request.items
+      .map((i) => `${i.qty}× ${i.name}`)
+      .join(", ");
+    pushNotification({
+      user_id: supplierUser.id,
+      title: "New supply request from AMG.COM",
+      body: `Please supply ${itemSummary}. Total ${formatKes(request.total_kes)} for AMG's client in ${order.town}.`,
+      link: `/supplier/requests/${request.id}`,
+      order_id: orderId,
+      supply_request_id: request.id,
+    });
+  }
+
+  return request;
+}
+
+function writeSupplyRequest(updated: SupplyRequest): SupplyRequest {
+  const list = read<SupplyRequest[]>(KEYS.supplyRequests, []);
   write(
     KEYS.supplyRequests,
-    list.map((r) => (r.id === requestId ? updated : r)),
+    list.map((r) => (r.id === updated.id ? updated : r)),
   );
+  return updated;
+}
 
-  const orderRequests = getDemoSupplyRequests({ orderId: request.order_id });
-  const order = getDemoOrder(request.order_id);
+function refreshOrderSupplierStatus(orderId: string) {
+  const orderRequests = getDemoSupplyRequests({ orderId });
+  const order = getDemoOrder(orderId);
   const assignedIds = new Set(
     (order?.items ?? [])
       .map((i) => i.supplier_id)
       .filter((id): id is string => Boolean(id)),
   );
-  const allConfirmed = Array.from(assignedIds).every((sid) =>
-    orderRequests.some((r) => r.supplier_id === sid && r.status === "confirmed"),
+  const allAgreed = Array.from(assignedIds).every((sid) =>
+    orderRequests.some((r) => r.supplier_id === sid && supplyRequestAgreed(r.status)),
   );
-  if (allConfirmed) {
-    updateDemoOrderStatus(request.order_id, "supplier_confirmed");
+  if (allAgreed && order && (order.status === "pending" || order.status === "awaiting_supplier")) {
+    updateDemoOrderStatus(orderId, "supplier_confirmed");
   }
+}
+
+/** Supplier confirms they will supply and files the inbound logistics plan to AMG. */
+export function confirmDemoSupplyRequest(
+  requestId: string,
+  logistics: SupplyLogisticsPlan,
+): SupplyRequest {
+  ensureSeeded();
+  const list = read<SupplyRequest[]>(KEYS.supplyRequests, []);
+  const request = list.find((r) => r.id === requestId);
+  if (!request) throw new Error("Supply request not found");
+  if (request.status === "dispatched" || request.status === "fulfilled") {
+    throw new Error("This request can no longer be confirmed");
+  }
+  if (request.status === "rejected") {
+    // allow re-confirm from rejected
+  } else if (request.status !== "pending" && request.status !== "confirmed") {
+    throw new Error("This request can no longer be confirmed");
+  }
+  if (!logistics.amg_location_id || !logistics.planned_dispatch_at || !logistics.method) {
+    throw new Error("Logistics plan is incomplete");
+  }
+  if (Number.isNaN(Date.parse(logistics.planned_dispatch_at))) {
+    throw new Error("Planned dispatch time is invalid");
+  }
+
+  const wasPending = request.status === "pending" || request.status === "rejected";
+  const updated = writeSupplyRequest({
+    ...request,
+    status: "confirmed",
+    confirmed_at: request.confirmed_at ?? new Date().toISOString(),
+    logistics,
+  });
+
+  if (wasPending) {
+    refreshOrderSupplierStatus(request.order_id);
+    pushNotification({
+      user_id: "demo-admin",
+      title: `${request.supplier_name} confirmed supply`,
+      body: `Order ${request.order_id}: logistics plan set — ${logistics.method} to ${logistics.amg_location_name} on ${new Date(logistics.planned_dispatch_at).toLocaleString()}.`,
+      link: "/admin/orders",
+      order_id: request.order_id,
+      supply_request_id: request.id,
+    });
+  }
+
+  return updated;
+}
+
+/** Supplier marks stock as dispatched toward the AMG hub with driver/vehicle details. */
+export function dispatchDemoSupplyRequest(
+  requestId: string,
+  dispatch: SupplyDispatchDetails,
+): SupplyRequest {
+  ensureSeeded();
+  const request = getDemoSupplyRequest(requestId);
+  if (!request) throw new Error("Supply request not found");
+  if (request.status !== "confirmed") {
+    throw new Error("Only confirmed orders can be marked dispatched");
+  }
+  if (!request.logistics) {
+    throw new Error(
+      "Logistics plan missing — drag back to add the AMG hub plan, or open the order and save logistics first.",
+    );
+  }
+  if (!dispatch.driver_name.trim() || !dispatch.driver_phone.trim() || !dispatch.vehicle_plate.trim()) {
+    throw new Error("Driver name, phone, and vehicle plate are required");
+  }
+
+  const cleaned: SupplyDispatchDetails = {
+    vehicle_type: dispatch.vehicle_type,
+    driver_name: dispatch.driver_name.trim(),
+    driver_phone: dispatch.driver_phone.trim(),
+    vehicle_plate: dispatch.vehicle_plate.trim().toUpperCase(),
+    vehicle_description: dispatch.vehicle_description?.trim() || null,
+  };
+
+  const updated = writeSupplyRequest({
+    ...request,
+    status: "dispatched",
+    dispatch: cleaned,
+    dispatched_at: new Date().toISOString(),
+  });
 
   pushNotification({
     user_id: "demo-admin",
-    title: `${request.supplier_name} confirmed supply`,
-    body: `Order ${request.order_id}: supplier confirmed. You can now confirm the order to the buyer.`,
+    title: `${request.supplier_name} dispatched to AMG`,
+    body: `Order ${request.order_id}: ${cleaned.vehicle_type.toUpperCase()} ${cleaned.vehicle_plate}, driver ${cleaned.driver_name} (${cleaned.driver_phone}) → ${request.logistics.amg_location_name}.`,
     link: "/admin/orders",
     order_id: request.order_id,
     supply_request_id: request.id,
   });
 
   return updated;
+}
+
+/** AMG admin certifies inbound goods after inspection (supplier cannot do this). */
+export function fulfillDemoSupplyRequest(
+  requestId: string,
+  adminUserId = "demo-admin",
+): SupplyRequest {
+  ensureSeeded();
+  const request = getDemoSupplyRequest(requestId);
+  if (!request) throw new Error("Supply request not found");
+  if (request.status !== "dispatched") {
+    throw new Error("Only dispatched supply can be certified fulfilled");
+  }
+
+  const updated = writeSupplyRequest({
+    ...request,
+    status: "fulfilled",
+    fulfilled_at: new Date().toISOString(),
+    fulfilled_by: adminUserId,
+  });
+
+  const supplierUser = read<Profile[]>(KEYS.profiles, []).find(
+    (p) => p.role === "supplier" && p.supplier_id === request.supplier_id,
+  );
+  if (supplierUser) {
+    pushNotification({
+      user_id: supplierUser.id,
+      title: "AMG certified your delivery",
+      body: `Supply for order ${request.order_id} was inspected and marked fulfilled at ${request.logistics?.amg_location_name ?? "AMG hub"}.`,
+      link: `/supplier/requests/${request.id}`,
+      order_id: request.order_id,
+      supply_request_id: request.id,
+    });
+  }
+
+  return updated;
+}
+
+/**
+ * Kanban advance for suppliers: pending→confirmed needs logistics (use confirm),
+ * confirmed→dispatched. Fulfilled is AMG-only.
+ */
+export function advanceDemoSupplyRequest(
+  requestId: string,
+  to: SupplyRequestStatus,
+  logistics?: SupplyLogisticsPlan,
+  dispatch?: SupplyDispatchDetails,
+): SupplyRequest {
+  if (to === "confirmed") {
+    if (!logistics) throw new Error("Logistics plan required to confirm");
+    return confirmDemoSupplyRequest(requestId, logistics);
+  }
+  if (to === "dispatched") {
+    if (!dispatch) throw new Error("Driver and vehicle details required to dispatch");
+    return dispatchDemoSupplyRequest(requestId, dispatch);
+  }
+  if (to === "fulfilled") {
+    throw new Error("Only AMG can certify fulfilled after inspection");
+  }
+  throw new Error(`Cannot move supply request to ${to}`);
 }
 
 /** Admin confirms order to the buyer after supplier confirmations */
@@ -811,16 +1403,25 @@ export function dispatchDemoOrder(orderId: string, riderId: string): Order | nul
   if (!rider) throw new Error("Rider not found");
 
   const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS);
-  const next = orders.map((o) =>
-    o.id === orderId
-      ? {
-          ...o,
-          status: "out_for_delivery" as const,
-          rider_id: rider.id,
-          rider_name_snapshot: rider.name,
-        }
-      : o,
-  );
+  const assignedAt = new Date().toISOString();
+  const assignEvent: RiderDeliveryEvent = {
+    status: "assigned",
+    at: assignedAt,
+    note: `Assigned to ${rider.name}`,
+  };
+  const next = orders.map((o) => {
+    if (o.id !== orderId) return o;
+    const prevEvents = o.rider_delivery_events ?? [];
+    return {
+      ...o,
+      status: "out_for_delivery" as const,
+      rider_id: rider.id,
+      rider_name_snapshot: rider.name,
+      rider_delivery_status: "assigned" as const,
+      rider_fail_reason: null,
+      rider_delivery_events: [...prevEvents, assignEvent],
+    };
+  });
   write(KEYS.orders, next);
   const order = next.find((o) => o.id === orderId) ?? null;
 
@@ -841,82 +1442,446 @@ export function dispatchDemoOrder(orderId: string, riderId: string): Order | nul
     });
   }
 
-  if (order?.user_id) {
-    pushNotification({
-      user_id: order.user_id,
-      title: "Your AMG.COM order is out for delivery",
-      body: `Order ${shortId(order.id)} is on its way${
-        order.delivery_method === "dropoff" && order.dropoff_point_name
-          ? ` to ${order.dropoff_point_name}`
-          : " to your doorstep"
-      }.`,
-      link: `/order/${order.id}`,
-      order_id: order.id,
-    });
+  if (order) {
+    notifyRiderStageToCustomerAndAdmin(order, "assigned");
   }
 
   return order;
 }
 
-/** Rider marks an order handed over at the drop point / doorstep. Triggers payout + notifications. */
-export function deliverDemoOrder(orderId: string): { order: Order; payout: RiderPayout | null } {
+function riderStageMessage(
+  order: Order,
+  status: RiderDeliveryStatus,
+): { customerTitle: string; customerBody: string; adminTitle: string; adminBody: string } {
+  const rider = order.rider_name_snapshot || "Rider";
+  const ref = shortId(order.id);
+  const map: Record<
+    RiderDeliveryStatus,
+    { customerTitle: string; customerBody: string; adminTitle: string; adminBody: string }
+  > = {
+    assigned: {
+      customerTitle: "Rider assigned to your order",
+      customerBody: `${rider} will deliver order ${ref} to you in ${order.town}.`,
+      adminTitle: `Rider assigned — ${rider}`,
+      adminBody: `${rider} assigned to order ${ref} (${order.customer_name}, ${order.town}).`,
+    },
+    collected: {
+      customerTitle: "Rider collected your order",
+      customerBody: `${rider} collected order ${ref} from the AMG hub and will head out shortly.`,
+      adminTitle: `Collected for delivery — ${rider}`,
+      adminBody: `${rider} collected order ${ref} from hub.`,
+    },
+    in_transit: {
+      customerTitle: "Your order is in transit",
+      customerBody: `${rider} is on the way with order ${ref}.`,
+      adminTitle: `In transit — ${rider}`,
+      adminBody: `${rider} is in transit with order ${ref} to ${order.customer_name}.`,
+    },
+    delivered: {
+      customerTitle: "Order delivered",
+      customerBody: `${rider} handed over order ${ref}. Complete payment with the rider if still unpaid.`,
+      adminTitle: `Delivered — ${rider}`,
+      adminBody: `${rider} marked order ${ref} delivered${order.paid ? "" : " (payment pending)"}.`,
+    },
+    paid: {
+      customerTitle: "Payment received — delivery complete",
+      customerBody: `Payment for order ${ref} is registered. Thank you for shopping with AMG.COM.`,
+      adminTitle: `Paid — trip closed`,
+      adminBody: `Order ${ref} paid and closed by ${rider}.`,
+    },
+    failed: {
+      customerTitle: "Delivery could not be completed",
+      customerBody: `${rider} could not complete delivery for order ${ref}${
+        order.rider_fail_reason ? `: ${order.rider_fail_reason}` : ""
+      }. AMG will contact you.`,
+      adminTitle: `Fail delivery — ${rider}`,
+      adminBody: `${rider} failed order ${ref}${
+        order.rider_fail_reason ? `: ${order.rider_fail_reason}` : ""
+      }.`,
+    },
+  };
+  return map[status];
+}
+
+function notifyRiderStageToCustomerAndAdmin(
+  order: Order,
+  status: RiderDeliveryStatus,
+) {
+  const msg = riderStageMessage(order, status);
+  if (order.user_id) {
+    pushNotification({
+      user_id: order.user_id,
+      title: msg.customerTitle,
+      body: msg.customerBody,
+      link: `/order/${order.id}`,
+      order_id: order.id,
+    });
+  }
+  pushNotification({
+    user_id: "demo-admin",
+    title: msg.adminTitle,
+    body: msg.adminBody,
+    link: "/admin/orders",
+    order_id: order.id,
+  });
+}
+
+/** Resolve the portal user id linked to a rider record (for push / in-app alerts). */
+export function getDemoUserIdForRider(riderId: string): string | null {
+  ensureSeeded();
+  return (
+    read<Profile[]>(KEYS.profiles, []).find(
+      (p) => p.role === "rider" && p.rider_id === riderId,
+    )?.id ?? null
+  );
+}
+
+/**
+ * Rider registers payment before leaving the customer.
+ * COD = cash collected; mpesa = STK confirmed at the door.
+ */
+/** In-app alert to the customer when the rider sends a door-side M-Pesa STK. */
+export function notifyDemoDoorMpesaPrompt(orderId: string, phone: string): void {
+  ensureSeeded();
+  const order = getDemoOrder(orderId);
+  if (!order?.user_id) return;
+  pushNotification({
+    user_id: order.user_id,
+    title: "Confirm M-Pesa on your phone",
+    body: `AMG rider sent a payment request for ${formatKes(Number(order.total_kes))} to ${phone}. Enter your M-Pesa PIN — the rider will wait until it confirms.`,
+    link: `/order/${order.id}`,
+    order_id: order.id,
+  });
+}
+
+export function markDemoOrderPaid(
+  orderId: string,
+  input: {
+    method: PaymentMethod;
+    note?: string | null;
+    mpesa_phone?: string | null;
+  },
+): Order {
   ensureSeeded();
   const order = getDemoOrder(orderId);
   if (!order) throw new Error("Order not found");
+  if (
+    order.status !== "out_for_delivery" &&
+    order.status !== "confirmed" &&
+    order.status !== "delivered"
+  ) {
+    throw new Error("Only orders in delivery can be marked paid here");
+  }
+  if (order.paid) {
+    if (normalizeRiderDeliveryStatus(order) === "delivered") {
+      return setDemoRiderDeliveryStatus(orderId, "paid");
+    }
+    return order;
+  }
 
-  const deliveredAt = new Date().toISOString();
+  const paidAt = new Date().toISOString();
   const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS);
+  const stage = normalizeRiderDeliveryStatus(order);
+  const closeTrip = stage === "delivered" || stage === "paid";
   const next = orders.map((o) =>
     o.id === orderId
-      ? { ...o, status: "delivered" as const, delivered_at: deliveredAt }
+      ? {
+          ...o,
+          paid: true,
+          paid_at: paidAt,
+          payment_method: input.method,
+          mpesa_phone:
+            input.method === "mpesa"
+              ? input.mpesa_phone || o.mpesa_phone || o.phone
+              : o.mpesa_phone,
+        }
       : o,
   );
   write(KEYS.orders, next);
-  const updatedOrder = next.find((o) => o.id === orderId)!;
 
-  let payout: RiderPayout | null = null;
-  if (order.rider_id) {
-    payout = {
-      id: `payout-${Date.now()}`,
+  if (order.user_id) {
+    pushNotification({
+      user_id: order.user_id,
+      title: "Payment received",
+      body: `Payment of ${formatKes(Number(order.total_kes))} for order ${shortId(order.id)} was registered (${input.method === "mpesa" ? "M-Pesa" : "cash"}).`,
+      link: `/order/${order.id}`,
       order_id: order.id,
-      rider_id: order.rider_id,
-      rider_name: order.rider_name_snapshot ?? "Rider",
-      amount_kes: RIDER_PAYOUT_KES,
-      status: "sent",
-      created_at: deliveredAt,
-    };
-    const payouts = read<RiderPayout[]>(KEYS.riderPayouts, []);
-    write(KEYS.riderPayouts, [payout, ...payouts]);
+    });
+  }
 
-    const riderUser = read<Profile[]>(KEYS.profiles, []).find(
-      (p) => p.role === "rider" && p.rider_id === order.rider_id,
-    );
-    if (riderUser) {
+  // Goods already handed over → close on Paid column (events + admin/customer stage notice)
+  if (closeTrip && order.rider_id) {
+    return setDemoRiderDeliveryStatus(orderId, "paid");
+  }
+
+  if (order.rider_id) {
+    const riderUserId = getDemoUserIdForRider(order.rider_id);
+    if (riderUserId) {
       pushNotification({
-        user_id: riderUser.id,
-        title: "Delivery payment sent",
-        body: `Payment of ${formatKes(RIDER_PAYOUT_KES)} sent for order ${shortId(order.id)}.`,
+        user_id: riderUserId,
+        title: "Payment registered",
+        body: `Order ${shortId(order.id)} is paid. Move it to Delivered / Paid when goods are handed over.`,
         link: "/rider",
         order_id: order.id,
       });
     }
   }
 
-  if (order.user_id) {
+  return getDemoOrder(orderId)!;
+}
+
+/** Infer kanban column for legacy orders missing rider_delivery_status. */
+export function normalizeRiderDeliveryStatus(order: Order): RiderDeliveryStatus {
+  if (order.rider_delivery_status) return order.rider_delivery_status;
+  if (order.status === "delivered") return order.paid ? "paid" : "delivered";
+  if (order.status === "out_for_delivery") return "assigned";
+  return "assigned";
+}
+
+function ensureRiderPayout(order: Order, at: string): RiderPayout | null {
+  if (!order.rider_id) return null;
+  const payouts = read<RiderPayout[]>(KEYS.riderPayouts, []);
+  const existing = payouts.find((p) => p.order_id === order.id);
+  if (existing) return existing;
+  const payout: RiderPayout = {
+    id: `payout-${Date.now()}`,
+    order_id: order.id,
+    rider_id: order.rider_id,
+    rider_name: order.rider_name_snapshot ?? "Rider",
+    amount_kes: RIDER_PAYOUT_KES,
+    status: "sent",
+    created_at: at,
+  };
+  write(KEYS.riderPayouts, [payout, ...payouts]);
+  const riderUser = read<Profile[]>(KEYS.profiles, []).find(
+    (p) => p.role === "rider" && p.rider_id === order.rider_id,
+  );
+  if (riderUser) {
     pushNotification({
-      user_id: order.user_id,
-      title: "Your AMG.COM order was delivered",
-      body: `Order ${shortId(order.id)} has been delivered${
-        order.delivery_method === "dropoff" && order.dropoff_point_name
-          ? ` to ${order.dropoff_point_name}`
-          : " to your doorstep"
-      }. Asante for shopping with AMG.COM!`,
-      link: `/order/${order.id}`,
+      user_id: riderUser.id,
+      title: "Delivery payment sent",
+      body: `Payment of ${formatKes(RIDER_PAYOUT_KES)} sent for order ${shortId(order.id)}.`,
+      link: "/rider",
       order_id: order.id,
     });
   }
+  return payout;
+}
 
-  return { order: updatedOrder, payout };
+/** Close trip after payment on the Paid column (payout + customer notice). */
+function finalizeRiderPaidDelivery(orderId: string): {
+  order: Order;
+  payout: RiderPayout | null;
+} {
+  const order = getDemoOrder(orderId);
+  if (!order) throw new Error("Order not found");
+  const at = order.delivered_at || new Date().toISOString();
+  const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS);
+  const next = orders.map((o) =>
+    o.id === orderId
+      ? {
+          ...o,
+          status: "delivered" as const,
+          delivered_at: o.delivered_at || at,
+          rider_delivery_status: "paid" as const,
+        }
+      : o,
+  );
+  write(KEYS.orders, next);
+  const updated = next.find((o) => o.id === orderId)!;
+  const payout = order.paid ? ensureRiderPayout(updated, at) : null;
+  return { order: updated, payout };
+}
+
+/**
+ * Advance (or set) the rider kanban stage.
+ * Paid requires order.paid === true. Failed accepts an optional reason.
+ */
+export function setDemoRiderDeliveryStatus(
+  orderId: string,
+  to: RiderDeliveryStatus,
+  opts?: { failReason?: string | null },
+): Order {
+  ensureSeeded();
+  const order = getDemoOrder(orderId);
+  if (!order) throw new Error("Order not found");
+  if (!order.rider_id) throw new Error("Order is not assigned to a rider");
+
+  if (to === "paid" && !order.paid) {
+    throw new Error("Collect M-Pesa or cash before moving to Paid");
+  }
+
+  const current = normalizeRiderDeliveryStatus(order);
+  if (current === to && to !== "failed") {
+    return order;
+  }
+
+  const now = new Date().toISOString();
+  const failReason =
+    to === "failed" ? opts?.failReason?.trim() || "Delivery failed" : null;
+  const event: RiderDeliveryEvent = {
+    status: to,
+    at: now,
+    note:
+      to === "failed"
+        ? failReason
+        : to === "assigned"
+          ? `Assigned to ${order.rider_name_snapshot || "rider"}`
+          : null,
+  };
+
+  let patch: Partial<Order> = {
+    rider_delivery_status: to,
+    rider_fail_reason: failReason,
+    rider_delivery_events: [...(order.rider_delivery_events ?? []), event],
+  };
+
+  if (to === "delivered" || to === "paid") {
+    patch = {
+      ...patch,
+      status: "delivered",
+      delivered_at: order.delivered_at || now,
+    };
+  } else if (to === "failed") {
+    patch = {
+      ...patch,
+      status: "out_for_delivery",
+    };
+  } else {
+    patch = {
+      ...patch,
+      status: "out_for_delivery",
+      delivered_at: null,
+    };
+  }
+
+  const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS);
+  write(
+    KEYS.orders,
+    orders.map((o) => (o.id === orderId ? { ...o, ...patch } : o)),
+  );
+
+  let updated = getDemoOrder(orderId)!;
+
+  if (to === "paid") {
+    updated = finalizeRiderPaidDelivery(orderId).order;
+  }
+
+  notifyRiderStageToCustomerAndAdmin(updated, to);
+  return updated;
+}
+
+/** @deprecated Prefer setDemoRiderDeliveryStatus — kept for admin/order-status paths. */
+export function deliverDemoOrder(orderId: string): { order: Order; payout: RiderPayout | null } {
+  ensureSeeded();
+  const order = getDemoOrder(orderId);
+  if (!order) throw new Error("Order not found");
+  if (!order.paid) {
+    throw new Error(
+      "Payment not registered. Collect cash or confirm M-Pesa before closing as Paid.",
+    );
+  }
+  setDemoRiderDeliveryStatus(orderId, "delivered");
+  const closed = setDemoRiderDeliveryStatus(orderId, "paid");
+  const payouts = read<RiderPayout[]>(KEYS.riderPayouts, []);
+  return {
+    order: closed,
+    payout: payouts.find((p) => p.order_id === orderId) ?? null,
+  };
+}
+
+/**
+ * Admin records that the supplier has responded (agreed).
+ * Confirms any pending supply requests with a stub logistics plan and
+ * moves the order to supplier_confirmed.
+ */
+export function adminRecordSupplierResponse(orderId: string): Order {
+  ensureSeeded();
+  const order = getDemoOrder(orderId);
+  if (!order) throw new Error("Order not found");
+
+  const pending = getDemoSupplyRequests({ orderId }).filter((r) => r.status === "pending");
+  const hubs = getDemoDropoffPoints(order.town);
+  const hub = hubs[0];
+  const stubLogistics: SupplyLogisticsPlan = {
+    method: "boda",
+    amg_location_id: hub?.id ?? "drop-homabay-1",
+    amg_location_name: hub?.name ?? "AMG Hub",
+    amg_location_town: hub?.town ?? order.town,
+    planned_dispatch_at: new Date(Date.now() + 4 * 3600_000).toISOString(),
+    notes: "Recorded by AMG admin from Order Status board",
+  };
+
+  for (const req of pending) {
+    confirmDemoSupplyRequest(req.id, stubLogistics);
+  }
+
+  updateDemoOrderStatus(orderId, "supplier_confirmed");
+  return getDemoOrder(orderId)!;
+}
+
+export function getDemoServiceRatings(orderId?: string): ServiceRating[] {
+  ensureSeeded();
+  const list = read<ServiceRating[]>(KEYS.serviceRatings, []);
+  const filtered = orderId ? list.filter((r) => r.order_id === orderId) : list;
+  return filtered.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+}
+
+export function upsertDemoServiceRating(input: {
+  id?: string;
+  order_id: string;
+  subject: RatingSubject;
+  scores: RatingScores;
+  notes?: string | null;
+  supplier_id?: string | null;
+  supplier_name?: string | null;
+  rider_id?: string | null;
+  rider_name?: string | null;
+  created_by?: string | null;
+}): ServiceRating {
+  ensureSeeded();
+  const list = read<ServiceRating[]>(KEYS.serviceRatings, []);
+  const average = averageScores(input.scores);
+
+  if (input.id) {
+    const next = list.map((r) =>
+      r.id === input.id
+        ? {
+            ...r,
+            scores: input.scores,
+            average,
+            notes: input.notes?.trim() || null,
+            supplier_id: input.supplier_id ?? r.supplier_id,
+            supplier_name: input.supplier_name ?? r.supplier_name,
+            rider_id: input.rider_id ?? r.rider_id,
+            rider_name: input.rider_name ?? r.rider_name,
+          }
+        : r,
+    );
+    write(KEYS.serviceRatings, next);
+    return next.find((r) => r.id === input.id)!;
+  }
+
+  // One rating per subject per order — replace if exists
+  const without = list.filter(
+    (r) => !(r.order_id === input.order_id && r.subject === input.subject),
+  );
+  const rating: ServiceRating = {
+    id: `rate-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    order_id: input.order_id,
+    subject: input.subject,
+    supplier_id: input.supplier_id ?? null,
+    supplier_name: input.supplier_name ?? null,
+    rider_id: input.rider_id ?? null,
+    rider_name: input.rider_name ?? null,
+    scores: input.scores,
+    average,
+    notes: input.notes?.trim() || null,
+    created_at: new Date().toISOString(),
+    created_by: input.created_by ?? null,
+  };
+  write(KEYS.serviceRatings, [rating, ...without]);
+  return rating;
 }
 
 function shortId(id: string): string {
@@ -946,6 +1911,10 @@ export function getDemoRiderOrders(riderId: string): Order[] {
   ensureSeeded();
   return read<Order[]>(KEYS.orders, DEMO_ORDERS)
     .filter((o) => o.rider_id === riderId)
+    .map((o) => ({
+      ...o,
+      rider_delivery_status: normalizeRiderDeliveryStatus(o),
+    }))
     .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
 }
 
@@ -984,7 +1953,18 @@ export function createDemoQuoteRequest(input: {
     unmatched_count,
     status: "quoted",
     created_at: new Date().toISOString(),
+    market_analysis: null,
   };
+
+  // Market scan vs other suppliers — alert AMG when quote is not best-in-market
+  const analysis = buildHeuristicQuoteAnalysis(
+    quote,
+    getDemoProducts({ activeOnly: true }),
+    getDemoSuppliers(),
+    getDemoSupplierAddresses(),
+  );
+  quote.market_analysis = analysis;
+
   const list = read<QuoteRequest[]>(KEYS.quoteRequests, []);
   write(KEYS.quoteRequests, [quote, ...list]);
 
@@ -997,7 +1977,38 @@ export function createDemoQuoteRequest(input: {
     link: "/admin/quotes",
   });
 
+  if (analysis.has_better_prices) {
+    pushNotification({
+      user_id: "demo-admin",
+      title: "AI price alert — better supplier quotes available",
+      body: `${input.customer_name}'s quote may be overpriced. Potential savings ~${analysis.potential_savings_kes.toLocaleString("en-KE")} KES. ${analysis.summary}`,
+      link: "/admin/quotes",
+    });
+  }
+
   return quote;
+}
+
+export function saveDemoQuoteMarketAnalysis(
+  quoteId: string,
+  analysis: QuoteMarketAnalysis,
+): QuoteRequest | null {
+  ensureSeeded();
+  const list = read<QuoteRequest[]>(KEYS.quoteRequests, []);
+  const next = list.map((q) =>
+    q.id === quoteId ? { ...q, market_analysis: analysis } : q,
+  );
+  write(KEYS.quoteRequests, next);
+  const saved = next.find((q) => q.id === quoteId) ?? null;
+  if (saved?.market_analysis?.has_better_prices) {
+    pushNotification({
+      user_id: "demo-admin",
+      title: "AI price alert — better supplier quotes available",
+      body: `${saved.customer_name}: potential savings ~${saved.market_analysis.potential_savings_kes.toLocaleString("en-KE")} KES. ${saved.market_analysis.summary}`,
+      link: "/admin/quotes",
+    });
+  }
+  return saved;
 }
 
 export function getDemoQuoteRequests(userId?: string): QuoteRequest[] {

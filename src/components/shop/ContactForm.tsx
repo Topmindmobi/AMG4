@@ -66,7 +66,7 @@ export function ContactForm() {
         <select
           name="town"
           defaultValue="Homabay"
-          className="mt-1 w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-forest"
+          className="amg-select mt-1 w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal outline-none focus:border-forest"
         >
           <option value="Homabay">Homabay</option>
           <option value="Mbita">Mbita</option>

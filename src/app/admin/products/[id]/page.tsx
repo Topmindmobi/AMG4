@@ -19,9 +19,11 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (isDemoMode()) {
-      setProduct(getDemoProductById(params.id));
-      setCategories(getDemoCategories());
-      setSuppliers(getDemoSuppliers());
+      void Promise.resolve().then(() => {
+        setProduct(getDemoProductById(params.id));
+        setCategories(getDemoCategories());
+        setSuppliers(getDemoSuppliers());
+      });
       return;
     }
     void (async () => {

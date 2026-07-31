@@ -187,14 +187,14 @@ export function ProductForm({
         <Field label="Slug" name="slug" defaultValue={product?.slug} />
 
         <div>
-          <label className="block text-xs uppercase tracking-wide text-sand/45">
+          <label className="block text-xs uppercase tracking-wide text-ink-soft">
             Barcode
             <input
               name="barcode"
               value={barcode}
               onChange={(e) => setBarcode(e.target.value)}
               placeholder="Scan or type EAN / UPC / Code 128"
-              className="mt-1 w-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-sand"
+              className="mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
             />
           </label>
           <button
@@ -207,7 +207,7 @@ export function ProductForm({
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-wide text-sand/45">Cover photo</p>
+          <p className="text-xs uppercase tracking-wide text-ink-soft">Cover photo</p>
           {coverPreview && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -227,7 +227,7 @@ export function ProductForm({
             >
               Capture with camera
             </button>
-            <label className="cursor-pointer border border-white/20 px-4 py-2 text-sm text-sand/80 hover:bg-white/5">
+            <label className="cursor-pointer border border-line px-4 py-2 text-sm text-charcoal/80 hover:bg-white">
               Upload file
               <input
                 name="image"
@@ -249,7 +249,7 @@ export function ProductForm({
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-wide text-sand/45">Gallery photos</p>
+          <p className="text-xs uppercase tracking-wide text-ink-soft">Gallery photos</p>
           {galleryPreviews.length > 0 && (
             <div className="mt-2 grid grid-cols-3 gap-2">
               {galleryPreviews.map((src, i) => (
@@ -275,11 +275,11 @@ export function ProductForm({
               setCameraTarget("gallery");
               setCameraOpen(true);
             }}
-            className="mt-2 border border-white/20 px-4 py-2 text-sm text-sand/80 hover:bg-white/5"
+            className="mt-2 border border-line px-4 py-2 text-sm text-charcoal/80 hover:bg-white"
           >
             Capture gallery photo
           </button>
-          <label className="mt-3 block text-xs uppercase tracking-wide text-sand/45">
+          <label className="mt-3 block text-xs uppercase tracking-wide text-ink-soft">
             Or paste gallery paths (one per line)
             <textarea
               name="gallery"
@@ -288,38 +288,38 @@ export function ProductForm({
                 .filter((g) => !g.startsWith("data:"))
                 .join("\n")}
               placeholder="/products/item-2.jpg"
-              className="mt-1 w-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-sand"
+              className="mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
             />
           </label>
         </div>
 
-        <label className="block text-xs uppercase tracking-wide text-sand/45">
+        <label className="block text-xs uppercase tracking-wide text-ink-soft">
           Short description
           <textarea
             name="short_description"
             rows={2}
             required
             defaultValue={product?.short_description || product?.description}
-            className="mt-1 w-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-sand"
+            className="mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
           />
         </label>
-        <label className="block text-xs uppercase tracking-wide text-sand/45">
+        <label className="block text-xs uppercase tracking-wide text-ink-soft">
           Detailed description
           <textarea
             name="detailed_description"
             rows={6}
             required
             defaultValue={product?.detailed_description}
-            className="mt-1 w-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-sand"
+            className="mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
           />
         </label>
-        <label className="block text-xs uppercase tracking-wide text-sand/45">
+        <label className="block text-xs uppercase tracking-wide text-ink-soft">
           Category
           <select
             name="category_id"
             required
             defaultValue={product?.category_id}
-            className="mt-1 w-full border border-white/15 bg-forest-deep px-3 py-2 text-sm"
+            className="amg-select mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
           >
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
@@ -331,12 +331,12 @@ export function ProductForm({
         {lockedSupplierId ? (
           <input type="hidden" name="supplier_id" value={lockedSupplierId} />
         ) : (
-          <label className="block text-xs uppercase tracking-wide text-sand/45">
+          <label className="block text-xs uppercase tracking-wide text-ink-soft">
             Supplier
             <select
               name="supplier_id"
               defaultValue={product?.supplier_id ?? ""}
-              className="mt-1 w-full border border-white/15 bg-forest-deep px-3 py-2 text-sm"
+              className="amg-select mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
             >
               <option value="">None</option>
               {suppliers.map((s) => (
@@ -364,7 +364,7 @@ export function ProductForm({
           />
         </div>
         <fieldset>
-          <legend className="text-xs uppercase tracking-wide text-sand/45">Towns</legend>
+          <legend className="text-xs uppercase tracking-wide text-ink-soft">Towns</legend>
           <div className="mt-2 flex flex-wrap gap-3">
             {TOWNS.map((town) => (
               <label key={town} className="flex items-center gap-2 text-sm">
@@ -420,14 +420,14 @@ function Field({
   type?: string;
 }) {
   return (
-    <label className="block text-xs uppercase tracking-wide text-sand/45">
+    <label className="block text-xs uppercase tracking-wide text-ink-soft">
       {label}
       <input
         name={name}
         type={type}
         defaultValue={defaultValue}
         required={required}
-        className="mt-1 w-full border border-white/15 bg-white/5 px-3 py-2 text-sm text-sand"
+        className="mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
       />
     </label>
   );

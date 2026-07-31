@@ -12,8 +12,10 @@ export default function NewProductPage() {
 
   useEffect(() => {
     if (isDemoMode()) {
-      setCategories(getDemoCategories());
-      setSuppliers(getDemoSuppliers());
+      void Promise.resolve().then(() => {
+        setCategories(getDemoCategories());
+        setSuppliers(getDemoSuppliers());
+      });
       return;
     }
     void (async () => {
@@ -30,7 +32,7 @@ export default function NewProductPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">New product</h1>
+      <h1 className="font-display text-3xl text-charcoal">New product</h1>
       <ProductForm categories={categories} suppliers={suppliers} />
     </div>
   );

@@ -1,31 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, type ReactNode, useEffect, useState } from "react";
+import { FormEvent, type ReactNode, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AmgLogo } from "@/components/brand/AmgLogo";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart";
-import { getDemoNotifications } from "@/lib/store/demo-store";
-import { isDemoMode } from "@/lib/supabase/config";
 
 export function SiteHeader() {
   const { count, justAdded } = useCart();
-  const { user, isAdmin, isSupplier, logout } = useAuth();
+  const { user, isAdmin, isSupplier, isRider, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const [unread, setUnread] = useState(0);
   const [q, setQ] = useState("");
 
-  useEffect(() => {
-    if (!user || !isDemoMode()) {
-      setUnread(0);
-      return;
-    }
-    setUnread(getDemoNotifications(user.id).filter((n) => !n.read).length);
-  }, [user, pathname]);
-
-  if (pathname.startsWith("/admin") || pathname.startsWith("/supplier")) {
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/supplier") ||
+    pathname.startsWith("/rider")
+  ) {
     return null;
   }
 
@@ -51,6 +45,9 @@ export function SiteHeader() {
           </NavLink>
           <NavLink href="/shop" pathname={pathname}>
             Shop
+          </NavLink>
+          <NavLink href="/quote" pathname={pathname}>
+            Get a quote
           </NavLink>
           <NavLink href="/about" pathname={pathname}>
             About
@@ -102,15 +99,16 @@ export function SiteHeader() {
                 </Link>
               )}
               {isSupplier && (
-                <Link href="/supplier" className="inline-flex items-center gap-1 hover:text-forest-deep">
+                <Link href="/supplier" className="hover:text-forest-deep">
                   Supplier
-                  {unread > 0 && (
-                    <span className="inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-ember px-1 text-[10px] font-bold text-white">
-                      {unread}
-                    </span>
-                  )}
                 </Link>
               )}
+              {isRider && (
+                <Link href="/rider" className="hover:text-forest-deep">
+                  Rider
+                </Link>
+              )}
+              <NotificationBell />
               <button
                 type="button"
                 onClick={() => void logout()}

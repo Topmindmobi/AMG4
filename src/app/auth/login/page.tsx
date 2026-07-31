@@ -4,15 +4,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-import { useAuth } from "@/lib/auth-context";
+import { roleHomePath, useAuth } from "@/lib/auth-context";
 import { getDemoSession } from "@/lib/store/demo-store";
 import { isDemoMode } from "@/lib/supabase/config";
-
-function roleHome(role?: string | null) {
-  if (role === "admin") return "/admin";
-  if (role === "supplier") return "/supplier";
-  return "/account";
-}
 
 function LoginForm() {
   const { login } = useAuth();
@@ -40,7 +34,7 @@ function LoginForm() {
         return;
       }
       if (isDemoMode()) {
-        router.push(roleHome(getDemoSession()?.user.role));
+        router.push(roleHomePath(getDemoSession()?.user ?? null));
         return;
       }
       router.push("/account");
@@ -55,7 +49,7 @@ function LoginForm() {
     <div className="mx-auto max-w-md px-5 py-12">
       <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Sign in</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Customers, suppliers, and AMG admin sign in here.
+        Customers, suppliers, riders, and AMG admin sign in here.
       </p>
       {isDemoMode() && (
         <div className="mt-4 space-y-1 rounded-lg border border-line bg-sand px-3 py-2.5 text-xs text-ink-soft">
@@ -68,6 +62,10 @@ function LoginForm() {
           <p>
             Supplier: <code>lakeview@amg.com</code>, <code>ruma@amg.com</code>, or{" "}
             <code>migori@amg.com</code> / <code>supplier123</code>
+          </p>
+          <p>
+            Rider: <code>brian@amg.com</code>, <code>faith@amg.com</code>, or{" "}
+            <code>kevin@amg.com</code> / <code>rider123</code>
           </p>
         </div>
       )}

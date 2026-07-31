@@ -4,6 +4,9 @@ import type {
   OrderStatus,
   PaymentMethod,
   Product,
+  QuoteRequest,
+  Rider,
+  RiderPayout,
   Supplier,
   SupplyRequest,
   Town,
@@ -141,10 +144,82 @@ export function buildPaymentReport(orders: Order[], range?: ReportRange) {
   const total = sum(rows.map((r) => r.amount)) || 1;
   for (const r of rows) r.share = (r.amount / total) * 100;
 
+  const active = list.filter((o) => o.status !== "cancelled");
+  const paidOnline = active.filter((o) => o.paid);
+  const discountIssued = sum(paidOnline.map((o) => Number(o.discount_kes || 0)));
+
   return {
     totalOrders: list.length,
     totalAmount: sum(rows.map((r) => r.amount)),
     rows,
+    payNow: {
+      orders: paidOnline.length,
+      share: active.length ? (paidOnline.length / active.length) * 100 : 0,
+      discountIssued,
+    },
+  };
+}
+
+export function buildQuoteReport(quotes: QuoteRequest[], range?: ReportRange) {
+  const list = quotes.filter((q) => inRange(q.created_at, range));
+  const converted = list.filter((q) => q.status === "converted");
+  const totalItems = sum(list.map((q) => q.items.length));
+  const unmatchedItems = sum(list.map((q) => q.unmatched_count));
+
+  const byTown = new Map<Town, { count: number; amount: number }>();
+  for (const q of list) {
+    const row = byTown.get(q.town) || { count: 0, amount: 0 };
+    row.count += 1;
+    row.amount += Number(q.total_kes);
+    byTown.set(q.town, row);
+  }
+
+  return {
+    total: list.length,
+    converted: converted.length,
+    conversionRate: list.length ? (converted.length / list.length) * 100 : 0,
+    potentialRevenue: sum(list.map((q) => Number(q.total_kes))),
+    matchRate: totalItems ? ((totalItems - unmatchedItems) / totalItems) * 100 : 100,
+    byTown: Array.from(byTown.entries()).map(([town, v]) => ({ town, ...v })),
+  };
+}
+
+export function buildRiderReport(
+  riders: Rider[],
+  payouts: RiderPayout[],
+  orders: Order[],
+  range?: ReportRange,
+) {
+  const inRangePayouts = payouts.filter((p) => inRange(p.created_at, range));
+  const deliveredInRange = orders.filter(
+    (o) => o.status === "delivered" && o.delivered_at && inRange(o.delivered_at, range),
+  );
+
+  const deliveryTimesMs = deliveredInRange
+    .filter((o) => o.delivered_at)
+    .map((o) => +new Date(o.delivered_at!) - +new Date(o.created_at));
+  const avgDeliveryHours = deliveryTimesMs.length
+    ? sum(deliveryTimesMs) / deliveryTimesMs.length / 3_600_000
+    : 0;
+
+  const byRider = riders
+    .map((r) => {
+      const riderPayouts = inRangePayouts.filter((p) => p.rider_id === r.id);
+      return {
+        id: r.id,
+        name: r.name,
+        town: r.town,
+        deliveries: riderPayouts.length,
+        earned: sum(riderPayouts.map((p) => Number(p.amount_kes))),
+      };
+    })
+    .sort((a, b) => b.deliveries - a.deliveries);
+
+  return {
+    totalPayouts: inRangePayouts.length,
+    totalPaidOut: sum(inRangePayouts.map((p) => Number(p.amount_kes))),
+    avgDeliveryHours,
+    byRider,
   };
 }
 
@@ -282,6 +357,8 @@ export function buildLogisticsReport(
     total: supplyInRange.length,
     pending: supplyInRange.filter((r) => r.status === "pending").length,
     confirmed: supplyInRange.filter((r) => r.status === "confirmed").length,
+    dispatched: supplyInRange.filter((r) => r.status === "dispatched").length,
+    fulfilled: supplyInRange.filter((r) => r.status === "fulfilled").length,
     rejected: supplyInRange.filter((r) => r.status === "rejected").length,
     value: sum(
       supplyInRange
@@ -330,5 +407,161 @@ export function buildEcommerceOverview(
     logistics,
     activeProducts,
     lowStock,
+  };
+}
+
+const LOW_STOCK_THRESHOLD = 5;
+
+/** Supplier-scoped inventory + sales + pipeline reports. */
+export function buildSupplierReport(
+  supplierId: string,
+  products: Product[],
+  orders: Order[],
+  supplyRequests: SupplyRequest[],
+  categories: Category[],
+  range?: ReportRange,
+) {
+  const mine = products.filter((p) => p.supplier_id === supplierId);
+  const active = mine.filter((p) => p.is_active);
+  const inactive = mine.filter((p) => !p.is_active);
+  const lowStock = active.filter((p) => p.stock <= LOW_STOCK_THRESHOLD);
+  const outOfStock = active.filter((p) => p.stock === 0);
+  const stockUnits = sum(active.map((p) => p.stock));
+  const inventoryValue = sum(active.map((p) => p.price_kes * p.stock));
+
+  const orderList = filterOrders(orders, range).filter(
+    (o) => o.status !== "cancelled",
+  );
+  const soldQty = new Map<string, number>();
+  const soldRev = new Map<string, number>();
+  let unitsSold = 0;
+  let revenue = 0;
+
+  for (const o of orderList) {
+    for (const item of o.items ?? []) {
+      if (item.supplier_id !== supplierId) continue;
+      const pid = item.product_id || item.name_snapshot;
+      const qty = item.qty;
+      const line = item.price_kes * qty;
+      soldQty.set(pid, (soldQty.get(pid) || 0) + qty);
+      soldRev.set(pid, (soldRev.get(pid) || 0) + line);
+      unitsSold += qty;
+      revenue += line;
+    }
+  }
+
+  const byProduct = mine
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      stock: p.stock,
+      price_kes: p.price_kes,
+      inventoryValue: p.price_kes * p.stock,
+      is_active: p.is_active,
+      sold: soldQty.get(p.id) || 0,
+      revenue: soldRev.get(p.id) || 0,
+      category: p.category?.name || categories.find((c) => c.id === p.category_id)?.name || "—",
+    }))
+    .sort((a, b) => b.revenue - a.revenue || b.sold - a.sold);
+
+  const movers = byProduct.filter((p) => p.sold > 0).slice(0, 20);
+  const deadStock = active
+    .filter((p) => p.stock > 0 && !(soldQty.get(p.id) || 0))
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      stock: p.stock,
+      inventoryValue: p.price_kes * p.stock,
+    }))
+    .sort((a, b) => b.inventoryValue - a.inventoryValue)
+    .slice(0, 20);
+
+  const byCategory = categories
+    .filter((c) => !c.parent_id)
+    .map((cat) => {
+      const childIds = categories
+        .filter((c) => c.parent_id === cat.id)
+        .map((c) => c.id);
+      const ids = new Set([cat.id, ...childIds]);
+      const inCat = active.filter((p) => ids.has(p.category_id));
+      return {
+        name: cat.name,
+        products: inCat.length,
+        stockUnits: sum(inCat.map((p) => p.stock)),
+        inventoryValue: sum(inCat.map((p) => p.price_kes * p.stock)),
+        unitsSold: sum(inCat.map((p) => soldQty.get(p.id) || 0)),
+        revenue: sum(inCat.map((p) => soldRev.get(p.id) || 0)),
+      };
+    })
+    .filter((r) => r.products > 0)
+    .sort((a, b) => b.inventoryValue - a.inventoryValue);
+
+  const supplyMine = supplyRequests.filter(
+    (r) => r.supplier_id === supplierId && inRange(r.created_at, range),
+  );
+  const pipeline = {
+    pending: supplyMine.filter((r) => r.status === "pending").length,
+    confirmed: supplyMine.filter((r) => r.status === "confirmed").length,
+    dispatched: supplyMine.filter((r) => r.status === "dispatched").length,
+    fulfilled: supplyMine.filter((r) => r.status === "fulfilled").length,
+    rejected: supplyMine.filter((r) => r.status === "rejected").length,
+    total: supplyMine.length,
+    value: sum(
+      supplyMine
+        .filter((r) => r.status !== "rejected")
+        .map((r) => Number(r.total_kes)),
+    ),
+    fulfilledValue: sum(
+      supplyMine
+        .filter((r) => r.status === "fulfilled")
+        .map((r) => Number(r.total_kes)),
+    ),
+  };
+
+  const byTownMap = new Map<
+    Town,
+    { requests: number; value: number; fulfilled: number }
+  >();
+  for (const r of supplyMine) {
+    if (r.status === "rejected") continue;
+    const row = byTownMap.get(r.customer_town) || {
+      requests: 0,
+      value: 0,
+      fulfilled: 0,
+    };
+    row.requests += 1;
+    row.value += Number(r.total_kes);
+    if (r.status === "fulfilled") row.fulfilled += 1;
+    byTownMap.set(r.customer_town, row);
+  }
+  const byTown = Array.from(byTownMap.entries())
+    .map(([town, v]) => ({ town, ...v }))
+    .sort((a, b) => b.value - a.value);
+
+  return {
+    totalProducts: mine.length,
+    activeProducts: active.length,
+    inactiveProducts: inactive.length,
+    stockUnits,
+    inventoryValue,
+    lowStockCount: lowStock.length,
+    outOfStockCount: outOfStock.length,
+    lowStockThreshold: LOW_STOCK_THRESHOLD,
+    lowStock: lowStock
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        stock: p.stock,
+        price_kes: p.price_kes,
+      }))
+      .sort((a, b) => a.stock - b.stock),
+    unitsSold,
+    revenue,
+    byProduct,
+    movers,
+    deadStock,
+    byCategory,
+    pipeline,
+    byTown,
   };
 }

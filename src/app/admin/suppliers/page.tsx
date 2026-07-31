@@ -12,7 +12,7 @@ export default function AdminSuppliersPage() {
 
   function load() {
     if (isDemoMode()) {
-      setSuppliers(getDemoSuppliers());
+      void Promise.resolve(getDemoSuppliers()).then(setSuppliers);
       return;
     }
     void (async () => {
@@ -65,7 +65,7 @@ export default function AdminSuppliersPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">Suppliers</h1>
+      <h1 className="font-display text-3xl text-charcoal">Suppliers</h1>
       <form onSubmit={onSubmit} className="mt-8 grid max-w-xl gap-3">
         <input
           name="name"
@@ -73,18 +73,18 @@ export default function AdminSuppliersPage() {
           placeholder="Supplier name"
           defaultValue={editing?.name}
           key={editing?.id ?? "new"}
-          className="border border-white/15 bg-white/5 px-3 py-2 text-sm"
+          className="border border-line bg-white px-3 py-2 text-sm"
         />
         <input
           name="contact_phone"
           placeholder="Phone"
           defaultValue={editing?.contact_phone ?? ""}
-          className="border border-white/15 bg-white/5 px-3 py-2 text-sm"
+          className="border border-line bg-white px-3 py-2 text-sm"
         />
         <select
           name="town"
           defaultValue={editing?.town ?? ""}
-          className="border border-white/15 bg-forest-deep px-3 py-2 text-sm"
+          className="amg-select border border-line bg-white px-3 py-2 text-sm text-charcoal"
         >
           <option value="">Town</option>
           {TOWNS.map((t) => (
@@ -98,7 +98,7 @@ export default function AdminSuppliersPage() {
           placeholder="Notes"
           defaultValue={editing?.notes ?? ""}
           rows={2}
-          className="border border-white/15 bg-white/5 px-3 py-2 text-sm"
+          className="border border-line bg-white px-3 py-2 text-sm"
         />
         <div className="flex gap-2">
           <button type="submit" className="bg-ember px-4 py-2 text-sm font-semibold text-white">
@@ -108,7 +108,7 @@ export default function AdminSuppliersPage() {
             <button
               type="button"
               onClick={() => setEditing(null)}
-              className="px-4 py-2 text-sm text-sand/50"
+              className="px-4 py-2 text-sm text-ink-soft"
             >
               Cancel
             </button>
@@ -116,19 +116,19 @@ export default function AdminSuppliersPage() {
         </div>
       </form>
 
-      <ul className="mt-10 divide-y divide-white/10 border-y border-white/10">
+      <ul className="mt-10 divide-y divide-line border-y border-line">
         {suppliers.map((s) => (
           <li key={s.id} className="flex items-center justify-between gap-3 py-3 text-sm">
             <div>
               <p className="font-medium">{s.name}</p>
-              <p className="text-xs text-sand/45">
+              <p className="text-xs text-ink-soft">
                 {s.contact_phone || "No phone"} · {s.town || "—"}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setEditing(s)}
-              className="text-sand/50 hover:text-ember"
+              className="text-ink-soft hover:text-ember"
             >
               Edit
             </button>

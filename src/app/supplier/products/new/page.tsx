@@ -12,15 +12,17 @@ export default function SupplierNewProductPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   useEffect(() => {
-    setCategories(getDemoCategories());
-    setSuppliers(getDemoSuppliers());
+    void Promise.resolve().then(() => {
+      setCategories(getDemoCategories());
+      setSuppliers(getDemoSuppliers());
+    });
   }, []);
 
   if (!supplierId) return null;
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">Add product</h1>
+      <h1 className="font-display text-3xl text-charcoal">Add product</h1>
       <ProductForm
         categories={categories}
         suppliers={suppliers}

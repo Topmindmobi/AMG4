@@ -16,6 +16,10 @@
   --line: #dbe1ea;
   --background: var(--mist);
   --foreground: var(--charcoal);
+  /* Keep native form controls light — OS dark mode + Tailwind
+     preflight (transparent select bg) otherwise flashes black.
+     Also set early via <meta>/<style> in layout.tsx. */
+  color-scheme: light;
 }
 
 @theme inline {
@@ -42,6 +46,30 @@ body {
   color: var(--foreground);
   font-family: var(--font-work-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+  Tailwind preflight sets select background-color: transparent.
+  With OS dark mode that paints native controls black (closed field +
+  option list). Force every select light — admin and storefront alike.
+  Early color-scheme is also inlined in layout.tsx.
+*/
+html,
+body {
+  color-scheme: light;
+}
+
+select,
+select option,
+.amg-select,
+.amg-select option {
+  background-color: #fff !important;
+  color: var(--charcoal) !important;
+  color-scheme: light;
+}
+
+select {
+  border-color: var(--line);
 }
 
 .font-display {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AmgLogo } from "@/components/brand/AmgLogo";
 import { CategoryIcon } from "@/components/shop/CategoryIcon";
 import { HeroRouteMap } from "@/components/shop/HeroRouteMap";
+import { PayNowPromo } from "@/components/shop/PayNowPromo";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { TrustStrip } from "@/components/shop/TrustStrip";
 import { listProducts, listTopCategories } from "@/lib/data/catalog";
@@ -53,6 +54,7 @@ export default async function HomePage() {
       </section>
 
       <TrustStrip />
+      <PayNowPromo />
 
       <section className="px-5 py-[46px]">
         <div className="mx-auto max-w-[1120px]">

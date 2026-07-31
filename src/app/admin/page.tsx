@@ -16,8 +16,10 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (isDemoMode()) {
-      setOrders(getDemoOrders());
-      setProducts(getDemoProducts({ activeOnly: false }));
+      void Promise.resolve().then(() => {
+        setOrders(getDemoOrders());
+        setProducts(getDemoProducts({ activeOnly: false }));
+      });
       return;
     }
     void (async () => {
@@ -42,8 +44,8 @@ export default function AdminDashboardPage() {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl text-sand">Dashboard</h1>
-          <p className="mt-2 text-sm text-sand/55">
+          <h1 className="font-display text-3xl text-charcoal">Dashboard</h1>
+          <p className="mt-2 text-sm text-ink-soft">
             Homabay &amp; Migori operations overview
           </p>
         </div>
@@ -62,11 +64,11 @@ export default function AdminDashboardPage() {
       </div>
 
       <section className="mt-10">
-        <h2 className="font-display text-xl text-sand">Low stock</h2>
+        <h2 className="font-display text-xl text-charcoal">Low stock</h2>
         {lowStock.length === 0 ? (
-          <p className="mt-3 text-sm text-sand/50">All active products are above 5 units.</p>
+          <p className="mt-3 text-sm text-ink-soft">All active products are above 5 units.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-white/10 border-y border-white/10">
+          <ul className="mt-4 divide-y divide-line border-y border-line">
             {lowStock.map((p) => (
               <li key={p.id} className="flex justify-between py-3 text-sm">
                 <span>{p.name}</span>
@@ -82,9 +84,9 @@ export default function AdminDashboardPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-white/10 bg-white/5 px-4 py-5">
-      <p className="text-xs uppercase tracking-wide text-sand/45">{label}</p>
-      <p className="mt-2 font-display text-2xl text-sand">{value}</p>
+    <div className="border border-line bg-white px-4 py-5">
+      <p className="text-xs uppercase tracking-wide text-ink-soft">{label}</p>
+      <p className="mt-2 font-display text-2xl text-charcoal">{value}</p>
     </div>
   );
 }

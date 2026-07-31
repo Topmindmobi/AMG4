@@ -1,7 +1,9 @@
 import "server-only";
 import twilio from "twilio";
+export { normalizeKenyaPhone } from "@/lib/phone";
+import { normalizeKenyaPhone } from "@/lib/phone";
 
-export type OrderSmsEvent = "confirmed" | "dispatched";
+export type OrderSmsEvent = "confirmed" | "dispatched" | "delivered";
 
 export function isTwilioConfigured(): boolean {
   const sid = process.env.TWILIO_ACCOUNT_SID?.trim();
@@ -10,33 +12,6 @@ export function isTwilioConfigured(): boolean {
     process.env.TWILIO_MESSAGING_SERVICE_SID?.trim() ||
     process.env.TWILIO_PHONE_NUMBER?.trim();
   return Boolean(sid && token && from);
-}
-
-/** Normalize Kenya mobile numbers to E.164 (+254…). Returns null if unusable. */
-export function normalizeKenyaPhone(raw: string): string | null {
-  const digits = raw.replace(/[^\d+]/g, "").trim();
-  if (!digits) return null;
-
-  let normalized = digits;
-  if (normalized.startsWith("+")) {
-    normalized = `+${normalized.slice(1).replace(/\D/g, "")}`;
-  } else {
-    const only = normalized.replace(/\D/g, "");
-    if (only.startsWith("254") && only.length >= 12) {
-      normalized = `+${only}`;
-    } else if (only.startsWith("0") && only.length >= 10) {
-      normalized = `+254${only.slice(1)}`;
-    } else if (/^[17]\d{8}$/.test(only)) {
-      normalized = `+254${only}`;
-    } else if (only.length >= 9) {
-      normalized = `+254${only.replace(/^0+/, "")}`;
-    } else {
-      return null;
-    }
-  }
-
-  if (!/^\+254[17]\d{8}$/.test(normalized)) return null;
-  return normalized;
 }
 
 export function shortOrderRef(orderId: string): string {
@@ -51,6 +26,9 @@ function buildMessage(event: OrderSmsEvent, orderId: string): string {
   const ref = shortOrderRef(orderId);
   if (event === "confirmed") {
     return `AMG Store: Your order ${ref} is confirmed. We will dispatch soon.`;
+  }
+  if (event === "delivered") {
+    return `AMG Store: Your order ${ref} has been delivered. Asante for shopping with AMG!`;
   }
   return `AMG Store: Your order ${ref} is out for delivery (dispatched).`;
 }

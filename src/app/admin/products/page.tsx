@@ -12,7 +12,7 @@ export default function AdminProductsPage() {
 
   function load() {
     if (isDemoMode()) {
-      setProducts(getDemoProducts({ activeOnly: false }));
+      void Promise.resolve(getDemoProducts({ activeOnly: false })).then(setProducts);
       return;
     }
     void (async () => {
@@ -46,7 +46,7 @@ export default function AdminProductsPage() {
   return (
     <div>
       <div className="flex items-center justify-between gap-4">
-        <h1 className="font-display text-3xl text-sand">Products</h1>
+        <h1 className="font-display text-3xl text-charcoal">Products</h1>
         <Link
           href="/admin/products/new"
           className="bg-ember px-4 py-2 text-sm font-semibold text-white"
@@ -56,7 +56,7 @@ export default function AdminProductsPage() {
       </div>
       <div className="mt-8 overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="text-xs uppercase tracking-wide text-sand/45">
+          <thead className="text-xs uppercase tracking-wide text-ink-soft">
             <tr>
               <th className="pb-3 font-medium">Name</th>
               <th className="pb-3 font-medium">Barcode</th>
@@ -66,7 +66,7 @@ export default function AdminProductsPage() {
               <th className="pb-3 font-medium" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-line">
             {products.map((p) => (
               <tr key={p.id}>
                 <td className="py-3">
@@ -74,7 +74,7 @@ export default function AdminProductsPage() {
                     {p.name}
                   </Link>
                 </td>
-                <td className="py-3 font-mono text-xs text-sand/60">
+                <td className="py-3 font-mono text-xs text-ink-soft">
                   {p.barcode || "—"}
                 </td>
                 <td className="py-3">{formatKes(Number(p.price_kes))}</td>
@@ -84,7 +84,7 @@ export default function AdminProductsPage() {
                   <button
                     type="button"
                     onClick={() => void deactivate(p.id)}
-                    className="text-sand/45 hover:text-ember"
+                    className="text-ink-soft hover:text-ember"
                   >
                     Deactivate
                   </button>

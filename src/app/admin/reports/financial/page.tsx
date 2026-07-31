@@ -1,31 +1,25 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import {
   money,
-  ReportBar,
+  ReportExportButton,
   ReportFilters,
   ReportSection,
   ReportStat,
   ReportTable,
   ReportTabs,
+  ReportTrendChart,
+  useReportData,
   useReportRange,
 } from "@/components/admin/reports/ReportUI";
 import { getFinancialReport } from "@/lib/reports-data";
 
 function Body() {
   const range = useReportRange();
-  const [data, setData] = useState<ReturnType<typeof getFinancialReport> | null>(
-    null,
-  );
+  const data = useReportData(getFinancialReport, range);
 
-  useEffect(() => {
-    setData(getFinancialReport(range));
-  }, [range.from, range.to]);
-
-  if (!data) return <p className="mt-8 text-sand/50">Loading…</p>;
-
-  const maxDay = Math.max(...data.byDay.map((d) => d.amount), 1);
+  if (!data) return <p className="mt-8 text-ink-soft">Loading…</p>;
 
   return (
     <>
@@ -53,21 +47,17 @@ function Body() {
         />
       </div>
 
-      <ReportSection title="Revenue by day">
-        <div className="space-y-3">
-          {data.byDay.map((d) => (
-            <ReportBar
-              key={d.date}
-              label={d.date}
-              value={d.amount}
-              max={maxDay}
-              display={money(d.amount)}
-            />
-          ))}
-          {data.byDay.length === 0 && (
-            <p className="text-sm text-sand/50">No recognized revenue in range.</p>
-          )}
-        </div>
+      <ReportSection
+        title="Revenue by day"
+        action={
+          <ReportExportButton
+            filename="revenue-by-day.csv"
+            headers={["Date", "Amount (KES)"]}
+            rows={data.byDay.map((d) => [d.date, d.amount])}
+          />
+        }
+      >
+        <ReportTrendChart points={data.byDay} />
       </ReportSection>
 
       <ReportSection title="Summary table">
@@ -91,8 +81,8 @@ function Body() {
 export default function FinancialReportPage() {
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">Financial report</h1>
-      <p className="mt-2 text-sm text-sand/55">
+      <h1 className="font-display text-3xl text-charcoal">Financial report</h1>
+      <p className="mt-2 text-sm text-ink-soft">
         GMV, recognized revenue, AOV, and cancellations.
       </p>
       <Suspense fallback={null}>

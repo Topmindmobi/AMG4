@@ -9,6 +9,7 @@ export type PlacedOrderSnapshot = Omit<Order, "items"> & { items: OrderItem[] };
 /** One-time notice after guest checkout auto-created (or linked) an account. */
 export type AccountCreatedNotice = {
   email: string;
+  phone?: string | null;
   created: boolean;
   temporaryPassword?: string;
 };
