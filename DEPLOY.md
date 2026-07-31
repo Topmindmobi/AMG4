@@ -36,7 +36,29 @@ The Blueprint uses Render’s **Node** runtime (`npm ci && npm run build` / `npm
 
 ## DigitalOcean
 
-`doctl` is optional. If it is not installed, use the App Platform UI below.
+Spec: [`.do/app.yaml`](.do/app.yaml) → GitHub repo **`Topmindmobi/AMG4`**, branch **`main`**, Dockerfile, port **3000**.
+
+Live app (existing): https://amg-com-2j9zz.ondigitalocean.app
+
+### Update an existing App Platform app
+
+1. Push latest code to `main` on GitHub.
+2. In [DigitalOcean Apps](https://cloud.digitalocean.com/apps) → **amg-com** → **Settings**:
+   - Source: repo `Topmindmobi/AMG4`, branch `main`, autodeploy on
+   - Or **Actions → Force Rebuild / Deploy**
+3. Ensure `NEXT_PUBLIC_DEMO_MODE=true` for demo, or `false` + Supabase secrets for production (**Run and build time** for all `NEXT_PUBLIC_*`).
+
+### CLI (`doctl`)
+
+```bash
+# Windows typical path: %LOCALAPPDATA%\doctl\doctl.exe
+doctl auth init
+doctl apps list
+doctl apps update <APP_ID> --spec .do/app.yaml
+doctl apps create-deployment <APP_ID>
+```
+
+`doctl` is optional. If it is not authenticated, use the App Platform UI above.
 
 ## Environment variables (App Platform / Docker)
 
