@@ -388,7 +388,7 @@ export function OrderStatusKanban({
               const fd = new FormData(e.currentTarget);
               const supplierId = String(fd.get("supplierId") || "");
               if (!supplierId) return;
-              void onRequestSupplier(pickSupplierOrder.id, supplierId)
+              void Promise.resolve(onRequestSupplier(pickSupplierOrder.id, supplierId))
                 .then(() => setPickSupplierFor(null))
                 .catch((err: unknown) =>
                   setError(err instanceof Error ? err.message : "Request failed"),
@@ -432,7 +432,7 @@ export function OrderStatusKanban({
               const fd = new FormData(e.currentTarget);
               const riderId = String(fd.get("riderId") || "");
               if (!riderId) return;
-              void onDispatch(pickRiderOrder.id, riderId)
+              void Promise.resolve(onDispatch(pickRiderOrder.id, riderId))
                 .then(() => setPickRiderFor(null))
                 .catch((err: unknown) =>
                   setError(err instanceof Error ? err.message : "Dispatch failed"),
@@ -476,7 +476,7 @@ export function OrderStatusKanban({
           existing={ratingsByOrder[rateOrder.id] ?? []}
           onClose={() => setRateOrderId(null)}
           onSave={(subjects) => {
-            void onSaveRatings(rateOrder.id, subjects).then(() =>
+            void Promise.resolve(onSaveRatings(rateOrder.id, subjects)).then(() =>
               setRateOrderId(null),
             );
           }}

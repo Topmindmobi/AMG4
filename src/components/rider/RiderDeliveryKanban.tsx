@@ -330,7 +330,9 @@ export function RiderDeliveryKanban({
               onCollectCash={() => onCollectCash(payOrder)}
               onSendMpesa={(phone) => onSendMpesa(payOrder, phone)}
               onDeliver={() => {
-                void onAdvance(payOrder.id, "paid").then(() => setPayForId(null));
+                void Promise.resolve(onAdvance(payOrder.id, "paid")).then(() =>
+                  setPayForId(null),
+                );
               }}
             />
             {payOrder.paid && (
@@ -338,7 +340,9 @@ export function RiderDeliveryKanban({
                 type="button"
                 className="mt-3 w-full bg-ember px-4 py-2.5 text-sm font-semibold text-white"
                 onClick={() => {
-                  void onAdvance(payOrder.id, "paid").then(() => setPayForId(null));
+                  void Promise.resolve(onAdvance(payOrder.id, "paid")).then(() =>
+                    setPayForId(null),
+                  );
                 }}
               >
                 Move to Paid column
@@ -354,9 +358,11 @@ export function RiderDeliveryKanban({
             className="w-full max-w-md border border-white/15 bg-forest-deep p-4 text-sand"
             onSubmit={(e: FormEvent) => {
               e.preventDefault();
-              void onAdvance(failOrder.id, "failed", {
-                failReason: failReason || "Customer unavailable",
-              }).then(() => {
+              void Promise.resolve(
+                onAdvance(failOrder.id, "failed", {
+                  failReason: failReason || "Customer unavailable",
+                }),
+              ).then(() => {
                 setFailForId(null);
                 setFailReason("");
               });
