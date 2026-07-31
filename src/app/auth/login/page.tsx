@@ -37,6 +37,18 @@ function LoginForm() {
         router.push(roleHomePath(getDemoSession()?.user ?? null));
         return;
       }
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", auth.user.id)
+          .maybeSingle();
+        router.push(roleHomePath(profile));
+        return;
+      }
       router.push("/account");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

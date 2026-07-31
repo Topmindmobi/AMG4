@@ -85,7 +85,13 @@ NEXT_PUBLIC_DEMO_MODE=false
    - `010_push_subscriptions.sql` — `push_subscriptions` table (Web Push)
    - `011_order_confirmation_v2.sql` — extends the guest order-confirmation RPC with the new fields
    - `seed.sql`
-4. Auth → create a user (e.g. `admin@amg.com`), then promote:
+4. Create the admin login (password `admin123` by default):
+
+```bash
+node --env-file=.env.local scripts/ensure-admin-user.mjs
+```
+
+Or in the Supabase SQL editor after creating the Auth user:
 
 ```sql
 update public.profiles set role = 'admin' where id = '<user-uuid>';
