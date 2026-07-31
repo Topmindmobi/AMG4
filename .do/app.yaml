@@ -25,6 +25,9 @@ services:
       - key: NODE_ENV
         scope: RUN_TIME
         value: production
+      - key: NEXT_PUBLIC_SITE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: https://amg-com-2j9zz.ondigitalocean.app
       # Demo mode runs without Supabase. Set "false" + Supabase secrets for production.
       - key: NEXT_PUBLIC_DEMO_MODE
         scope: RUN_AND_BUILD_TIME
