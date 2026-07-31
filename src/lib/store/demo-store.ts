@@ -4,35 +4,61 @@ import {
   DEMO_ADMIN,
   DEMO_CATEGORIES,
   DEMO_CUSTOMER,
+  DEMO_DROPOFF_POINTS,
   DEMO_ORDERS,
   DEMO_PRODUCTS,
+  DEMO_RIDER_USERS,
+  DEMO_RIDERS,
   DEMO_SUPPLIER_USERS,
   DEMO_SUPPLIERS,
 } from "@/lib/demo-data";
 import type {
   AppNotification,
   Category,
+  DeliveryMethod,
+  DropoffPoint,
   Order,
   OrderItem,
   PaymentMethod,
   Product,
   Profile,
+  QuoteRequest,
+  Rider,
+  RiderPayout,
   Supplier,
   SupplyRequest,
   SupplyRequestStatus,
   Town,
 } from "@/lib/types";
-import { formatKes, slugify } from "@/lib/format";
+import type {
+  EnsureCustomerAccountInput,
+  EnsureCustomerAccountResult,
+} from "@/lib/auth/ensure-customer-account";
+import { generateTemporaryPassword } from "@/lib/auth/password";
+import {
+  formatKes,
+  PAY_NOW_DISCOUNT_RATE,
+  QUOTE_DELIVERY_ESTIMATE_KES,
+  RIDER_PAYOUT_KES,
+  slugify,
+} from "@/lib/format";
+import { buildInstantQuote, QUOTE_CATALOG_CATEGORY_SLUG } from "@/lib/quotes";
 
 const KEYS = {
   products: "amg_products_v5",
   categories: "amg_categories",
   suppliers: "amg_suppliers_v2",
-  orders: "amg_orders_v6",
+  orders: "amg_orders_v7",
   session: "amg_session",
-  profiles: "amg_profiles_v5",
+  profiles: "amg_profiles_v6",
+  /** email → password for demo-created customer accounts */
+  credentials: "amg_credentials_v1",
   supplyRequests: "amg_supply_requests_v1",
   notifications: "amg_notifications_v1",
+  riders: "amg_riders_v1",
+  dropoffPoints: "amg_dropoff_points_v1",
+  riderPayouts: "amg_rider_payouts_v1",
+  quoteRequests: "amg_quote_requests_v1",
 };
 
 function read<T>(key: string, fallback: T): T {
@@ -59,9 +85,78 @@ function ensureSeeded() {
   if (!localStorage.getItem(KEYS.orders)) write(KEYS.orders, DEMO_ORDERS);
   if (!localStorage.getItem(KEYS.supplyRequests)) write(KEYS.supplyRequests, []);
   if (!localStorage.getItem(KEYS.notifications)) write(KEYS.notifications, []);
+  if (!localStorage.getItem(KEYS.riders)) write(KEYS.riders, DEMO_RIDERS);
+  if (!localStorage.getItem(KEYS.dropoffPoints)) write(KEYS.dropoffPoints, DEMO_DROPOFF_POINTS);
+  if (!localStorage.getItem(KEYS.riderPayouts)) write(KEYS.riderPayouts, []);
+  if (!localStorage.getItem(KEYS.quoteRequests)) write(KEYS.quoteRequests, []);
   if (!localStorage.getItem(KEYS.profiles)) {
-    write(KEYS.profiles, [DEMO_CUSTOMER, DEMO_ADMIN, ...DEMO_SUPPLIER_USERS]);
+    write(KEYS.profiles, [
+      DEMO_CUSTOMER,
+      DEMO_ADMIN,
+      ...DEMO_SUPPLIER_USERS,
+      ...DEMO_RIDER_USERS,
+    ]);
   }
+  if (!localStorage.getItem(KEYS.credentials)) {
+    write(KEYS.credentials, {
+      "customer@amg.com": "customer123",
+      "admin@amg.com": "admin123",
+      "lakeview@amg.com": "supplier123",
+      "ruma@amg.com": "supplier123",
+      "migori@amg.com": "supplier123",
+      "brian@amg.com": "rider123",
+      "faith@amg.com": "rider123",
+      "kevin@amg.com": "rider123",
+    } satisfies Record<string, string>);
+  }
+}
+
+function readCredentials(): Record<string, string> {
+  ensureSeeded();
+  return read<Record<string, string>>(KEYS.credentials, {});
+}
+
+function writeCredential(email: string, password: string) {
+  const creds = readCredentials();
+  write(KEYS.credentials, { ...creds, [email.trim().toLowerCase()]: password });
+}
+
+const SUPPLIER_LOGINS: Record<string, string> = {
+  "lakeview@amg.com": "demo-supplier-1",
+  "ruma@amg.com": "demo-supplier-2",
+  "migori@amg.com": "demo-supplier-3",
+};
+
+const RIDER_LOGINS: Record<string, string> = {
+  "brian@amg.com": "demo-rider-1",
+  "faith@amg.com": "demo-rider-2",
+  "kevin@amg.com": "demo-rider-3",
+};
+
+function findDemoProfileByEmail(normalized: string): Profile | null {
+  ensureSeeded();
+  const profiles = read<Profile[]>(KEYS.profiles, []);
+  if (normalized === "admin@amg.com") {
+    return profiles.find((p) => p.id === DEMO_ADMIN.id) ?? DEMO_ADMIN;
+  }
+  if (normalized === "customer@amg.com") {
+    return profiles.find((p) => p.id === DEMO_CUSTOMER.id) ?? DEMO_CUSTOMER;
+  }
+  if (SUPPLIER_LOGINS[normalized]) {
+    return (
+      profiles.find((p) => p.id === SUPPLIER_LOGINS[normalized]) ||
+      DEMO_SUPPLIER_USERS.find((p) => p.id === SUPPLIER_LOGINS[normalized]) ||
+      null
+    );
+  }
+  if (RIDER_LOGINS[normalized]) {
+    return (
+      profiles.find((p) => p.id === RIDER_LOGINS[normalized]) ||
+      DEMO_RIDER_USERS.find((p) => p.id === RIDER_LOGINS[normalized]) ||
+      null
+    );
+  }
+  return profiles.find((p) => p.id === `user-${normalized}`) ?? null;
 }
 
 export function getDemoProducts(filters?: {
@@ -171,26 +266,23 @@ export function getDemoSession(): DemoSession | null {
   return read<DemoSession | null>(KEYS.session, null);
 }
 
-const SUPPLIER_LOGINS: Record<string, string> = {
-  "lakeview@amg.com": "demo-supplier-1",
-  "ruma@amg.com": "demo-supplier-2",
-  "migori@amg.com": "demo-supplier-3",
-};
-
 export function demoLogin(email: string, password: string): DemoSession {
   ensureSeeded();
   const normalized = email.trim().toLowerCase();
-  if (normalized === "admin@amg.com" && password === "admin123") {
+  const creds = readCredentials();
+  const stored = creds[normalized];
+
+  if (normalized === "admin@amg.com" && password === (stored ?? "admin123")) {
     const s = { user: DEMO_ADMIN, email: normalized };
     write(KEYS.session, s);
     return s;
   }
-  if (normalized === "customer@amg.com" && password === "customer123") {
+  if (normalized === "customer@amg.com" && password === (stored ?? "customer123")) {
     const s = { user: DEMO_CUSTOMER, email: normalized };
     write(KEYS.session, s);
     return s;
   }
-  if (password === "supplier123" && SUPPLIER_LOGINS[normalized]) {
+  if (SUPPLIER_LOGINS[normalized] && password === (stored ?? "supplier123")) {
     const profiles = read<Profile[]>(KEYS.profiles, []);
     const profile =
       profiles.find((p) => p.id === SUPPLIER_LOGINS[normalized]) ||
@@ -199,23 +291,29 @@ export function demoLogin(email: string, password: string): DemoSession {
     write(KEYS.session, s);
     return s;
   }
-  const profiles = read<Profile[]>(KEYS.profiles, []);
-  let profile = profiles.find((p) => p.id === `user-${normalized}`);
-  if (!profile) {
-    profile = {
-      id: `user-${normalized}`,
-      full_name: normalized.split("@")[0],
-      phone: null,
-      role: "customer",
-      town: null,
-      supplier_id: null,
-      created_at: new Date().toISOString(),
-    };
-    write(KEYS.profiles, [...profiles, profile]);
+  if (RIDER_LOGINS[normalized] && password === (stored ?? "rider123")) {
+    const profiles = read<Profile[]>(KEYS.profiles, []);
+    const profile =
+      profiles.find((p) => p.id === RIDER_LOGINS[normalized]) ||
+      DEMO_RIDER_USERS.find((p) => p.id === RIDER_LOGINS[normalized])!;
+    const s = { user: profile, email: normalized };
+    write(KEYS.session, s);
+    return s;
   }
-  const s = { user: profile, email: normalized };
-  write(KEYS.session, s);
-  return s;
+
+  const existing = findDemoProfileByEmail(normalized);
+  if (existing) {
+    if (stored !== undefined && stored !== password) {
+      throw new Error("Invalid email or password");
+    }
+    // Legacy profiles without a stored password: accept and persist this login password.
+    if (stored === undefined) writeCredential(normalized, password);
+    const s = { user: existing, email: normalized };
+    write(KEYS.session, s);
+    return s;
+  }
+
+  throw new Error("Invalid email or password");
 }
 
 export function demoSignup(
@@ -223,9 +321,11 @@ export function demoSignup(
   password: string,
   fullName: string,
 ): DemoSession {
-  void password;
   ensureSeeded();
   const normalized = email.trim().toLowerCase();
+  if (findDemoProfileByEmail(normalized)) {
+    throw new Error("An account with this email already exists. Sign in instead.");
+  }
   const profiles = read<Profile[]>(KEYS.profiles, []);
   const profile: Profile = {
     id: `user-${normalized}`,
@@ -234,15 +334,72 @@ export function demoSignup(
     role: "customer",
     town: null,
     supplier_id: null,
+    rider_id: null,
     created_at: new Date().toISOString(),
   };
   write(
     KEYS.profiles,
     [...profiles.filter((p) => p.id !== profile.id), profile],
   );
+  writeCredential(normalized, password);
   const s = { user: profile, email: normalized };
   write(KEYS.session, s);
   return s;
+}
+
+/**
+ * Guest checkout: create a customer account for the email if none exists.
+ * Does not sign the user in. Never throws for "already exists".
+ */
+export function ensureDemoCustomerAccount(
+  input: EnsureCustomerAccountInput,
+): EnsureCustomerAccountResult {
+  ensureSeeded();
+  const email = input.email.trim().toLowerCase();
+  if (!email || !email.includes("@")) {
+    return {
+      userId: null,
+      created: false,
+      existed: false,
+      email,
+      error: "Invalid email",
+    };
+  }
+
+  const existing = findDemoProfileByEmail(email);
+  if (existing) {
+    return {
+      userId: existing.id,
+      created: false,
+      existed: true,
+      email,
+    };
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  const profiles = read<Profile[]>(KEYS.profiles, []);
+  const profile: Profile = {
+    id: `user-${email}`,
+    full_name: input.fullName.trim() || email.split("@")[0] || "Customer",
+    phone: input.phone?.trim() || null,
+    role: "customer",
+    town: (input.town === "Homabay" || input.town === "Mbita" || input.town === "Migori"
+      ? input.town
+      : null),
+    supplier_id: null,
+    rider_id: null,
+    created_at: new Date().toISOString(),
+  };
+  write(KEYS.profiles, [...profiles, profile]);
+  writeCredential(email, temporaryPassword);
+
+  return {
+    userId: profile.id,
+    created: true,
+    existed: false,
+    email,
+    temporaryPassword,
+  };
 }
 
 export function demoLogout() {
@@ -254,10 +411,15 @@ export function createDemoOrder(input: {
   user_id: string | null;
   customer_name: string;
   phone: string;
+  email?: string | null;
   town: Town;
   address: string;
   payment_method: PaymentMethod;
   mpesa_phone: string | null;
+  /** True when payment was actually confirmed online (M-Pesa pay-now) before submit. */
+  paid: boolean;
+  delivery_method: DeliveryMethod;
+  dropoff_point_id?: string | null;
   items: { productId: string; name: string; price_kes: number; qty: number }[];
 }): Order {
   ensureSeeded();
@@ -278,16 +440,35 @@ export function createDemoOrder(input: {
       supplier_name_snapshot: supplier?.name ?? null,
     };
   });
-  const total_kes = items.reduce((sum, i) => sum + i.price_kes * i.qty, 0);
+  const subtotal_kes = items.reduce((sum, i) => sum + i.price_kes * i.qty, 0);
+  const discount_kes = input.paid ? Math.round(subtotal_kes * PAY_NOW_DISCOUNT_RATE) : 0;
+  const total_kes = subtotal_kes - discount_kes;
+  const dropoffPoints = read<DropoffPoint[]>(KEYS.dropoffPoints, DEMO_DROPOFF_POINTS);
+  const dropoff =
+    input.delivery_method === "dropoff"
+      ? dropoffPoints.find((d) => d.id === input.dropoff_point_id) ?? null
+      : null;
+
   const order: Order = {
     id,
     user_id: input.user_id,
     customer_name: input.customer_name,
     phone: input.phone,
+    email: input.email ?? null,
     town: input.town,
     address: input.address,
     payment_method: input.payment_method,
     mpesa_phone: input.mpesa_phone,
+    paid: input.paid,
+    paid_at: input.paid ? new Date().toISOString() : null,
+    subtotal_kes,
+    discount_kes,
+    delivery_method: input.delivery_method,
+    dropoff_point_id: dropoff?.id ?? null,
+    dropoff_point_name: dropoff?.name ?? null,
+    rider_id: null,
+    rider_name_snapshot: null,
+    delivered_at: null,
     status: "pending",
     total_kes,
     created_at: new Date().toISOString(),
@@ -304,10 +485,13 @@ export function createDemoOrder(input: {
   });
   write(KEYS.products, updated);
 
+  const paidNote = input.paid
+    ? ` Paid online (5% discount applied, ${formatKes(discount_kes)} off).`
+    : " Cash on delivery.";
   pushNotification({
     user_id: "demo-admin",
     title: "New customer order",
-    body: `${order.customer_name} placed an order for ${formatKes(total_kes)}. Forward items to suppliers.`,
+    body: `${order.customer_name} placed an order for ${formatKes(total_kes)}.${paidNote} Forward items to suppliers.`,
     link: "/admin/orders",
     order_id: order.id,
   });
@@ -620,13 +804,221 @@ export function confirmOrderToBuyer(orderId: string): Order {
   return next.find((o) => o.id === orderId)!;
 }
 
-export function dispatchDemoOrder(orderId: string): Order | null {
-  return updateDemoOrderStatus(orderId, "out_for_delivery");
+export function dispatchDemoOrder(orderId: string, riderId: string): Order | null {
+  ensureSeeded();
+  const riders = read<Rider[]>(KEYS.riders, DEMO_RIDERS);
+  const rider = riders.find((r) => r.id === riderId);
+  if (!rider) throw new Error("Rider not found");
+
+  const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS);
+  const next = orders.map((o) =>
+    o.id === orderId
+      ? {
+          ...o,
+          status: "out_for_delivery" as const,
+          rider_id: rider.id,
+          rider_name_snapshot: rider.name,
+        }
+      : o,
+  );
+  write(KEYS.orders, next);
+  const order = next.find((o) => o.id === orderId) ?? null;
+
+  const riderUser = read<Profile[]>(KEYS.profiles, []).find(
+    (p) => p.role === "rider" && p.rider_id === rider.id,
+  );
+  if (riderUser && order) {
+    pushNotification({
+      user_id: riderUser.id,
+      title: "New delivery assigned",
+      body: `Order ${shortId(order.id)} to ${order.town}${
+        order.delivery_method === "dropoff" && order.dropoff_point_name
+          ? ` (drop-off: ${order.dropoff_point_name})`
+          : " (deliver to doorstep)"
+      }.`,
+      link: "/rider",
+      order_id: order.id,
+    });
+  }
+
+  if (order?.user_id) {
+    pushNotification({
+      user_id: order.user_id,
+      title: "Your AMG.COM order is out for delivery",
+      body: `Order ${shortId(order.id)} is on its way${
+        order.delivery_method === "dropoff" && order.dropoff_point_name
+          ? ` to ${order.dropoff_point_name}`
+          : " to your doorstep"
+      }.`,
+      link: `/order/${order.id}`,
+      order_id: order.id,
+    });
+  }
+
+  return order;
+}
+
+/** Rider marks an order handed over at the drop point / doorstep. Triggers payout + notifications. */
+export function deliverDemoOrder(orderId: string): { order: Order; payout: RiderPayout | null } {
+  ensureSeeded();
+  const order = getDemoOrder(orderId);
+  if (!order) throw new Error("Order not found");
+
+  const deliveredAt = new Date().toISOString();
+  const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS);
+  const next = orders.map((o) =>
+    o.id === orderId
+      ? { ...o, status: "delivered" as const, delivered_at: deliveredAt }
+      : o,
+  );
+  write(KEYS.orders, next);
+  const updatedOrder = next.find((o) => o.id === orderId)!;
+
+  let payout: RiderPayout | null = null;
+  if (order.rider_id) {
+    payout = {
+      id: `payout-${Date.now()}`,
+      order_id: order.id,
+      rider_id: order.rider_id,
+      rider_name: order.rider_name_snapshot ?? "Rider",
+      amount_kes: RIDER_PAYOUT_KES,
+      status: "sent",
+      created_at: deliveredAt,
+    };
+    const payouts = read<RiderPayout[]>(KEYS.riderPayouts, []);
+    write(KEYS.riderPayouts, [payout, ...payouts]);
+
+    const riderUser = read<Profile[]>(KEYS.profiles, []).find(
+      (p) => p.role === "rider" && p.rider_id === order.rider_id,
+    );
+    if (riderUser) {
+      pushNotification({
+        user_id: riderUser.id,
+        title: "Delivery payment sent",
+        body: `Payment of ${formatKes(RIDER_PAYOUT_KES)} sent for order ${shortId(order.id)}.`,
+        link: "/rider",
+        order_id: order.id,
+      });
+    }
+  }
+
+  if (order.user_id) {
+    pushNotification({
+      user_id: order.user_id,
+      title: "Your AMG.COM order was delivered",
+      body: `Order ${shortId(order.id)} has been delivered${
+        order.delivery_method === "dropoff" && order.dropoff_point_name
+          ? ` to ${order.dropoff_point_name}`
+          : " to your doorstep"
+      }. Asante for shopping with AMG.COM!`,
+      link: `/order/${order.id}`,
+      order_id: order.id,
+    });
+  }
+
+  return { order: updatedOrder, payout };
+}
+
+function shortId(id: string): string {
+  return id.startsWith("ord-") ? id.slice(0, 12) : id.slice(0, 8).toUpperCase();
 }
 
 export function getDemoProductsBySupplier(supplierId: string): Product[] {
   ensureSeeded();
   return getDemoProducts({ activeOnly: false }).filter(
     (p) => p.supplier_id === supplierId,
+  );
+}
+
+export function getDemoRiders(town?: Town): Rider[] {
+  ensureSeeded();
+  const riders = read<Rider[]>(KEYS.riders, DEMO_RIDERS).filter((r) => r.active);
+  return town ? riders.filter((r) => r.town === town) : riders;
+}
+
+export function getDemoDropoffPoints(town?: Town): DropoffPoint[] {
+  ensureSeeded();
+  const points = read<DropoffPoint[]>(KEYS.dropoffPoints, DEMO_DROPOFF_POINTS);
+  return town ? points.filter((p) => p.town === town) : points;
+}
+
+export function getDemoRiderOrders(riderId: string): Order[] {
+  ensureSeeded();
+  return read<Order[]>(KEYS.orders, DEMO_ORDERS)
+    .filter((o) => o.rider_id === riderId)
+    .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+}
+
+export function getDemoRiderPayouts(riderId?: string): RiderPayout[] {
+  ensureSeeded();
+  const payouts = read<RiderPayout[]>(KEYS.riderPayouts, []);
+  const list = riderId ? payouts.filter((p) => p.rider_id === riderId) : payouts;
+  return list.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+}
+
+/** Instant building-materials quote: matches free-text lines against the Hardware catalog. */
+export function createDemoQuoteRequest(input: {
+  user_id: string | null;
+  customer_name: string;
+  phone: string;
+  town: Town;
+  lines: { description: string; qty: number; unit: string }[];
+}): QuoteRequest {
+  ensureSeeded();
+  const products = getDemoProducts({ activeOnly: true }).filter(
+    (p) => p.category?.slug === QUOTE_CATALOG_CATEGORY_SLUG,
+  );
+  const { items, subtotal_kes, delivery_estimate_kes, total_kes, unmatched_count } =
+    buildInstantQuote(input.lines, products, QUOTE_DELIVERY_ESTIMATE_KES);
+
+  const quote: QuoteRequest = {
+    id: `qr-${Date.now()}`,
+    user_id: input.user_id,
+    customer_name: input.customer_name,
+    phone: input.phone,
+    town: input.town,
+    items,
+    subtotal_kes,
+    delivery_estimate_kes,
+    total_kes,
+    unmatched_count,
+    status: "quoted",
+    created_at: new Date().toISOString(),
+  };
+  const list = read<QuoteRequest[]>(KEYS.quoteRequests, []);
+  write(KEYS.quoteRequests, [quote, ...list]);
+
+  pushNotification({
+    user_id: "demo-admin",
+    title: "New building-materials quote request",
+    body: `${input.customer_name} requested a quote for ${items.length} item(s) in ${input.town}.${
+      unmatched_count > 0 ? ` ${unmatched_count} item(s) need manual pricing.` : ""
+    }`,
+    link: "/admin/quotes",
+  });
+
+  return quote;
+}
+
+export function getDemoQuoteRequests(userId?: string): QuoteRequest[] {
+  ensureSeeded();
+  const list = read<QuoteRequest[]>(KEYS.quoteRequests, []);
+  const filtered = userId ? list.filter((q) => q.user_id === userId) : list;
+  return filtered.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+}
+
+export function getDemoQuoteRequest(id: string): QuoteRequest | null {
+  ensureSeeded();
+  return read<QuoteRequest[]>(KEYS.quoteRequests, []).find((q) => q.id === id) ?? null;
+}
+
+export function markDemoQuoteConverted(id: string, orderId: string): void {
+  ensureSeeded();
+  const list = read<QuoteRequest[]>(KEYS.quoteRequests, []);
+  write(
+    KEYS.quoteRequests,
+    list.map((q) =>
+      q.id === id ? { ...q, status: "converted" as const, converted_order_id: orderId } : q,
+    ),
   );
 }
