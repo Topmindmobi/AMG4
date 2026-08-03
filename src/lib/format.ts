@@ -58,6 +58,15 @@ export const SUPPLY_VEHICLE_LABELS: Record<string, string> = {
   truck: "Truck",
 };
 
+/** Vehicles a rider can use for AMG → customer last-mile delivery. */
+export const RIDER_VEHICLES = ["boda", "van", "truck"] as const;
+
+export const RIDER_VEHICLE_LABELS: Record<string, string> = {
+  boda: "Motorcycle (boda)",
+  van: "Van",
+  truck: "Truck",
+};
+
 /** Supplier has agreed (and may already be shipping). */
 export function supplyRequestAgreed(status: string): boolean {
   return status === "confirmed" || status === "dispatched" || status === "fulfilled";

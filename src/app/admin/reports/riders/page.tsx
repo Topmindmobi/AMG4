@@ -12,6 +12,7 @@ import {
   useReportData,
   useReportRange,
 } from "@/components/admin/reports/ReportUI";
+import { RIDER_VEHICLE_LABELS } from "@/lib/format";
 import { getRiderReport } from "@/lib/reports-data";
 
 function Body() {
@@ -36,14 +37,26 @@ function Body() {
         action={
           <ReportExportButton
             filename="rider-performance.csv"
-            headers={["Rider", "Town", "Deliveries", "Earned (KES)"]}
-            rows={data.byRider.map((r) => [r.name, r.town ?? "", r.deliveries, r.earned])}
+            headers={["Rider", "Town", "Vehicle", "Deliveries", "Earned (KES)"]}
+            rows={data.byRider.map((r) => [
+              r.name,
+              r.town ?? "",
+              RIDER_VEHICLE_LABELS[r.vehicle] ?? r.vehicle,
+              r.deliveries,
+              r.earned,
+            ])}
           />
         }
       >
         <ReportTable
-          headers={["Rider", "Town", "Deliveries", "Earned"]}
-          rows={data.byRider.map((r) => [r.name, r.town ?? "—", r.deliveries, money(r.earned)])}
+          headers={["Rider", "Town", "Vehicle", "Deliveries", "Earned"]}
+          rows={data.byRider.map((r) => [
+            r.name,
+            r.town ?? "—",
+            RIDER_VEHICLE_LABELS[r.vehicle] ?? r.vehicle,
+            r.deliveries,
+            money(r.earned),
+          ])}
         />
       </ReportSection>
     </>

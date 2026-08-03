@@ -8,6 +8,7 @@ import {
   formatKes,
   ORDER_STATUS_LABELS,
   RIDER_DELIVERY_STATUS_LABELS,
+  RIDER_VEHICLE_LABELS,
 } from "@/lib/format";
 import { isDemoMode } from "@/lib/supabase/config";
 import {
@@ -84,6 +85,9 @@ export default function AccountOrdersPage() {
                     {ORDER_STATUS_LABELS[order.status]}
                     {order.rider_name_snapshot
                       ? ` · Rider: ${order.rider_name_snapshot}`
+                      : ""}
+                    {order.rider_vehicle_snapshot
+                      ? ` (${RIDER_VEHICLE_LABELS[order.rider_vehicle_snapshot] ?? order.rider_vehicle_snapshot})`
                       : ""}
                     {riderLabel ? ` · ${riderLabel}` : ""}
                   </p>

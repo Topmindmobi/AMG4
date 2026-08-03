@@ -15,6 +15,7 @@ const links = [
   { href: "/admin/order-status", label: "Order Status" },
   { href: "/admin/quotes", label: "Quotes" },
   { href: "/admin/suppliers", label: "Suppliers" },
+  { href: "/admin/riders", label: "Riders" },
   { href: "/admin/categories", label: "Categories" },
 ];
 

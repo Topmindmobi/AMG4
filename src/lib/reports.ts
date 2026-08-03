@@ -209,6 +209,7 @@ export function buildRiderReport(
         id: r.id,
         name: r.name,
         town: r.town,
+        vehicle: r.vehicle,
         deliveries: riderPayouts.length,
         earned: sum(riderPayouts.map((p) => Number(p.amount_kes))),
       };

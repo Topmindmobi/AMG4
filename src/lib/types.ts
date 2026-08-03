@@ -61,6 +61,9 @@ export interface SupplyLogisticsPlan {
 /** Vehicle used when supplier dispatches stock to AMG. */
 export type SupplyVehicleType = "boda" | "van" | "truck";
 
+/** Vehicle a rider uses for AMG → customer last-mile delivery. */
+export type RiderVehicleType = "boda" | "van" | "truck";
+
 /** Driver + vehicle details captured at dispatch time. */
 export interface SupplyDispatchDetails {
   vehicle_type: SupplyVehicleType;
@@ -88,6 +91,7 @@ export interface Rider {
   name: string;
   phone: string | null;
   town: Town | null;
+  vehicle: RiderVehicleType;
   active: boolean;
   created_at: string;
 }
@@ -186,6 +190,8 @@ export interface Order {
   dropoff_point_name?: string | null;
   rider_id?: string | null;
   rider_name_snapshot?: string | null;
+  /** Rider's vehicle at the moment of dispatch (rider's vehicle may change later). */
+  rider_vehicle_snapshot?: RiderVehicleType | null;
   /** Rider kanban stage once the order is assigned for last-mile delivery. */
   rider_delivery_status?: RiderDeliveryStatus | null;
   /** Optional note when rider marks Fail Delivery. */

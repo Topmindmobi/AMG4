@@ -15,6 +15,7 @@ import {
   ORDER_KANBAN_COLUMNS,
   ORDER_STATUS_LABELS,
   RATING_SUBJECT_LABELS,
+  RIDER_VEHICLE_LABELS,
   SUPPLY_STATUS_LABELS,
 } from "@/lib/format";
 import { orderRatingSummary } from "@/lib/ratings";
@@ -460,6 +461,7 @@ export function OrderStatusKanban({
                   <option key={r.id} value={r.id}>
                     {r.name}
                     {r.town ? ` · ${r.town}` : ""}
+                    {r.vehicle ? ` · ${RIDER_VEHICLE_LABELS[r.vehicle] ?? r.vehicle}` : ""}
                   </option>
                 ))}
               </select>

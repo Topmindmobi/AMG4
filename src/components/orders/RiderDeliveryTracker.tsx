@@ -1,6 +1,6 @@
 "use client";
 
-import { RIDER_DELIVERY_STATUS_LABELS } from "@/lib/format";
+import { RIDER_DELIVERY_STATUS_LABELS, RIDER_VEHICLE_LABELS } from "@/lib/format";
 import { normalizeRiderDeliveryStatus } from "@/lib/store/demo-store";
 import type { Order, RiderDeliveryStatus } from "@/lib/types";
 
@@ -96,6 +96,12 @@ export function RiderDeliveryTracker({
         <span className="font-semibold">
           {order.rider_name_snapshot || "Assigned rider"}
         </span>
+        {order.rider_vehicle_snapshot && (
+          <span className="text-ink-soft">
+            {" "}
+            · {RIDER_VEHICLE_LABELS[order.rider_vehicle_snapshot] ?? order.rider_vehicle_snapshot}
+          </span>
+        )}
       </p>
       <p className="mt-1 text-sm text-ink-soft">
         {stageCopy(stage, order.rider_name_snapshot, audience)}

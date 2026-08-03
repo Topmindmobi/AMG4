@@ -9,6 +9,7 @@ import {
   DELIVERY_METHOD_LABELS,
   formatKes,
   ORDER_STATUS_LABELS,
+  RIDER_VEHICLE_LABELS,
   SUPPLY_METHOD_LABELS,
   SUPPLY_STATUS_LABELS,
   SUPPLY_VEHICLE_LABELS,
@@ -213,6 +214,7 @@ export default function AdminOrdersPage() {
             status: "out_for_delivery",
             rider_id: riderId,
             rider_name_snapshot: rider?.name ?? null,
+            rider_vehicle_snapshot: rider?.vehicle ?? null,
           })
           .eq("id", order.id);
         if (error) throw error;
@@ -307,6 +309,9 @@ export default function AdminOrdersPage() {
                       ? ` — ${order.dropoff_point_name}`
                       : ""}
                     {order.rider_name_snapshot ? ` · Rider: ${order.rider_name_snapshot}` : ""}
+                    {order.rider_vehicle_snapshot
+                      ? ` (${RIDER_VEHICLE_LABELS[order.rider_vehicle_snapshot] ?? order.rider_vehicle_snapshot})`
+                      : ""}
                   </p>
                   <p className="mt-1 text-xs text-ink-soft">
                     {order.id} · {new Date(order.created_at).toLocaleString()}
@@ -485,7 +490,7 @@ export default function AdminOrdersPage() {
                       <option value="">Choose rider…</option>
                       {riders.map((r) => (
                         <option key={r.id} value={r.id}>
-                          {r.name}
+                          {r.name} · {RIDER_VEHICLE_LABELS[r.vehicle] ?? r.vehicle}
                         </option>
                       ))}
                     </select>

@@ -1417,6 +1417,7 @@ export function dispatchDemoOrder(orderId: string, riderId: string): Order | nul
       status: "out_for_delivery" as const,
       rider_id: rider.id,
       rider_name_snapshot: rider.name,
+      rider_vehicle_snapshot: rider.vehicle,
       rider_delivery_status: "assigned" as const,
       rider_fail_reason: null,
       rider_delivery_events: [...prevEvents, assignEvent],
@@ -1899,6 +1900,35 @@ export function getDemoRiders(town?: Town): Rider[] {
   ensureSeeded();
   const riders = read<Rider[]>(KEYS.riders, DEMO_RIDERS).filter((r) => r.active);
   return town ? riders.filter((r) => r.town === town) : riders;
+}
+
+/** Unfiltered rider list (including inactive) for admin management. */
+export function getAllDemoRiders(): Rider[] {
+  ensureSeeded();
+  return read<Rider[]>(KEYS.riders, DEMO_RIDERS);
+}
+
+export function upsertDemoRider(
+  data: Partial<Rider> & { name: string },
+): Rider {
+  ensureSeeded();
+  const riders = read<Rider[]>(KEYS.riders, DEMO_RIDERS);
+  if (data.id) {
+    const next = riders.map((r) => (r.id === data.id ? { ...r, ...data } : r));
+    write(KEYS.riders, next);
+    return next.find((r) => r.id === data.id)!;
+  }
+  const rider: Rider = {
+    id: `rider-${Date.now()}`,
+    name: data.name,
+    phone: data.phone ?? null,
+    town: data.town ?? null,
+    vehicle: data.vehicle ?? "boda",
+    active: data.active ?? true,
+    created_at: new Date().toISOString(),
+  };
+  write(KEYS.riders, [rider, ...riders]);
+  return rider;
 }
 
 export function getDemoDropoffPoints(town?: Town): DropoffPoint[] {

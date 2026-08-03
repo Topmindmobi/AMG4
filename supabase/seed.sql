@@ -53,10 +53,10 @@ insert into public.products (category_id, supplier_id, name, slug, description, 
   ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'Electrical Wire 2.5mm (100m Roll)', 'electrical-wire-2-5mm-100m', '100m roll of 2.5mm² copper electrical cable.', 6800, 25, array['Homabay','Mbita','Migori'], '/products/cement-50kg.jpg'),
   ('11111111-1111-1111-1111-111111111015', null, 'KCPE Revision Bundle', 'kcpe-revision-bundle', 'Core subject revision pack.', 2400, 40, array['Homabay','Mbita','Migori'], '/products/kcpe-revision-bundle.jpg');
 
-insert into public.riders (id, name, phone, town) values
-  ('33333333-3333-3333-3333-333333333001', 'Brian Otieno', '0733001100', 'Homabay'),
-  ('33333333-3333-3333-3333-333333333002', 'Faith Anyango', '0733002200', 'Mbita'),
-  ('33333333-3333-3333-3333-333333333003', 'Kevin Omondi', '0733003300', 'Migori');
+insert into public.riders (id, name, phone, town, vehicle) values
+  ('33333333-3333-3333-3333-333333333001', 'Brian Otieno', '0733001100', 'Homabay', 'boda'),
+  ('33333333-3333-3333-3333-333333333002', 'Faith Anyango', '0733002200', 'Mbita', 'van'),
+  ('33333333-3333-3333-3333-333333333003', 'Kevin Omondi', '0733003300', 'Migori', 'truck');
 
 insert into public.dropoff_points (id, town, name, description) values
   ('44444444-4444-4444-4444-444444444001', 'Homabay', 'AMG Hub — Arujo Road', 'Next to Arujo Road matatu stage, opposite Equity Bank.'),
