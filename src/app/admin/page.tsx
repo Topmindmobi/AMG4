@@ -46,7 +46,7 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className="font-display text-3xl text-charcoal">Dashboard</h1>
           <p className="mt-2 text-sm text-ink-soft">
-            Homabay &amp; Migori operations overview
+            Nationwide operations overview
           </p>
         </div>
         <Link

@@ -40,7 +40,13 @@ export type DeliveryMethod = "doorstep" | "dropoff";
 /** How the supplier will deliver stock into an AMG hub. */
 export type SupplyMethod = "boda" | "van" | "self_dropoff" | "courier";
 
-export type Town = "Homabay" | "Mbita" | "Migori";
+export type Town =
+  | "Nairobi"
+  | "Mombasa"
+  | "Kisumu"
+  | "Homabay"
+  | "Mbita"
+  | "Migori";
 
 /** Logistics plan filled when the supplier confirms they will supply. */
 export interface SupplyLogisticsPlan {

@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Privacy Policy — AMG Store",
   description:
-    "How AMG Store collects, uses, and protects personal information for customers shopping across Homabay, Mbita, and Migori.",
+    "How AMG Store collects, uses, and protects personal information for customers shopping nationwide across Kenya.",
 };
 
 const lastUpdated = "29 July 2026";
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
       <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
         This Privacy Policy explains how <strong className="font-semibold text-charcoal">AMG Store</strong>{" "}
         (“we”, “us”, or “our”) collects, uses, stores, and shares personal information when you use
-        our marketplace website and related services serving Homabay, Mbita, and Migori, Kenya.
+        our marketplace website and related services serving customers nationwide across Kenya.
       </p>
       <p className="mt-2 text-[13px] text-ink-soft">Last updated: {lastUpdated}</p>
 
@@ -50,7 +50,7 @@ export default function PrivacyPage() {
             </li>
             <li>
               <span className="font-semibold text-charcoal">Order &amp; delivery details</span> —
-              delivery town or area (e.g. Homabay, Mbita, Migori), landmark or address notes, phone
+              delivery town or area (e.g. Nairobi, Mombasa, Kisumu, Homa Bay), landmark or address notes, phone
               number for rider contact, items ordered, and order status history.
             </li>
             <li>
@@ -118,7 +118,7 @@ export default function PrivacyPage() {
           <p>We may share personal information with:</p>
           <ul className="list-disc space-y-2 pl-5">
             <li>Pilot shops and suppliers fulfilling your order.</li>
-            <li>Delivery riders or logistics partners serving Homabay, Mbita, and Migori.</li>
+            <li>Delivery riders or logistics partners serving customers nationwide.</li>
             <li>Technology providers (e.g. hosting, authentication, analytics) under appropriate
               agreements.</li>
             <li>Authorities when required by Kenyan law.</li>

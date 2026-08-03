@@ -14,7 +14,8 @@ export function SiteFooter() {
         <div>
           <AmgLogo className="mb-2.5 h-[22px] w-auto" />
           <p className="max-w-[40ch] text-[12.5px] text-ink-soft">
-            Marketplace for Homabay &amp; Migori — pilot shops in Homabay and Mbita.
+            Kenya&apos;s nationwide marketplace — delivering to Nairobi, Mombasa, Kisumu, Homa Bay
+            and beyond.
           </p>
         </div>
         <div className="flex flex-wrap gap-[22px] text-[13.5px] font-semibold text-forest">

@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Terms of Use — AMG Store",
   description:
-    "Terms of Use for the AMG Store marketplace serving Homabay, Mbita, and Migori — accounts, orders, pricing in KES, delivery, and liability.",
+    "Terms of Use for the AMG Store marketplace serving customers nationwide across Kenya — accounts, orders, pricing in KES, delivery, and liability.",
 };
 
 const lastUpdated = "29 July 2026";
@@ -21,8 +21,8 @@ export default function TermsPage() {
       <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
         These Terms of Use (“Terms”) govern your access to and use of the marketplace operated by{" "}
         <strong className="font-semibold text-charcoal">AMG Store</strong> (“we”, “us”, or “our”),
-        including browsing, creating an account, placing orders, and arranging delivery across
-        Homabay, Mbita, and Migori, Kenya. By using the site, you agree to these Terms.
+        including browsing, creating an account, placing orders, and arranging delivery
+        nationwide across Kenya. By using the site, you agree to these Terms.
       </p>
       <p className="mt-2 text-[13px] text-ink-soft">Last updated: {lastUpdated}</p>
 
@@ -108,12 +108,14 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="font-display text-[22px] text-charcoal">6. Delivery towns and timing</h2>
           <p>
-            We primarily serve <span className="font-semibold text-charcoal">Homabay</span>,{" "}
-            <span className="font-semibold text-charcoal">Mbita</span>, and{" "}
-            <span className="font-semibold text-charcoal">Migori</span>, with motorcycle (boda)
-            delivery to estates, landmarks, and shops where riders can safely reach. Same-day
-            delivery is a goal when stock and rider capacity allow; it is not a guaranteed service
-            level.
+            We deliver <span className="font-semibold text-charcoal">nationwide</span>, including{" "}
+            <span className="font-semibold text-charcoal">Nairobi</span>,{" "}
+            <span className="font-semibold text-charcoal">Mombasa</span>,{" "}
+            <span className="font-semibold text-charcoal">Kisumu</span>, and{" "}
+            <span className="font-semibold text-charcoal">Homa Bay</span>, with motorcycle (boda)
+            or courier delivery to estates, landmarks, and shops where riders can safely reach.
+            Same-day delivery is a goal when stock and rider capacity allow; it is not a
+            guaranteed service level.
           </p>
           <p>
             Delivery times are estimates. Delays may occur due to weather, road conditions, traffic,

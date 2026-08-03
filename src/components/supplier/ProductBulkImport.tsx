@@ -107,7 +107,8 @@ export function ProductBulkImport({
         <h2 className="font-display text-xl text-charcoal">1. Download template</h2>
         <p className="mt-2 text-sm text-ink-soft">
           Fill in one product per row. Use a <code className="text-xs">category_slug</code> from the
-          category reference (not free text). Towns: <code className="text-xs">Homabay|Mbita|Migori</code>.
+          category reference (not free text). Towns:{" "}
+          <code className="text-xs">Nairobi|Mombasa|Kisumu|Homabay|Mbita|Migori</code>.
           Excel can open the CSV or .xls template directly.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">

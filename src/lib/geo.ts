@@ -2,13 +2,20 @@ import type { Town } from "@/lib/types";
 
 /** Approximate town centres used when an address has no pin. */
 export const TOWN_COORDS: Record<Town, { lat: number; lng: number }> = {
+  Nairobi: { lat: -1.2921, lng: 36.8219 },
+  Mombasa: { lat: -4.0435, lng: 39.6682 },
+  Kisumu: { lat: -0.0917, lng: 34.768 },
   Homabay: { lat: -0.5273, lng: 34.4571 },
   Mbita: { lat: -0.4215, lng: 34.2056 },
   Migori: { lat: -1.0634, lng: 34.4731 },
 };
 
-/** Road-ish distance proxy between towns (km). */
-export const TOWN_DISTANCE_KM: Record<Town, Record<Town, number>> = {
+/**
+ * Road-ish distance proxy between towns (km), hand-tuned for the original
+ * pilot towns only. Pairs involving newer towns fall back to a haversine
+ * estimate in distanceToHubKm rather than guessed "road-ish" numbers.
+ */
+export const TOWN_DISTANCE_KM: Partial<Record<Town, Partial<Record<Town, number>>>> = {
   Homabay: { Homabay: 0, Mbita: 28, Migori: 62 },
   Mbita: { Homabay: 28, Mbita: 0, Migori: 48 },
   Migori: { Homabay: 62, Mbita: 48, Migori: 0 },
@@ -102,5 +109,7 @@ export function distanceToHubKm(opts: {
     return Math.round(haversineKm({ lat: opts.fromLat, lng: opts.fromLng }, hub) * 10) / 10;
   }
   if (!opts.fromTown) return 80;
-  return TOWN_DISTANCE_KM[opts.fromTown][opts.hubTown];
+  const legacyKm = TOWN_DISTANCE_KM[opts.fromTown]?.[opts.hubTown];
+  if (legacyKm != null) return legacyKm;
+  return Math.round(haversineKm(TOWN_COORDS[opts.fromTown], hub) * 10) / 10;
 }

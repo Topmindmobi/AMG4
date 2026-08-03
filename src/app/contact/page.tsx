@@ -4,7 +4,7 @@ import { ContactForm } from "@/components/shop/ContactForm";
 export const metadata: Metadata = {
   title: "Contacts — AMG.COM",
   description:
-    "Get in touch with AMG.COM for orders, delivery questions, or supplier inquiries across Homabay, Mbita, and Migori.",
+    "Get in touch with AMG.COM for orders, delivery questions, or supplier inquiries anywhere in Kenya — Nairobi, Mombasa, Kisumu, Homa Bay and beyond.",
 };
 
 export default function ContactPage() {
@@ -13,7 +13,7 @@ export default function ContactPage() {
       <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Contacts</h1>
       <p className="mt-2 text-[14.5px] text-ink-soft">
         Questions about an order, delivery towns, or joining as a supplier? Reach the AMG team
-        serving Homabay, Mbita, and Migori.
+        serving customers nationwide.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -38,12 +38,12 @@ export default function ContactPage() {
           <p className="mt-1 text-[12.5px] text-ink-soft">Orders &amp; supplier inquiries</p>
         </div>
         <div className="rounded-[10px] border border-line bg-sand px-4 py-4 sm:col-span-2">
-          <p className="text-xs font-bold uppercase tracking-[0.08em] text-ember">Pilot shops</p>
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-ember">Our coverage</p>
           <p className="mt-1.5 text-[14.5px] leading-relaxed text-charcoal">
-            Homabay town · Mbita · serving Migori deliveries
+            Nairobi · Mombasa · Kisumu · Homa Bay — and everywhere in between
           </p>
           <p className="mt-1 text-[12.5px] text-ink-soft">
-            Motorcycle delivery to estates and landmarks across Homabay, Mbita, and Migori.
+            Motorcycle and courier delivery to estates and landmarks all across the country.
           </p>
         </div>
       </div>

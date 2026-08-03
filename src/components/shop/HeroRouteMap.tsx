@@ -22,7 +22,7 @@ export function HeroRouteMap() {
           fontWeight="700"
           textAnchor="middle"
         >
-          HOMABAY
+          NAIROBI
         </text>
         <text
           x="220"
@@ -33,7 +33,7 @@ export function HeroRouteMap() {
           fontWeight="700"
           textAnchor="middle"
         >
-          MBITA
+          KISUMU
         </text>
         <text
           x="400"
@@ -44,7 +44,7 @@ export function HeroRouteMap() {
           fontWeight="700"
           textAnchor="middle"
         >
-          MIGORI
+          MOMBASA
         </text>
         <g className="boda-ride">
           <circle r="11" fill="#F0672E" />
@@ -54,8 +54,8 @@ export function HeroRouteMap() {
         </g>
       </svg>
       <p className="mt-2 max-w-[34ch] text-sm leading-relaxed text-[#C7CCEC]">
-        <strong className="font-semibold text-white">One boda, three towns, no drama.</strong> A
-        rider brings your order straight from the nearest pilot shop.
+        <strong className="font-semibold text-white">Nationwide delivery, no drama.</strong> A
+        rider brings your order straight from the nearest partner shop.
       </p>
     </div>
   );

@@ -19,9 +19,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "AMG.COM — Homabay & Migori Marketplace",
+  title: "AMG.COM — Kenya's Nationwide Marketplace",
   description:
-    "Shop electronics, appliances, farm produce, hardware and more. Local delivery across Homabay, Mbita and Migori.",
+    "Shop electronics, appliances, farm produce, hardware and more. Nationwide delivery across Nairobi, Mombasa, Kisumu, Homa Bay and beyond.",
 };
 
 /** Inline so native controls stay light before CSS bundles parse (OS dark mode FOUC). */

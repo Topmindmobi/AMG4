@@ -561,6 +561,9 @@ export const DEMO_PRODUCTS: Product[] = [
 );
 
 const TOWN_RIDER: Record<Town, { id: string; name: string }> = {
+  Nairobi: { id: "rider-4", name: "Peter Kamau" },
+  Mombasa: { id: "rider-5", name: "Amina Salim" },
+  Kisumu: { id: "rider-6", name: "Dennis Owino" },
   Homabay: { id: "rider-1", name: "Brian Otieno" },
   Mbita: { id: "rider-2", name: "Faith Anyango" },
   Migori: { id: "rider-3", name: "Kevin Omondi" },

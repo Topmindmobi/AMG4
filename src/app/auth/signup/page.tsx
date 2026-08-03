@@ -36,7 +36,7 @@ export default function SignupPage() {
     <div className="mx-auto max-w-md px-5 py-12">
       <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Create account</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Track orders across Homabay, Mbita, and Migori.
+        Track orders nationwide, wherever you are in Kenya.
       </p>
       <div className="mt-8 space-y-4">
         <GoogleAuthButton label="Continue with Google" nextPath="/account" />

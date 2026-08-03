@@ -63,7 +63,14 @@ export function supplyRequestAgreed(status: string): boolean {
   return status === "confirmed" || status === "dispatched" || status === "fulfilled";
 }
 
-export const TOWNS = ["Homabay", "Mbita", "Migori"] as const;
+export const TOWNS = [
+  "Nairobi",
+  "Mombasa",
+  "Kisumu",
+  "Homabay",
+  "Mbita",
+  "Migori",
+] as const;
 
 /** Reward for paying online upfront via M-Pesa instead of cash on delivery. */
 export const PAY_NOW_DISCOUNT_RATE = 0.05;

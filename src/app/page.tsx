@@ -23,14 +23,14 @@ export default async function HomePage() {
               <AmgLogo priority className="h-[22px] w-auto" />
             </div>
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.09em] text-[#F0A585]">
-              Homabay · Mbita · Migori
+              Nairobi · Mombasa · Kisumu · Homa Bay
             </p>
             <h1 className="max-w-[17ch] font-display text-[clamp(30px,5vw,46px)] font-semibold leading-[1.1] text-white">
               Order today, the boda&apos;s already warming up.
             </h1>
             <p className="mt-[18px] mb-7 max-w-[46ch] text-base leading-relaxed text-[#C7CCEC]">
-              Electronics, farm supplies, hardware, and home essentials from pilot shops in Homabay
-              and Mbita — delivered by motorcycle, pay cash or M-Pesa on arrival.
+              Electronics, farm supplies, hardware, and home essentials delivered nationwide —
+              from Nairobi to Mombasa, Kisumu to Homa Bay — pay cash or M-Pesa on arrival.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -40,7 +40,7 @@ export default async function HomePage() {
                 Shop now
               </Link>
               <Link
-                href="/shop?town=Homabay"
+                href="/shop"
                 className="inline-flex items-center rounded-lg border-[1.5px] border-white/50 px-[22px] py-[13px] text-[15px] font-semibold text-white transition hover:bg-white/10"
               >
                 Delivering near you
@@ -87,7 +87,7 @@ export default async function HomePage() {
             <div>
               <h2 className="font-display text-[25px] text-charcoal">Featured this week</h2>
               <p className="mt-1.5 text-[14.5px] text-ink-soft">
-                Popular picks across Homabay and Mbita.
+                Popular picks delivered nationwide.
               </p>
             </div>
             <Link

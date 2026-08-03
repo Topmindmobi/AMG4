@@ -289,7 +289,7 @@ export default function CheckoutPage() {
 
       <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Checkout</h1>
       <p className="mt-2 text-[14.5px] text-ink-soft">
-        Delivery by motorcycle in Homabay, Mbita &amp; Migori
+        Nationwide delivery across Kenya
       </p>
 
       {guestCheckout && !user && (

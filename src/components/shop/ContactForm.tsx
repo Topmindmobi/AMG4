@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { TOWNS } from "@/lib/format";
 
 export function ContactForm() {
   const [sent, setSent] = useState(false);
@@ -65,12 +66,14 @@ export function ContactForm() {
         Town
         <select
           name="town"
-          defaultValue="Homabay"
+          defaultValue={TOWNS[0]}
           className="amg-select mt-1 w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal outline-none focus:border-forest"
         >
-          <option value="Homabay">Homabay</option>
-          <option value="Mbita">Mbita</option>
-          <option value="Migori">Migori</option>
+          {TOWNS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
           <option value="Other">Other</option>
         </select>
       </label>
