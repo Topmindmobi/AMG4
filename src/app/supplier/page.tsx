@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { formatKes, SUPPLY_STATUS_LABELS } from "@/lib/format";
+import { isDemoMode } from "@/lib/supabase/config";
 import {
   getDemoProductsBySupplier,
   getDemoSupplyRequests,
@@ -17,10 +18,26 @@ export default function SupplierDashboardPage() {
 
   useEffect(() => {
     if (!supplierId) return;
-    void Promise.resolve().then(() => {
+
+    if (isDemoMode()) {
       setRequests(getDemoSupplyRequests({ supplierId }));
       setProducts(getDemoProductsBySupplier(supplierId));
-    });
+      return;
+    }
+
+    // Supply-request pipeline stays demo-only for now — that workflow (and its
+    // RLS-backed table) isn't wired up in production yet. The product count
+    // is a plain read, so it's safe to back with real data.
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("supplier_id", supplierId)
+        .order("created_at", { ascending: false });
+      setProducts((data as Product[]) ?? []);
+    })();
   }, [supplierId]);
 
   const pending = requests.filter((r) => r.status === "pending").length;
