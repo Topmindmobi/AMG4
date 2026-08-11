@@ -17,29 +17,15 @@ const admin = createClient(url, key, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const SUPPLIERS = [
-  {
-    id: "22222222-2222-2222-2222-222222222001",
-    name: "Lakeview Electronics",
-    contact_phone: "0722001100",
-    town: "Homabay",
-    notes: "Laptops, phones, printers",
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222002",
-    name: "Ruma Fresh Farms",
-    contact_phone: "0722002200",
-    town: "Mbita",
-    notes: "Eggs, fish, produce",
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222003",
-    name: "Migori Hardware Hub",
-    contact_phone: "0722003300",
-    town: "Migori",
-    notes: "Cement, iron sheets, paints",
-  },
-];
+// Seeded once via scripts/seed-production-catalog.mjs with generated uuids —
+// look these up by name rather than hardcoding ids, so supplier accounts
+// link to the same supplier rows the real product catalog references
+// instead of creating duplicate, product-less supplier rows.
+const SUPPLIER_NAMES = {
+  lakeview: "Lakeview Electronics",
+  ruma: "Ruma Fresh Farms",
+  migori: "Migori Hardware Hub",
+};
 
 const RIDERS = [
   {
@@ -86,7 +72,7 @@ const USERS = [
     role: "supplier",
     town: "Homabay",
     phone: "0722001100",
-    supplier_id: "22222222-2222-2222-2222-222222222001",
+    supplier_key: "lakeview",
   },
   {
     email: "ruma@amg.com",
@@ -95,7 +81,7 @@ const USERS = [
     role: "supplier",
     town: "Mbita",
     phone: "0722002200",
-    supplier_id: "22222222-2222-2222-2222-222222222002",
+    supplier_key: "ruma",
   },
   {
     email: "migori@amg.com",
@@ -104,7 +90,7 @@ const USERS = [
     role: "supplier",
     town: "Migori",
     phone: "0722003300",
-    supplier_id: "22222222-2222-2222-2222-222222222003",
+    supplier_key: "migori",
   },
   {
     email: "brian@amg.com",
@@ -210,16 +196,19 @@ async function upsertProfile(userId, entry) {
   throw lastError;
 }
 
-async function ensureReferenceData() {
-  const { error: sErr } = await admin.from("suppliers").upsert(SUPPLIERS, {
-    onConflict: "id",
-  });
-  if (sErr) {
-    console.warn("  suppliers upsert:", sErr.message);
-  } else {
-    console.log("  suppliers: ok");
+async function resolveSupplierIds() {
+  const map = {};
+  for (const [key, name] of Object.entries(SUPPLIER_NAMES)) {
+    const { data, error } = await admin.from("suppliers").select("id").eq("name", name).maybeSingle();
+    if (error) throw new Error(`supplier lookup ${name}: ${error.message}`);
+    if (!data) throw new Error(`supplier "${name}" not found — run scripts/seed-production-catalog.mjs first`);
+    map[key] = data.id;
   }
+  console.log("  suppliers: resolved", map);
+  return map;
+}
 
+async function ensureReferenceData() {
   const { error: rErr } = await admin.from("riders").upsert(RIDERS, {
     onConflict: "id",
   });
@@ -231,12 +220,16 @@ async function ensureReferenceData() {
 }
 
 async function main() {
-  console.log("Ensuring reference suppliers/riders…");
+  console.log("Resolving real supplier ids…");
+  const supplierIds = await resolveSupplierIds();
+
+  console.log("Ensuring reference riders…");
   await ensureReferenceData();
 
   console.log("Ensuring demo users…");
   const results = [];
-  for (const entry of USERS) {
+  for (const raw of USERS) {
+    const entry = raw.supplier_key ? { ...raw, supplier_id: supplierIds[raw.supplier_key] } : raw;
     try {
       const user = await ensureAuthUser(entry);
       await upsertProfile(user.id, entry);
