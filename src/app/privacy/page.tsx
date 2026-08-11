@@ -145,8 +145,12 @@ export default function PrivacyPage() {
             </Link>{" "}
             page — this removes your login and profile immediately. Past orders are kept as
             business records (for example, for tax and dispute purposes) but are no longer linked
-            to your identity. For anything else — access to or correction of information we hold
-            about you — contact us via the{" "}
+            to your identity. See{" "}
+            <Link href="/data-deletion" className="font-semibold text-forest hover:text-forest-deep">
+              Account &amp; Data Deletion
+            </Link>{" "}
+            for step-by-step instructions. For anything else — access to or correction of
+            information we hold about you — contact us via the{" "}
             <Link href="/contact" className="font-semibold text-forest hover:text-forest-deep">
               Contacts
             </Link>{" "}
