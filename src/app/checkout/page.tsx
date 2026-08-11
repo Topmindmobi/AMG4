@@ -17,6 +17,7 @@ import {
 } from "@/lib/order-confirmation";
 import { isDemoMode } from "@/lib/supabase/config";
 import { getErrorMessage } from "@/lib/supabase/errors";
+import { submitOrder } from "@/lib/offline/order-queue";
 import { createDemoOrder, ensureDemoCustomerAccount } from "@/lib/store/demo-store";
 import type { DeliveryMethod, DropoffPoint, PaymentMethod, Town } from "@/lib/types";
 import type { EnsureCustomerAccountResult } from "@/lib/auth/ensure-customer-account";
@@ -198,17 +199,15 @@ export default function CheckoutPage() {
         return;
       }
 
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-
       // Client-generated id + insert without RETURNING avoids RLS failure:
       // SELECT policies block guest rows (user_id null), and INSERT…RETURNING
-      // requires the new row to pass SELECT as well.
+      // requires the new row to pass SELECT as well. Same shape is reused as
+      // the offline-queue payload when the device has no connectivity.
       const orderId = crypto.randomUUID();
       const createdAt = new Date().toISOString();
       const discount_kes = paid ? Math.round(total * PAY_NOW_DISCOUNT_RATE) : 0;
 
-      const { error: orderError } = await supabase.from("orders").insert({
+      const orderRow = {
         id: orderId,
         user_id: payload.user_id,
         customer_name: payload.customer_name,
@@ -227,8 +226,7 @@ export default function CheckoutPage() {
         dropoff_point_name: dropoff?.name ?? null,
         status: "pending",
         total_kes: total - discount_kes,
-      });
-      if (orderError) throw orderError;
+      };
 
       const lineItems = payload.items.map((i) => ({
         id: crypto.randomUUID(),
@@ -239,8 +237,7 @@ export default function CheckoutPage() {
         qty: i.qty,
       }));
 
-      const { error: itemsError } = await supabase.from("order_items").insert(lineItems);
-      if (itemsError) throw itemsError;
+      const { queued } = await submitOrder(orderRow, lineItems);
 
       const snapshot: PlacedOrderSnapshot = {
         id: orderId,
@@ -275,7 +272,7 @@ export default function CheckoutPage() {
       if (accountNotice) stashAccountCreatedNotice(orderId, accountNotice);
 
       clear();
-      router.push(`/order/${orderId}`);
+      router.push(queued ? `/order/${orderId}?queued=1` : `/order/${orderId}`);
     } catch (err) {
       setError(getErrorMessage(err, "Could not place order"));
     } finally {

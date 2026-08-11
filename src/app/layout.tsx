@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Work_Sans } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider } from "@/lib/cart";
+import { PwaManager } from "@/components/pwa/PwaManager";
 import { SiteFooter } from "@/components/shop/SiteFooter";
 import { SiteHeader } from "@/components/shop/SiteHeader";
 import "./globals.css";
@@ -22,6 +23,20 @@ export const metadata: Metadata = {
   title: "AMG.COM — Kenya's Nationwide Marketplace",
   description:
     "Shop electronics, appliances, farm produce, hardware and more. Nationwide delivery across Nairobi, Mombasa, Kisumu, Homa Bay and beyond.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AMG.COM",
+  },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#FF7417",
 };
 
 /** Inline so native controls stay light before CSS bundles parse (OS dark mode FOUC). */
@@ -55,6 +70,7 @@ export default function RootLayout({
             <SiteHeader />
             <main className="flex-1">{children}</main>
             <SiteFooter />
+            <PwaManager />
           </CartProvider>
         </AuthProvider>
       </body>
