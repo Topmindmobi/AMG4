@@ -139,13 +139,18 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="font-display text-[22px] text-charcoal">9. Your choices</h2>
           <p>
-            You may request access to, correction of, or deletion of personal information we hold
-            about you, subject to legal exceptions (for example, records we must keep for orders).
-            Contact us via the{" "}
+            You may delete your account and profile at any time from your{" "}
+            <Link href="/account" className="font-semibold text-forest hover:text-forest-deep">
+              Account
+            </Link>{" "}
+            page — this removes your login and profile immediately. Past orders are kept as
+            business records (for example, for tax and dispute purposes) but are no longer linked
+            to your identity. For anything else — access to or correction of information we hold
+            about you — contact us via the{" "}
             <Link href="/contact" className="font-semibold text-forest hover:text-forest-deep">
               Contacts
             </Link>{" "}
-            page. You may also close your account where that functionality is available.
+            page.
           </p>
         </section>
 

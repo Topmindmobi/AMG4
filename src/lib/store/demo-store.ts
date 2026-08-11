@@ -696,6 +696,49 @@ export function demoLogout() {
   localStorage.removeItem(KEYS.session);
 }
 
+/**
+ * Mirrors the real-mode deletion behavior (see /api/account/delete): removes
+ * the profile + login credential, detaches (doesn't delete) past orders and
+ * quote requests by nulling their user_id, drops per-user notifications, then
+ * signs out. Order/quote records are kept for the same reason production
+ * keeps them — they're business records, not identity data.
+ */
+export function demoDeleteAccount(): void {
+  if (typeof window === "undefined") return;
+  const session = getDemoSession();
+  if (!session) return;
+  const userId = session.user.id;
+  const email = session.email.trim().toLowerCase();
+
+  write(
+    KEYS.profiles,
+    read<Profile[]>(KEYS.profiles, []).filter((p) => p.id !== userId),
+  );
+
+  const creds = readCredentials();
+  delete creds[email];
+  write(KEYS.credentials, creds);
+
+  write(
+    KEYS.orders,
+    read<Order[]>(KEYS.orders, DEMO_ORDERS).map((o) =>
+      o.user_id === userId ? { ...o, user_id: null } : o,
+    ),
+  );
+  write(
+    KEYS.quoteRequests,
+    read<QuoteRequest[]>(KEYS.quoteRequests, []).map((q) =>
+      q.user_id === userId ? { ...q, user_id: null } : q,
+    ),
+  );
+  write(
+    KEYS.notifications,
+    read<AppNotification[]>(KEYS.notifications, []).filter((n) => n.user_id !== userId),
+  );
+
+  localStorage.removeItem(KEYS.session);
+}
+
 export function createDemoOrder(input: {
   user_id: string | null;
   customer_name: string;

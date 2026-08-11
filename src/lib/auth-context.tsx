@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  demoDeleteAccount,
   demoLogin,
   demoLogout,
   demoSignup,
@@ -32,6 +33,7 @@ type AuthContextValue = {
   signup: (email: string, password: string, fullName: string) => Promise<void>;
   signInWithGoogle: (nextPath?: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refresh: () => void;
   homePathForRole: () => string;
 };
@@ -164,6 +166,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    if (isDemoMode()) {
+      demoDeleteAccount();
+      setSession(null);
+      return;
+    }
+    const res = await fetch("/api/account/delete", { method: "POST" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: "Could not delete account" }));
+      throw new Error(body.error ?? "Could not delete account");
+    }
+    setSession(null);
+  }, []);
+
   const value = useMemo(
     () => ({
       user: session?.user ?? null,
@@ -178,10 +194,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signup,
       signInWithGoogle,
       logout,
+      deleteAccount,
       refresh,
       homePathForRole: () => roleHomePath(session?.user ?? null),
     }),
-    [session, loading, login, signup, signInWithGoogle, logout, refresh],
+    [session, loading, login, signup, signInWithGoogle, logout, deleteAccount, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
