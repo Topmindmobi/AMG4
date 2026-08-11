@@ -1,3 +1,5 @@
 plugins {
-    id("com.android.application") version "8.7.2" apply false
+    // 8.9.1+ required — androidx.browser resolves transitively to a version that
+    // needs compileSdk 36 (see android/app/build.gradle.kts).
+    id("com.android.application") version "8.9.3" apply false
 }
