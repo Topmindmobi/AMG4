@@ -2,18 +2,14 @@
 <resources>
     <string name="app_name">AMG.COM</string>
 
-    <!-- Mirrors public/.well-known/assetlinks.json on amgstores.ai. The
-         PLACEHOLDER_SHA256_FINGERPRINT below must be replaced with the real
-         release-key fingerprint (see android/README.md) — until then, the
-         app opens amgstores.ai in a Chrome Custom Tab with a URL bar instead
-         of a chromeless Trusted Web Activity. -->
+    <!-- Mirrors public/.well-known/assetlinks.json on amgstores.ai. -->
     <string name="asset_statements">
         [{
             \"relation\": [\"delegate_permission/common.handle_all_urls\"],
             \"target\": {
                 \"namespace\": \"android_app\",
                 \"package_name\": \"ai.amgstores.app\",
-                \"sha256_cert_fingerprints\": [\"PLACEHOLDER_SHA256_FINGERPRINT\"]
+                \"sha256_cert_fingerprints\": [\"D8:F0:DC:1E:AA:4D:34:6F:04:63:A1:9A:41:00:49:14:26:B8:C3:55:3F:97:C2:3C:D3:D2:09:BB:08:E9:49:D1\"]
             }
         }]
     </string>
