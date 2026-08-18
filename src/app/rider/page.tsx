@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { RiderDeliveryKanban } from "@/components/rider/RiderDeliveryKanban";
 import { useAuth } from "@/lib/auth-context";
-import { formatKes } from "@/lib/format";
+import { formatKes, RIDER_PAYOUT_KES } from "@/lib/format";
 import { payNowWithMpesa } from "@/lib/mpesa/pay-now-client";
 import {
   ensurePushSubscription,
@@ -93,12 +93,20 @@ export default function RiderDashboardPage() {
     setBusy(`move-${orderId}`);
     setMessage(null);
     try {
-      if (!isDemoMode()) {
-        throw new Error("Rider kanban updates require demo mode for now.");
+      if (isDemoMode()) {
+        setDemoRiderDeliveryStatus(orderId, to, {
+          failReason: extras?.failReason,
+        });
+      } else {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { error } = await supabase.rpc("set_rider_delivery_status", {
+          p_order_id: orderId,
+          p_to: to,
+          p_fail_reason: extras?.failReason ?? null,
+        });
+        if (error) throw error;
       }
-      setDemoRiderDeliveryStatus(orderId, to, {
-        failReason: extras?.failReason,
-      });
       setMessage(
         to === "paid"
           ? "Trip closed as Paid — payout recorded."
@@ -109,16 +117,11 @@ export default function RiderDashboardPage() {
       load();
 
       if (to === "paid" && user) {
-        const payout = getDemoRiderPayouts(riderId ?? undefined).find(
-          (p) => p.order_id === orderId,
-        );
-        if (payout) {
-          await notifyRiderPayoutPush({
-            userId: user.id,
-            orderId,
-            amountKes: payout.amount_kes,
-          });
-        }
+        const amountKes = isDemoMode()
+          ? (getDemoRiderPayouts(riderId ?? undefined).find((p) => p.order_id === orderId)
+              ?.amount_kes ?? RIDER_PAYOUT_KES)
+          : RIDER_PAYOUT_KES;
+        await notifyRiderPayoutPush({ userId: user.id, orderId, amountKes });
       }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Could not update stage");
@@ -132,13 +135,22 @@ export default function RiderDashboardPage() {
     setBusy(`cash-${order.id}`);
     setMessage(null);
     try {
-      if (!isDemoMode()) throw new Error("Cash collection needs mark_order_paid RPC.");
-      markDemoOrderPaid(order.id, { method: "cod", note: "Cash collected by rider" });
-      const stage = normalizeRiderDeliveryStatus(
-        getDemoRiderOrders(riderId!).find((o) => o.id === order.id) ?? order,
-      );
-      if (stage === "delivered" || stage === "paid") {
-        setDemoRiderDeliveryStatus(order.id, "paid");
+      if (isDemoMode()) {
+        markDemoOrderPaid(order.id, { method: "cod", note: "Cash collected by rider" });
+        const stage = normalizeRiderDeliveryStatus(
+          getDemoRiderOrders(riderId!).find((o) => o.id === order.id) ?? order,
+        );
+        if (stage === "delivered" || stage === "paid") {
+          setDemoRiderDeliveryStatus(order.id, "paid");
+        }
+      } else {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { error } = await supabase.rpc("rider_mark_order_paid", {
+          p_order_id: order.id,
+          p_method: "cod",
+        });
+        if (error) throw error;
       }
       setMessage(`Cash ${formatKes(Number(order.total_kes))} registered.`);
       load();
@@ -184,6 +196,15 @@ export default function RiderDashboardPage() {
         if (stage === "delivered" || stage === "paid") {
           setDemoRiderDeliveryStatus(order.id, "paid");
         }
+      } else {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { error } = await supabase.rpc("rider_mark_order_paid", {
+          p_order_id: order.id,
+          p_method: "mpesa",
+          p_mpesa_phone: phone,
+        });
+        if (error) throw error;
       }
 
       setMessage(`M-Pesa confirmed on ${phone}. Move the card to Paid when ready.`);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState, type DragEvent } from "react";
+import { FormEvent, useMemo, useRef, useState, type PointerEvent } from "react";
 import { RiderPaymentPanel } from "@/components/rider/RiderPaymentPanel";
 import {
   DELIVERY_METHOD_LABELS,
@@ -11,10 +11,14 @@ import {
 import { normalizeRiderDeliveryStatus } from "@/lib/store/demo-store";
 import type { Order, RiderDeliveryStatus } from "@/lib/types";
 
-function allowDrop(e: DragEvent) {
-  e.preventDefault();
-  e.stopPropagation();
-  e.dataTransfer.dropEffect = "move";
+const COLUMN_ATTR = "data-kanban-status";
+
+/** Pointer Events unify mouse/touch/pen — the native HTML5 Drag and Drop API
+ * this replaced never fires from touch input at all, which is why dragging
+ * silently did nothing on the Android app. */
+function columnUnderPoint(x: number, y: number): RiderDeliveryStatus | null {
+  const el = document.elementFromPoint(x, y)?.closest(`[${COLUMN_ATTR}]`);
+  return (el?.getAttribute(COLUMN_ATTR) as RiderDeliveryStatus | null) ?? null;
 }
 
 const FORWARD: Partial<Record<RiderDeliveryStatus, RiderDeliveryStatus[]>> = {
@@ -46,6 +50,7 @@ export function RiderDeliveryKanban({
   const [tab, setTab] = useState<"all" | RiderDeliveryStatus>("all");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<RiderDeliveryStatus | null>(null);
+  const activePointerId = useRef<number | null>(null);
   const [payForId, setPayForId] = useState<string | null>(null);
   const [failForId, setFailForId] = useState<string | null>(null);
   const [failReason, setFailReason] = useState("");
@@ -103,15 +108,44 @@ export function RiderDeliveryKanban({
     }
   }
 
-  function onDropColumn(e: DragEvent, to: RiderDeliveryStatus) {
-    e.preventDefault();
-    e.stopPropagation();
-    const id = e.dataTransfer.getData("text/plain") || draggingId;
-    const from = enriched.find((o) => o.id === id)?.rider_delivery_status;
+  function onHandlePointerDown(e: PointerEvent<HTMLButtonElement>, orderId: string) {
+    if (e.button != null && e.button !== 0) return; // left click / primary touch only
+    // Capture is best-effort: it keeps move/up events targeting this handle
+    // even once the finger leaves it, but a handful of environments (older
+    // WebViews, or a pointerId already released) throw here — that must not
+    // block the drag from starting.
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* fall through — drag still tracks via the move/up handlers below */
+    }
+    activePointerId.current = e.pointerId;
+    setDraggingId(orderId);
+    setDropTarget(null);
+  }
+
+  function onHandlePointerMove(e: PointerEvent<HTMLButtonElement>) {
+    if (activePointerId.current !== e.pointerId || !draggingId) return;
+    const from = enriched.find((o) => o.id === draggingId)?.rider_delivery_status;
+    const over = columnUnderPoint(e.clientX, e.clientY);
+    setDropTarget(over && from && canDrop(from, over) ? over : null);
+  }
+
+  function endDrag(e: PointerEvent<HTMLButtonElement>, commit: boolean) {
+    if (activePointerId.current !== e.pointerId) return;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      /* already released / never captured — nothing to clean up */
+    }
+    activePointerId.current = null;
+    const id = draggingId;
+    const to = dropTarget;
     setDraggingId(null);
     setDropTarget(null);
-    if (!id || !from || !canDrop(from, to)) return;
-    void applyMove(id, to);
+    if (commit && id && to) void applyMove(id, to);
   }
 
   const visibleColumns =
@@ -172,16 +206,7 @@ export function RiderDeliveryKanban({
           return (
             <section
               key={col.id}
-              onDragOver={(e) => {
-                if (!dragging) return;
-                if (!canDrop(normalizeRiderDeliveryStatus(dragging), col.id)) return;
-                allowDrop(e);
-                setDropTarget(col.id);
-              }}
-              onDragLeave={() => {
-                if (dropTarget === col.id) setDropTarget(null);
-              }}
-              onDrop={(e) => onDropColumn(e, col.id)}
+              {...{ [COLUMN_ATTR]: col.id }}
               className={`min-h-[160px] border p-3 transition ${
                 highlight
                   ? "border-ember ring-2 ring-ember/40 bg-ember/5"
@@ -209,18 +234,13 @@ export function RiderDeliveryKanban({
                       <div className="flex items-start gap-2">
                         <button
                           type="button"
-                          draggable
                           aria-label="Drag to change stage"
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData("text/plain", order.id);
-                            e.dataTransfer.effectAllowed = "move";
-                            requestAnimationFrame(() => setDraggingId(order.id));
-                          }}
-                          onDragEnd={() => {
-                            setDraggingId(null);
-                            setDropTarget(null);
-                          }}
-                          className="cursor-grab px-1 text-sand/40 active:cursor-grabbing"
+                          onPointerDown={(e) => onHandlePointerDown(e, order.id)}
+                          onPointerMove={onHandlePointerMove}
+                          onPointerUp={(e) => endDrag(e, true)}
+                          onPointerCancel={(e) => endDrag(e, false)}
+                          style={{ touchAction: "none" }}
+                          className="cursor-grab select-none px-1 py-1 text-sand/40 active:cursor-grabbing"
                         >
                           ⋮⋮
                         </button>
