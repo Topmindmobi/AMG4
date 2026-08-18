@@ -154,7 +154,7 @@ export function SiteHeader() {
             {user && <NotificationBell />}
 
             {!user && (
-              <Link href="/auth/login" className="inline-flex items-center md:hidden" aria-label="Sign in">
+              <Link href="/auth/login" className="inline-flex items-center p-2 -m-2 md:hidden" aria-label="Sign in">
                 <UserIcon />
               </Link>
             )}
@@ -162,15 +162,17 @@ export function SiteHeader() {
             {!isSupplier && (
               <Link
                 href="/cart"
-                className={`relative inline-flex items-center ${justAdded ? "animate-cart-pulse" : ""}`}
+                className={`inline-flex items-center p-2 -m-2 ${justAdded ? "animate-cart-pulse" : ""}`}
                 aria-label={`Cart${count > 0 ? `, ${count} items` : ""}`}
               >
-                <CartIcon />
-                {count > 0 && (
-                  <span className="absolute -right-2 -top-2 inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-ember text-[12px] font-bold text-white">
-                    {count}
-                  </span>
-                )}
+                <span className="relative inline-flex">
+                  <CartIcon />
+                  {count > 0 && (
+                    <span className="absolute -right-2 -top-2 inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-ember text-[12px] font-bold text-white">
+                      {count}
+                    </span>
+                  )}
+                </span>
               </Link>
             )}
           </div>

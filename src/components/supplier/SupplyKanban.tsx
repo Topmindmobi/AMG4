@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState, type DragEvent } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import {
   formatKes,
   SUPPLY_METHOD_LABELS,
@@ -38,10 +38,14 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-function allowDrop(e: DragEvent) {
-  e.preventDefault();
-  e.stopPropagation();
-  e.dataTransfer.dropEffect = "move";
+const COLUMN_ATTR = "data-kanban-status";
+
+/** Pointer Events unify mouse/touch/pen — the native HTML5 Drag and Drop API
+ * this replaced never fires from touch input at all, which is why dragging
+ * silently did nothing on the Android app. */
+function columnUnderPoint(x: number, y: number): SupplyRequestStatus | null {
+  const el = document.elementFromPoint(x, y)?.closest(`[${COLUMN_ATTR}]`);
+  return (el?.getAttribute(COLUMN_ATTR) as SupplyRequestStatus | null) ?? null;
 }
 
 export function SupplyKanban({
@@ -58,6 +62,7 @@ export function SupplyKanban({
   const [tab, setTab] = useState<TabId>("all");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<SupplyRequestStatus | null>(null);
+  const activePointerId = useRef<number | null>(null);
   const [logisticsForId, setLogisticsForId] = useState<string | null>(null);
   const [dispatchForId, setDispatchForId] = useState<string | null>(null);
   /** After saving logistics for a legacy confirmed card, continue into dispatch. */
@@ -88,27 +93,9 @@ export function SupplyKanban({
     return false;
   }
 
-  function onDragStart(e: DragEvent, id: string) {
-    e.dataTransfer.setData("text/plain", id);
-    e.dataTransfer.effectAllowed = "move";
-    // Some browsers need a drag image / async setState after setData
-    requestAnimationFrame(() => setDraggingId(id));
-  }
-
-  function onDragEnd() {
-    setDraggingId(null);
-    setDropTarget(null);
-  }
-
-  function onDropColumn(e: DragEvent, to: SupplyRequestStatus) {
-    e.preventDefault();
-    e.stopPropagation();
-    const id = e.dataTransfer.getData("text/plain") || draggingId;
+  function applyMove(id: string, to: SupplyRequestStatus) {
     const fromStatus = requests.find((r) => r.id === id)?.status;
-    setDraggingId(null);
-    setDropTarget(null);
-    if (!id || !fromStatus) return;
-    if (!canDrop(fromStatus, to)) return;
+    if (!fromStatus || !canDrop(fromStatus, to)) return;
 
     if (fromStatus === "pending" && to === "confirmed") {
       setContinueToDispatchId(null);
@@ -126,6 +113,42 @@ export function SupplyKanban({
       setDispatchForId(id);
       return;
     }
+  }
+
+  function onHandlePointerDown(e: PointerEvent<HTMLButtonElement>, id: string) {
+    if (e.button != null && e.button !== 0) return; // left click / primary touch only
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* fall through — drag still tracks via the move/up handlers below */
+    }
+    activePointerId.current = e.pointerId;
+    setDraggingId(id);
+    setDropTarget(null);
+  }
+
+  function onHandlePointerMove(e: PointerEvent<HTMLButtonElement>) {
+    if (activePointerId.current !== e.pointerId || !draggingId) return;
+    const from = requests.find((r) => r.id === draggingId)?.status;
+    const over = columnUnderPoint(e.clientX, e.clientY);
+    setDropTarget(over && from && canDrop(from, over) ? over : null);
+  }
+
+  function endDrag(e: PointerEvent<HTMLButtonElement>, commit: boolean) {
+    if (activePointerId.current !== e.pointerId) return;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      /* already released / never captured — nothing to clean up */
+    }
+    activePointerId.current = null;
+    const id = draggingId;
+    const to = dropTarget;
+    setDraggingId(null);
+    setDropTarget(null);
+    if (commit && id && to) applyMove(id, to);
   }
 
   const visibleColumns =
@@ -176,20 +199,7 @@ export function SupplyKanban({
           return (
             <section
               key={col.id}
-              onDragEnter={(e) => {
-                allowDrop(e);
-                if (accepts) setDropTarget(col.id);
-              }}
-              onDragOver={(e) => {
-                allowDrop(e);
-                if (accepts) setDropTarget(col.id);
-              }}
-              onDragLeave={(e) => {
-                const related = e.relatedTarget as Node | null;
-                if (related && e.currentTarget.contains(related)) return;
-                setDropTarget((prev) => (prev === col.id ? null : prev));
-              }}
-              onDrop={(e) => onDropColumn(e, col.id)}
+              {...{ [COLUMN_ATTR]: col.id }}
               className={`flex min-h-[260px] flex-col rounded-lg border p-3 transition ${
                 highlighted
                   ? "border-ember bg-ember/10 ring-2 ring-ember/30"
@@ -206,18 +216,12 @@ export function SupplyKanban({
                 </p>
               </header>
 
-              <ul
-                className="flex flex-1 flex-col gap-2"
-                onDragOver={allowDrop}
-                onDrop={(e) => onDropColumn(e, col.id)}
-              >
+              <ul className="flex flex-1 flex-col gap-2">
                 {byColumn[col.id].map((r) => {
                   const movable = r.status === "pending" || r.status === "confirmed";
                   return (
                     <li
                       key={r.id}
-                      onDragOver={allowDrop}
-                      onDrop={(e) => onDropColumn(e, col.id)}
                       className={`rounded-lg border border-line bg-white p-3 shadow-sm ${
                         draggingId === r.id ? "opacity-40" : ""
                       }`}
@@ -226,9 +230,11 @@ export function SupplyKanban({
                         {movable ? (
                           <button
                             type="button"
-                            draggable
-                            onDragStart={(e) => onDragStart(e, r.id)}
-                            onDragEnd={onDragEnd}
+                            onPointerDown={(e) => onHandlePointerDown(e, r.id)}
+                            onPointerMove={onHandlePointerMove}
+                            onPointerUp={(e) => endDrag(e, true)}
+                            onPointerCancel={(e) => endDrag(e, false)}
+                            style={{ touchAction: "none" }}
                             aria-label="Drag to move order"
                             title="Drag to next column"
                             className="mt-0.5 cursor-grab touch-none select-none rounded border border-line bg-sand px-1.5 py-1 text-ink-soft active:cursor-grabbing hover:border-forest hover:text-charcoal"
@@ -296,11 +302,7 @@ export function SupplyKanban({
                   );
                 })}
                 {byColumn[col.id].length === 0 && (
-                  <li
-                    className="rounded border border-dashed border-line px-3 py-8 text-center text-xs text-ink-soft"
-                    onDragOver={allowDrop}
-                    onDrop={(e) => onDropColumn(e, col.id)}
-                  >
+                  <li className="rounded border border-dashed border-line px-3 py-8 text-center text-xs text-ink-soft">
                     Drop here
                     {accepts ? " to move" : ""} ·{" "}
                     {SUPPLY_STATUS_LABELS[col.id]?.toLowerCase() ?? col.title}
@@ -409,7 +411,7 @@ function LogisticsPlanModal({
       />
       <form
         onSubmit={(e) => void submit(e)}
-        className="relative z-10 w-full max-w-md space-y-3 rounded-xl border border-line bg-white p-5 shadow-lg"
+        className="relative z-10 max-h-[90vh] w-full max-w-md space-y-3 overflow-y-auto rounded-xl border border-line bg-white p-5 shadow-lg"
       >
         <h2 className="font-display text-2xl text-charcoal">Logistics plan</h2>
         <p className="text-sm text-ink-soft">
@@ -562,7 +564,7 @@ function DispatchDetailsModal({
       />
       <form
         onSubmit={(e) => void submit(e)}
-        className="relative z-10 w-full max-w-md space-y-3 rounded-xl border border-line bg-white p-5 shadow-lg"
+        className="relative z-10 max-h-[90vh] w-full max-w-md space-y-3 overflow-y-auto rounded-xl border border-line bg-white p-5 shadow-lg"
       >
         <h2 className="font-display text-2xl text-charcoal">Dispatch details</h2>
         <p className="text-sm text-ink-soft">

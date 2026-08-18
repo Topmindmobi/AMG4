@@ -261,8 +261,8 @@ export default function QuotePage() {
         </form>
       ) : (
         <div className="mt-8">
-          <div className="rounded-lg border border-line">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-lg border border-line">
+            <table className="w-full min-w-[480px] text-left text-sm">
               <thead className="border-b border-line text-xs uppercase tracking-wide text-ink-soft">
                 <tr>
                   <th className="p-3 font-medium">Item</th>

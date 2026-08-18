@@ -323,7 +323,7 @@ export function RiderDeliveryKanban({
 
       {payOrder && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-charcoal/50 p-4 sm:items-center">
-          <div className="w-full max-w-md border border-line bg-white p-4 text-charcoal">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto border border-line bg-white p-4 text-charcoal">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="font-display text-xl">Collect payment</h3>
@@ -373,7 +373,7 @@ export function RiderDeliveryKanban({
       {failOrder && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-charcoal/50 p-4 sm:items-center">
           <form
-            className="w-full max-w-md border border-line bg-white p-4 text-charcoal"
+            className="max-h-[90vh] w-full max-w-md overflow-y-auto border border-line bg-white p-4 text-charcoal"
             onSubmit={(e: FormEvent) => {
               e.preventDefault();
               void Promise.resolve(

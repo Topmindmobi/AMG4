@@ -217,7 +217,7 @@ export function SupplierInventory({
                         type="button"
                         aria-label="Decrease stock"
                         onClick={() => bump(p, -1)}
-                        className="border border-line px-2 py-1 text-xs text-ink-soft hover:border-forest hover:text-charcoal"
+                        className="border border-line px-3 py-2 text-sm text-ink-soft hover:border-forest hover:text-charcoal"
                       >
                         −
                       </button>
@@ -232,13 +232,13 @@ export function SupplierInventory({
                         onKeyDown={(e) => {
                           if (e.key === "Enter") saveStock(p);
                         }}
-                        className={`w-20 border border-line bg-white px-2 py-1 text-sm tabular-nums ${stockClass}`}
+                        className={`w-20 border border-line bg-white px-2 py-2 text-sm tabular-nums ${stockClass}`}
                       />
                       <button
                         type="button"
                         aria-label="Increase stock"
                         onClick={() => bump(p, 1)}
-                        className="border border-line px-2 py-1 text-xs text-ink-soft hover:border-forest hover:text-charcoal"
+                        className="border border-line px-3 py-2 text-sm text-ink-soft hover:border-forest hover:text-charcoal"
                       >
                         +
                       </button>
@@ -246,7 +246,7 @@ export function SupplierInventory({
                         <button
                           type="button"
                           onClick={() => saveStock(p)}
-                          className="bg-forest px-2 py-1 text-xs font-semibold text-sand-light"
+                          className="bg-forest px-3 py-2 text-xs font-semibold text-sand-light"
                         >
                           Save
                         </button>

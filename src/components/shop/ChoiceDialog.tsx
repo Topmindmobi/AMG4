@@ -51,7 +51,7 @@ export function ChoiceDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="amg-choice-dialog-title"
-        className="relative z-10 w-full max-w-md rounded-xl border border-line bg-white p-6 shadow-[0_16px_40px_rgba(14,26,99,0.18)]"
+        className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-line bg-white p-6 shadow-[0_16px_40px_rgba(14,26,99,0.18)]"
       >
         <h2
           id="amg-choice-dialog-title"

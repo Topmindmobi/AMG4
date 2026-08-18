@@ -100,7 +100,7 @@ export function BarcodeScanner({ open, onClose, onScan }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="w-full max-w-lg border border-line bg-forest-deep p-4 text-charcoal shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto border border-line bg-white p-4 text-charcoal shadow-xl">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-xl">Scan barcode</h2>
           <button
