@@ -156,7 +156,7 @@ export function RiderDeliveryKanban({
   return (
     <div>
       {error && (
-        <p className="mb-4 border border-ember/40 bg-ember/10 px-3 py-2 text-sm text-sand">
+        <p className="mb-4 border border-ember/40 bg-ember/10 px-3 py-2 text-sm text-charcoal">
           {error}
         </p>
       )}
@@ -168,7 +168,7 @@ export function RiderDeliveryKanban({
           className={`border px-3 py-1.5 text-xs font-medium ${
             tab === "all"
               ? "border-ember text-ember"
-              : "border-white/20 text-sand/55 hover:text-sand"
+              : "border-line text-ink-soft hover:text-charcoal"
           }`}
         >
           All ({enriched.length})
@@ -181,7 +181,7 @@ export function RiderDeliveryKanban({
             className={`border px-3 py-1.5 text-xs font-medium ${
               tab === c.id
                 ? "border-ember text-ember"
-                : "border-white/20 text-sand/55 hover:text-sand"
+                : "border-line text-ink-soft hover:text-charcoal"
             }`}
           >
             {c.title} ({byColumn[c.id].length})
@@ -207,15 +207,13 @@ export function RiderDeliveryKanban({
             <section
               key={col.id}
               {...{ [COLUMN_ATTR]: col.id }}
-              className={`min-h-[160px] border p-3 transition ${
-                highlight
-                  ? "border-ember ring-2 ring-ember/40 bg-ember/5"
-                  : "border-white/10 bg-white/5"
+              className={`min-h-[160px] border bg-white p-3 transition ${
+                highlight ? "border-ember ring-2 ring-ember/40 bg-ember/5" : "border-line"
               }`}
             >
-              <header className="mb-3 border-b border-white/10 pb-2">
-                <h2 className="font-display text-lg text-sand">{col.title}</h2>
-                <p className="text-[13px] text-sand/45">{col.hint}</p>
+              <header className="mb-3 border-b border-line pb-2">
+                <h2 className="font-display text-lg text-charcoal">{col.title}</h2>
+                <p className="text-[13px] text-ink-soft">{col.hint}</p>
                 <p className="mt-1 text-xs font-semibold text-ember">
                   {list.length}
                 </p>
@@ -227,7 +225,7 @@ export function RiderDeliveryKanban({
                   return (
                     <li
                       key={order.id}
-                      className={`border border-white/10 bg-forest-deep/60 px-3 py-3 ${
+                      className={`border border-line bg-sand px-3 py-3 ${
                         draggingId === order.id ? "opacity-50" : ""
                       }`}
                     >
@@ -240,7 +238,7 @@ export function RiderDeliveryKanban({
                           onPointerUp={(e) => endDrag(e, true)}
                           onPointerCancel={(e) => endDrag(e, false)}
                           style={{ touchAction: "none" }}
-                          className="cursor-grab select-none px-1 py-1 text-sand/40 active:cursor-grabbing"
+                          className="cursor-grab select-none px-1 py-1 text-ink-soft active:cursor-grabbing"
                         >
                           ⋮⋮
                         </button>
@@ -248,7 +246,7 @@ export function RiderDeliveryKanban({
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <Link
                               href={`/order/${order.id}`}
-                              className="text-sm font-semibold text-sand hover:text-ember"
+                              className="text-sm font-semibold text-charcoal hover:text-ember"
                             >
                               {order.customer_name}
                             </Link>
@@ -256,10 +254,10 @@ export function RiderDeliveryKanban({
                               {formatKes(Number(order.total_kes))}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-[13px] text-sand/50">
+                          <p className="mt-0.5 text-[13px] text-ink-soft">
                             {order.phone} · {order.town}
                           </p>
-                          <p className="mt-0.5 text-[13px] text-sand/45">
+                          <p className="mt-0.5 text-[13px] text-ink-soft">
                             {DELIVERY_METHOD_LABELS[order.delivery_method]}
                             {order.delivery_method === "dropoff" &&
                             order.dropoff_point_name
@@ -269,7 +267,7 @@ export function RiderDeliveryKanban({
                           <p className="mt-1 text-[13px]">
                             <span
                               className={
-                                order.paid ? "text-sand" : "font-semibold text-ember"
+                                order.paid ? "text-charcoal" : "font-semibold text-ember"
                               }
                             >
                               {order.paid ? "Paid" : "Unpaid"}
@@ -288,7 +286,7 @@ export function RiderDeliveryKanban({
                                 type="button"
                                 disabled={Boolean(busy)}
                                 onClick={() => void applyMove(order.id, next)}
-                                className="border border-white/15 px-2 py-1 text-[12px] font-semibold text-sand/70 hover:border-ember hover:text-ember disabled:opacity-40"
+                                className="border border-line px-2 py-1 text-[12px] font-semibold text-ink-soft hover:border-ember hover:text-ember disabled:opacity-40"
                               >
                                 →{" "}
                                 {RIDER_DELIVERY_COLUMNS.find((c) => c.id === next)
@@ -313,7 +311,7 @@ export function RiderDeliveryKanban({
                   );
                 })}
                 {list.length === 0 && (
-                  <li className="border border-dashed border-white/10 px-3 py-6 text-center text-[13px] text-sand/40">
+                  <li className="border border-dashed border-line px-3 py-6 text-center text-[13px] text-ink-soft">
                     {highlight ? "Drop here" : "Empty"}
                   </li>
                 )}
@@ -325,18 +323,18 @@ export function RiderDeliveryKanban({
 
       {payOrder && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-charcoal/50 p-4 sm:items-center">
-          <div className="w-full max-w-md border border-white/15 bg-forest-deep p-4 text-sand">
+          <div className="w-full max-w-md border border-line bg-white p-4 text-charcoal">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="font-display text-xl">Collect payment</h3>
-                <p className="mt-1 text-sm text-sand/60">
+                <p className="mt-1 text-sm text-ink-soft">
                   {payOrder.customer_name} · {formatKes(Number(payOrder.total_kes))}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setPayForId(null)}
-                className="text-sm text-sand/50 hover:text-sand"
+                className="text-sm text-ink-soft hover:text-charcoal"
               >
                 Close
               </button>
@@ -375,7 +373,7 @@ export function RiderDeliveryKanban({
       {failOrder && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-charcoal/50 p-4 sm:items-center">
           <form
-            className="w-full max-w-md border border-white/15 bg-forest-deep p-4 text-sand"
+            className="w-full max-w-md border border-line bg-white p-4 text-charcoal"
             onSubmit={(e: FormEvent) => {
               e.preventDefault();
               void Promise.resolve(
@@ -389,16 +387,16 @@ export function RiderDeliveryKanban({
             }}
           >
             <h3 className="font-display text-xl">Fail delivery</h3>
-            <p className="mt-1 text-sm text-sand/60">
+            <p className="mt-1 text-sm text-ink-soft">
               Why couldn&apos;t you complete {failOrder.customer_name}&apos;s order?
             </p>
-            <label className="mt-4 block text-xs uppercase tracking-wide text-sand/50">
+            <label className="mt-4 block text-xs uppercase tracking-wide text-ink-soft">
               Reason
               <input
                 value={failReason}
                 onChange={(e) => setFailReason(e.target.value)}
                 placeholder="Customer not reachable, wrong address…"
-                className="mt-1 w-full border border-white/20 bg-white/5 px-3 py-2 text-sm text-sand"
+                className="mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
                 required
               />
             </label>
@@ -412,7 +410,7 @@ export function RiderDeliveryKanban({
               <button
                 type="button"
                 onClick={() => setFailForId(null)}
-                className="border border-white/20 px-4 py-2.5 text-sm text-sand/70"
+                className="border border-line px-4 py-2.5 text-sm text-ink-soft"
               >
                 Cancel
               </button>
