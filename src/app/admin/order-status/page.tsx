@@ -201,11 +201,18 @@ export default function AdminOrderStatusPage() {
         });
         if (paidError) throw paidError;
       }
-      const { error } = await supabase.rpc("set_rider_delivery_status", {
+      const { error: deliverError } = await supabase.rpc("set_rider_delivery_status", {
         p_order_id: orderId,
         p_to: "delivered",
       });
-      if (error) throw error;
+      if (deliverError) throw deliverError;
+      // Mirrors deliverDemoOrder: admin's "mark delivered" closes the whole
+      // trip in one action, same as the rider's own Delivered -> Paid move.
+      const { error: paidStageError } = await supabase.rpc("set_rider_delivery_status", {
+        p_order_id: orderId,
+        p_to: "paid",
+      });
+      if (paidStageError) throw paidStageError;
     }
     await notifyOrderStatus({
       orderId,
