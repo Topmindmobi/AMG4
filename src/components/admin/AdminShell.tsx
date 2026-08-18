@@ -3,20 +3,40 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { AmgLogo } from "@/components/brand/AmgLogo";
+import { DashboardShell, type NavGroup } from "@/components/layout/DashboardShell";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/lib/auth-context";
 
-const links = [
-  { href: "/admin", label: "Dashboard", exact: true },
-  { href: "/admin/reports", label: "Reports" },
-  { href: "/admin/products", label: "Products" },
-  { href: "/admin/orders", label: "Orders" },
-  { href: "/admin/order-status", label: "Order Status" },
-  { href: "/admin/quotes", label: "Quotes" },
-  { href: "/admin/suppliers", label: "Suppliers" },
-  { href: "/admin/riders", label: "Riders" },
-  { href: "/admin/categories", label: "Categories" },
+const navGroups: NavGroup[] = [
+  {
+    title: "Overview",
+    links: [
+      { href: "/admin", label: "Dashboard", exact: true },
+      { href: "/admin/reports", label: "Reports" },
+    ],
+  },
+  {
+    title: "Orders",
+    links: [
+      { href: "/admin/orders", label: "Orders" },
+      { href: "/admin/order-status", label: "Order Status" },
+      { href: "/admin/quotes", label: "Quotes" },
+    ],
+  },
+  {
+    title: "Catalog",
+    links: [
+      { href: "/admin/products", label: "Products" },
+      { href: "/admin/categories", label: "Categories" },
+    ],
+  },
+  {
+    title: "Network",
+    links: [
+      { href: "/admin/suppliers", label: "Suppliers" },
+      { href: "/admin/riders", label: "Riders" },
+    ],
+  },
 ];
 
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -44,44 +64,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-[70vh] bg-mist text-charcoal">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 lg:grid-cols-[200px_1fr] sm:px-6">
-        <aside>
-          <div className="flex items-center justify-between gap-2">
-            <Link href="/" className="inline-flex">
-              <AmgLogo className="h-7 w-auto" />
-            </Link>
-            <NotificationBell iconClassName="text-charcoal/80" />
-          </div>
-          <p className="mt-1 text-xs uppercase tracking-wide text-ink-soft">
-            Admin — suppliers hidden from shoppers
-          </p>
-          <nav className="mt-8 flex flex-col gap-2 text-sm">
-            {links.map((link) => {
-              const active = link.exact
-                ? pathname === link.href
-                : pathname === link.href || pathname.startsWith(`${link.href}/`);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={
-                    active
-                      ? "text-ember"
-                      : "text-ink-soft transition hover:text-charcoal"
-                  }
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-            <Link href="/" className="mt-6 text-ink-soft hover:text-charcoal">
-              ← Storefront
-            </Link>
-          </nav>
-        </aside>
-        <div>{children}</div>
-      </div>
-    </div>
+    <DashboardShell
+      navGroups={navGroups}
+      eyebrow="Admin — suppliers hidden from shoppers"
+      topBarExtra={<NotificationBell iconClassName="text-charcoal/80" />}
+      pathname={pathname}
+      footer={
+        <Link href="/" className="block px-3 py-2 text-sm font-semibold text-ink-soft hover:text-charcoal">
+          ← Storefront
+        </Link>
+      }
+    >
+      {children}
+    </DashboardShell>
   );
 }
