@@ -13,13 +13,57 @@ function isActive(pathname: string, link: NavLink): boolean {
     : pathname === link.href || pathname.startsWith(`${link.href}/`);
 }
 
+function NavLinks({
+  navGroups,
+  pathname,
+  onLinkClick,
+}: {
+  navGroups: NavGroup[];
+  pathname: string;
+  onLinkClick?: () => void;
+}) {
+  return (
+    <>
+      {navGroups.map((group, i) => (
+        <div key={group.title ?? i}>
+          {group.title && (
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
+              {group.title}
+            </p>
+          )}
+          <div className="flex flex-col gap-0.5">
+            {group.links.map((link) => {
+              const active = isActive(pathname, link);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={onLinkClick}
+                  aria-current={active ? "page" : undefined}
+                  className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${
+                    active
+                      ? "bg-sand text-ember"
+                      : "text-ink-soft hover:bg-sand hover:text-charcoal"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 /**
- * Shared hamburger-drawer shell for the admin and supplier portals. Both
- * used to render an always-visible sidebar (grid-cols-[Npx_1fr]) that just
- * stacked above the content on narrow screens instead of collapsing — this
- * replaces that with the same drawer pattern used for the storefront's
- * mobile nav, but as the one nav surface at every width, not just a mobile
- * fallback, so the dashboard itself stays uncluttered.
+ * Shared shell for the admin and supplier portals: a persistent sidebar on
+ * desktop (lg: and up, screen real estate to spare, sidebar collapsing would
+ * just add a click for no reason) and the same slide-in drawer pattern used
+ * for the storefront's mobile nav below that — a full-screen overlay isn't
+ * warranted once there's room for a permanent one, but it's still the right
+ * call on a phone.
  */
 export function DashboardShell({
   children,
@@ -56,33 +100,51 @@ export function DashboardShell({
   }, [open]);
 
   return (
-    <div className="min-h-[70vh] bg-mist text-charcoal">
-      <div className="sticky top-0 z-30 border-b border-line bg-mist">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              aria-label="Open menu"
-              aria-expanded={open}
-              aria-controls="dashboard-drawer"
-              className="inline-flex items-center justify-center text-forest"
-            >
-              <MenuIcon />
-            </button>
-            <Link href="/" className="inline-flex">
-              <AmgLogo className="h-7 w-auto" />
-            </Link>
-          </div>
-          {topBarExtra}
+    <div className="bg-mist text-charcoal lg:flex lg:min-h-screen">
+      <aside className="hidden shrink-0 border-r border-line bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col">
+        <div className="border-b border-line px-5 py-4">
+          <Link href="/" className="inline-flex">
+            <AmgLogo className="h-7 w-auto" />
+          </Link>
         </div>
-      </div>
+        <div className="px-5 pt-4">
+          <p className="text-xs uppercase tracking-wide text-ink-soft">{eyebrow}</p>
+          {identityLine && <p className="mt-1 text-sm text-ink-soft">{identityLine}</p>}
+        </div>
+        <nav className="mt-4 flex flex-1 flex-col gap-5 overflow-y-auto px-3 pb-4">
+          <NavLinks navGroups={navGroups} pathname={pathname} />
+        </nav>
+        {footer && <div className="border-t border-line px-3 py-4">{footer}</div>}
+      </aside>
 
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</div>
+      <div className="min-w-0 lg:flex-1">
+        <div className="sticky top-0 z-30 border-b border-line bg-mist">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                aria-label="Open menu"
+                aria-expanded={open}
+                aria-controls="dashboard-drawer"
+                className="inline-flex items-center justify-center text-forest lg:hidden"
+              >
+                <MenuIcon />
+              </button>
+              <Link href="/" className="inline-flex lg:hidden">
+                <AmgLogo className="h-7 w-auto" />
+              </Link>
+            </div>
+            {topBarExtra}
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</div>
+      </div>
 
       <div
         id="dashboard-drawer"
-        className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`}
+        className={`fixed inset-0 z-50 lg:hidden ${open ? "" : "pointer-events-none"}`}
         aria-hidden={!open}
       >
         <div
@@ -119,35 +181,7 @@ export function DashboardShell({
           </div>
 
           <nav className="mt-4 flex flex-1 flex-col gap-5 px-3 pb-4">
-            {navGroups.map((group, i) => (
-              <div key={group.title ?? i}>
-                {group.title && (
-                  <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-                    {group.title}
-                  </p>
-                )}
-                <div className="flex flex-col gap-0.5">
-                  {group.links.map((link) => {
-                    const active = isActive(pathname, link);
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        onClick={closeDrawer}
-                        aria-current={active ? "page" : undefined}
-                        className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${
-                          active
-                            ? "bg-sand text-ember"
-                            : "text-ink-soft hover:bg-sand hover:text-charcoal"
-                        }`}
-                      >
-                        {link.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+            <NavLinks navGroups={navGroups} pathname={pathname} onLinkClick={closeDrawer} />
           </nav>
 
           {footer && <div className="border-t border-line px-3 py-4">{footer}</div>}

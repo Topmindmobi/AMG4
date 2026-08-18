@@ -43,17 +43,43 @@ export default function AdminOrderStatusPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    if (!isDemoMode()) return;
-    const list = getDemoOrders();
-    setOrders(list);
-    setSuppliers(getDemoSuppliers());
-    setRiders(getDemoRiders());
-    setRatings(getDemoServiceRatings());
-    const map: Record<string, SupplyRequest[]> = {};
-    for (const o of list) {
-      map[o.id] = getDemoSupplyRequests({ orderId: o.id });
+    if (isDemoMode()) {
+      const list = getDemoOrders();
+      setOrders(list);
+      setSuppliers(getDemoSuppliers());
+      setRiders(getDemoRiders());
+      setRatings(getDemoServiceRatings());
+      const map: Record<string, SupplyRequest[]> = {};
+      for (const o of list) {
+        map[o.id] = getDemoSupplyRequests({ orderId: o.id });
+      }
+      setSupplyByOrder(map);
+      return;
     }
-    setSupplyByOrder(map);
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const [{ data: ordersData }, { data: suppliersData }, { data: ridersData }, { data: supplyData }] =
+        await Promise.all([
+          supabase
+            .from("orders")
+            .select("*, items:order_items(*)")
+            .order("created_at", { ascending: false }),
+          supabase.from("suppliers").select("*"),
+          supabase.from("riders").select("*").eq("active", true).order("name"),
+          supabase.from("supply_requests").select("*"),
+        ]);
+      setOrders((ordersData as Order[]) ?? []);
+      setSuppliers((suppliersData as Supplier[]) ?? []);
+      setRiders((ridersData as Rider[]) ?? []);
+      const map: Record<string, SupplyRequest[]> = {};
+      for (const r of (supplyData as SupplyRequest[]) ?? []) {
+        (map[r.order_id] ??= []).push(r);
+      }
+      setSupplyByOrder(map);
+      // No production table backs service ratings yet — leave empty.
+      setRatings([]);
+    })();
   }, []);
 
   useEffect(() => {
@@ -61,19 +87,50 @@ export default function AdminOrderStatusPage() {
   }, [load]);
 
   async function onRequestSupplier(orderId: string, supplierId: string) {
-    fulfillOrderWithSupplier(orderId, supplierId);
+    if (isDemoMode()) {
+      fulfillOrderWithSupplier(orderId, supplierId);
+    } else {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error } = await supabase.rpc("admin_request_supplier", {
+        p_order_id: orderId,
+        p_supplier_id: supplierId,
+      });
+      if (error) throw error;
+    }
     setMessage("Supplier request sent.");
     load();
   }
 
   async function onRecordSupplierResponse(orderId: string) {
-    adminRecordSupplierResponse(orderId);
+    if (isDemoMode()) {
+      adminRecordSupplierResponse(orderId);
+    } else {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error } = await supabase.rpc("admin_record_supplier_response", {
+        p_order_id: orderId,
+      });
+      if (error) throw error;
+    }
     setMessage("Supplier response recorded.");
     load();
   }
 
   async function onConfirmBuyer(orderId: string) {
-    const order = confirmOrderToBuyer(orderId);
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    if (isDemoMode()) {
+      confirmOrderToBuyer(orderId);
+    } else {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: "confirmed", buyer_notified_at: new Date().toISOString() })
+        .eq("id", orderId);
+      if (error) throw error;
+    }
     await notifyOrderStatus({
       orderId,
       event: "confirmed",
@@ -85,36 +142,71 @@ export default function AdminOrderStatusPage() {
   }
 
   async function onDispatch(orderId: string, riderId: string) {
-    const order = dispatchDemoOrder(orderId, riderId);
-    if (order) {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    if (isDemoMode()) {
+      dispatchDemoOrder(orderId, riderId);
       const riderUserId = getDemoUserIdForRider(riderId);
       if (riderUserId) {
         await notifyRiderDispatchPush({
           userId: riderUserId,
-          orderId: order.id,
+          orderId,
           town: order.town,
           totalKes: Number(order.total_kes),
           customerName: order.customer_name,
         });
       }
-      await notifyOrderStatus({
-        orderId,
-        event: "dispatched",
-        phone: order.phone,
-        email: order.email ?? null,
-      });
+    } else {
+      const rider = riders.find((r) => r.id === riderId);
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          status: "out_for_delivery",
+          rider_id: riderId,
+          rider_name_snapshot: rider?.name ?? null,
+          rider_vehicle_snapshot: rider?.vehicle ?? null,
+        })
+        .eq("id", orderId);
+      if (error) throw error;
     }
+    await notifyOrderStatus({
+      orderId,
+      event: "dispatched",
+      phone: order.phone,
+      email: order.email ?? null,
+    });
     setMessage("Order out for delivery — rider notified.");
     load();
   }
 
   async function onDeliver(orderId: string) {
-    // Admin override: register payment if rider hasn't yet, then deliver
-    const current = getDemoOrders().find((o) => o.id === orderId);
-    if (current && !current.paid) {
-      markDemoOrderPaid(orderId, { method: current.payment_method || "cod" });
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    if (isDemoMode()) {
+      // Admin override: register payment if rider hasn't yet, then deliver
+      const current = getDemoOrders().find((o) => o.id === orderId);
+      if (current && !current.paid) {
+        markDemoOrderPaid(orderId, { method: current.payment_method || "cod" });
+      }
+      deliverDemoOrder(orderId);
+    } else {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      if (!order.paid) {
+        const { error: paidError } = await supabase.rpc("rider_mark_order_paid", {
+          p_order_id: orderId,
+          p_method: order.payment_method || "cod",
+        });
+        if (paidError) throw paidError;
+      }
+      const { error } = await supabase.rpc("set_rider_delivery_status", {
+        p_order_id: orderId,
+        p_to: "delivered",
+      });
+      if (error) throw error;
     }
-    const { order } = deliverDemoOrder(orderId);
     await notifyOrderStatus({
       orderId,
       event: "delivered",
@@ -133,6 +225,10 @@ export default function AdminOrderStatusPage() {
       notes: string | null;
     }[],
   ) {
+    if (!isDemoMode()) {
+      setMessage("Service ratings aren't available in production yet.");
+      return;
+    }
     const order = getDemoOrders().find((o) => o.id === orderId);
     const srs = getDemoSupplyRequests({ orderId });
     const supplier = srs[0];
