@@ -59,7 +59,7 @@ function LoginForm() {
 
   return (
     <div className="mx-auto max-w-md px-5 py-12">
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Sign in</h1>
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Sign in</h1>
       <p className="mt-2 text-sm text-ink-soft">
         Customers, suppliers, riders, and AMG admin sign in here.
       </p>
@@ -114,7 +114,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-ember py-3 text-[15px] font-semibold text-white hover:bg-ember-deep disabled:opacity-60"
+          className="w-full rounded-lg bg-ember py-3 text-[17px] font-semibold text-white hover:bg-ember-deep disabled:opacity-60"
         >
           {loading ? "Signing in…" : "Sign in"}
         </button>

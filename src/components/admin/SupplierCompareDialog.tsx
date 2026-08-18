@@ -112,7 +112,7 @@ export function SupplierCompareDialog({
 function ScorePill({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded border border-line bg-sand px-1.5 py-1.5">
-      <p className="text-[10px] uppercase tracking-wide text-ink-soft">{label}</p>
+      <p className="text-[12px] uppercase tracking-wide text-ink-soft">{label}</p>
       <p className="mt-0.5 font-semibold text-charcoal">{value}</p>
     </div>
   );

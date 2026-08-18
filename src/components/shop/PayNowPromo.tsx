@@ -12,10 +12,10 @@ export function PayNowPromo() {
               −{pct}%
             </div>
             <div>
-              <p className="font-display text-[19px] font-semibold text-white">
+              <p className="font-display text-[21px] font-semibold text-white">
                 Pay online with M-Pesa — save {pct}% instantly
               </p>
-              <p className="mt-0.5 text-[13.5px] text-sand-light/80">
+              <p className="mt-0.5 text-[15.5px] text-sand-light/80">
                 Confirm payment at checkout and we automatically knock {pct}% off your total.
                 Prefer to pay later? Cash on delivery is always available too.
               </p>

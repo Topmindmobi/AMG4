@@ -34,7 +34,7 @@ export default function SignupPage() {
 
   return (
     <div className="mx-auto max-w-md px-5 py-12">
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Create account</h1>
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Create account</h1>
       <p className="mt-2 text-sm text-ink-soft">
         Track orders nationwide, wherever you are in Kenya.
       </p>
@@ -80,7 +80,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-ember py-3 text-[15px] font-semibold text-white hover:bg-ember-deep disabled:opacity-60"
+          className="w-full rounded-lg bg-ember py-3 text-[17px] font-semibold text-white hover:bg-ember-deep disabled:opacity-60"
         >
           {loading ? "Creating…" : "Create account"}
         </button>

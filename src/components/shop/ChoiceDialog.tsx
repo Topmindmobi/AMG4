@@ -55,7 +55,7 @@ export function ChoiceDialog({
       >
         <h2
           id="amg-choice-dialog-title"
-          className="font-display text-[clamp(22px,3.5vw,28px)] text-charcoal"
+          className="font-display text-[clamp(24px,3.5vw,30px)] text-charcoal"
         >
           {title}
         </h2>
@@ -67,10 +67,10 @@ export function ChoiceDialog({
 }
 
 const primaryClass =
-  "inline-flex w-full items-center justify-center rounded-lg bg-ember px-4 py-3 text-[15px] font-semibold text-white transition hover:bg-ember-deep";
+  "inline-flex w-full items-center justify-center rounded-lg bg-ember px-4 py-3 text-[17px] font-semibold text-white transition hover:bg-ember-deep";
 
 const secondaryClass =
-  "inline-flex w-full items-center justify-center rounded-lg border-[1.5px] border-line bg-white px-4 py-3 text-[15px] font-semibold text-forest transition hover:border-forest hover:bg-sand";
+  "inline-flex w-full items-center justify-center rounded-lg border-[1.5px] border-line bg-white px-4 py-3 text-[17px] font-semibold text-forest transition hover:border-forest hover:bg-sand";
 
 export function ChoicePrimaryButton({
   children,

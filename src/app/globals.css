@@ -41,6 +41,33 @@
   --font-display: var(--font-fraunces);
 }
 
+/*
+  Bumped one step up the default Tailwind scale (site-wide "text is too
+  small" pass) — text-xs now renders at the old text-sm size, and so on,
+  with each size keeping the next step's line-height pairing.
+  Plain @theme (not "inline"): these are static values, not references to
+  other runtime CSS variables, so they need the normal override form to
+  actually replace Tailwind's built-in scale.
+*/
+@theme {
+  --text-xs: 0.875rem;
+  --text-xs--line-height: calc(1.25 / 0.875);
+  --text-sm: 1rem;
+  --text-sm--line-height: calc(1.5 / 1);
+  --text-base: 1.125rem;
+  --text-base--line-height: calc(1.75 / 1.125);
+  --text-lg: 1.25rem;
+  --text-lg--line-height: calc(1.75 / 1.25);
+  --text-xl: 1.5rem;
+  --text-xl--line-height: calc(2 / 1.5);
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: calc(2.25 / 1.875);
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: calc(2.5 / 2.25);
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 1;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

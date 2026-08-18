@@ -85,7 +85,7 @@ export function RiderDeliveryTracker({
       <p
         className={
           audience === "admin"
-            ? "text-[11px] font-semibold uppercase tracking-wide text-ink-soft"
+            ? "text-[13px] font-semibold uppercase tracking-wide text-ink-soft"
             : "text-xs font-bold uppercase tracking-[0.09em] text-ember"
         }
       >
@@ -120,14 +120,14 @@ export function RiderDeliveryTracker({
             return (
               <li key={id} className="flex flex-col items-center text-center">
                 <div
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
+                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-bold ${
                     done ? "bg-forest text-white" : "bg-line text-ink-soft"
                   }`}
                 >
                   {done ? "✓" : i + 1}
                 </div>
                 <p
-                  className={`mt-1 text-[10px] font-semibold leading-tight ${
+                  className={`mt-1 text-[12px] font-semibold leading-tight ${
                     done ? "text-forest-deep" : "text-ink-soft"
                   }`}
                 >

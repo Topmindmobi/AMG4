@@ -12,11 +12,11 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-5 py-16 text-center">
-        <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Your cart</h1>
+        <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Your cart</h1>
         <p className="mt-4 text-ink-soft">Cart is empty.</p>
         <Link
           href="/shop"
-          className="mt-8 inline-block rounded-lg bg-ember px-[22px] py-[13px] text-[15px] font-semibold text-white hover:bg-ember-deep"
+          className="mt-8 inline-block rounded-lg bg-ember px-[22px] py-[13px] text-[17px] font-semibold text-white hover:bg-ember-deep"
         >
           Continue shopping
         </Link>
@@ -26,7 +26,7 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10">
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Your cart</h1>
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Your cart</h1>
       <ul className="mt-8 divide-y divide-line border-y border-line">
         {items.map((item) => (
           <li
@@ -45,7 +45,7 @@ export default function CartPage() {
               <div>
                 <Link
                   href={`/product/${item.slug}`}
-                  className="text-[15.5px] font-bold hover:text-forest"
+                  className="text-[17.5px] font-bold hover:text-forest"
                 >
                   {item.name}
                 </Link>
@@ -76,14 +76,14 @@ export default function CartPage() {
         <div className="flex flex-wrap gap-3">
           <Link
             href="/shop"
-            className="rounded-lg border-[1.5px] border-line bg-white px-[22px] py-[13px] text-[15px] font-semibold text-forest hover:border-forest"
+            className="rounded-lg border-[1.5px] border-line bg-white px-[22px] py-[13px] text-[17px] font-semibold text-forest hover:border-forest"
           >
             Continue shopping
           </Link>
           <button
             type="button"
             onClick={() => router.push("/checkout")}
-            className="rounded-lg bg-ember px-[22px] py-[13px] text-[15px] font-semibold text-white hover:bg-ember-deep"
+            className="rounded-lg bg-ember px-[22px] py-[13px] text-[17px] font-semibold text-white hover:bg-ember-deep"
           >
             Checkout
           </button>

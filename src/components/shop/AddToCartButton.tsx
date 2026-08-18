@@ -26,7 +26,7 @@ export function AddToCartButton({ product }: { product: Product }) {
           addItem(product);
           setPromptOpen(true);
         }}
-        className="inline-flex items-center justify-center rounded-lg bg-ember px-[22px] py-[13px] text-[15px] font-semibold text-white transition hover:bg-ember-deep disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex items-center justify-center rounded-lg bg-ember px-[22px] py-[13px] text-[17px] font-semibold text-white transition hover:bg-ember-deep disabled:cursor-not-allowed disabled:opacity-50"
       >
         {product.stock < 1 ? "Out of stock" : "Add to cart"}
       </button>

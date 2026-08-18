@@ -88,7 +88,7 @@ export default function OrderConfirmationPage() {
   if (!order) {
     return (
       <div className="mx-auto max-w-xl px-5 py-16">
-        <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Order not found</h1>
+        <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Order not found</h1>
         <Link href="/shop" className="mt-4 inline-block font-semibold text-forest underline">
           Back to shop
         </Link>
@@ -108,7 +108,7 @@ export default function OrderConfirmationPage() {
   if (forbidden) {
     return (
       <div className="mx-auto max-w-xl px-5 py-16">
-        <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">
+        <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">
           Order not available
         </h1>
         <p className="mt-3 text-ink-soft">
@@ -127,7 +127,7 @@ export default function OrderConfirmationPage() {
   return (
     <div className="mx-auto max-w-xl px-5 py-10">
       <p className="text-xs font-bold uppercase tracking-[0.09em] text-ember">Track your order</p>
-      <h1 className="mt-2 font-display text-[clamp(28px,4vw,36px)] text-charcoal">Asante!</h1>
+      <h1 className="mt-2 font-display text-[clamp(30px,4vw,38px)] text-charcoal">Asante!</h1>
       <p className="mt-3 text-ink-soft">
         {order.delivery_method === "dropoff" && order.dropoff_point_name
           ? `We'll notify you when it's ready at ${order.dropoff_point_name}.`
@@ -224,7 +224,7 @@ export default function OrderConfirmationPage() {
                     className={`h-0.5 flex-1 ${i === TRACKING_STEPS.length - 1 ? "opacity-0" : i < stepIndex ? "bg-forest" : "bg-line"}`}
                   />
                 </div>
-                <p className={`mt-2 text-[11px] font-semibold ${done ? "text-forest-deep" : "text-ink-soft"}`}>
+                <p className={`mt-2 text-[13px] font-semibold ${done ? "text-forest-deep" : "text-ink-soft"}`}>
                   {step.label}
                 </p>
               </li>

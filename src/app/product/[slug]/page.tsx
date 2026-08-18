@@ -30,10 +30,10 @@ export default async function ProductPage({
         <Link href="/shop" className="text-sm font-semibold text-forest hover:text-forest-deep">
           ← Back to shop
         </Link>
-        <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.06em] text-forest">
+        <p className="mt-4 text-[13px] font-bold uppercase tracking-[0.06em] text-forest">
           {product.category?.name}
         </p>
-        <h1 className="mt-2 font-display text-[clamp(28px,4vw,40px)] text-charcoal">
+        <h1 className="mt-2 font-display text-[clamp(30px,4vw,42px)] text-charcoal">
           {product.name}
         </h1>
         <p className="mt-3 text-2xl font-bold text-ember">
@@ -66,7 +66,7 @@ export default async function ProductPage({
       </div>
 
       <section className="lg:col-span-2">
-        <h2 className="font-display text-[25px] text-charcoal">Product details</h2>
+        <h2 className="font-display text-[27px] text-charcoal">Product details</h2>
         <div className="mt-4 max-w-3xl space-y-4 text-base leading-relaxed text-ink-soft whitespace-pre-line">
           {detailed}
         </div>

@@ -58,7 +58,7 @@ export function GoogleAuthButton({ label, nextPath = "/account" }: GoogleAuthBut
         type="button"
         onClick={onClick}
         disabled={loading}
-        className="flex w-full items-center justify-center gap-2.5 rounded-lg border-[1.5px] border-forest bg-white py-3 text-[15px] font-semibold text-forest transition hover:bg-sand disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2.5 rounded-lg border-[1.5px] border-forest bg-white py-3 text-[17px] font-semibold text-forest transition hover:bg-sand disabled:opacity-60"
       >
         <GoogleIcon className="h-5 w-5 shrink-0" />
         {loading ? "Redirecting…" : label}

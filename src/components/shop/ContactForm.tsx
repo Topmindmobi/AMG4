@@ -17,10 +17,10 @@ export function ContactForm() {
   if (sent) {
     return (
       <div className="mt-6 rounded-[10px] border border-line bg-sand px-5 py-6">
-        <p className="font-display text-[20px] text-charcoal">
+        <p className="font-display text-[22px] text-charcoal">
           Thanks{name ? `, ${name}` : ""} — message received.
         </p>
-        <p className="mt-2 text-[14.5px] text-ink-soft">
+        <p className="mt-2 text-[16.5px] text-ink-soft">
           For urgent orders, call or WhatsApp{" "}
           <a href="tel:+254700000000" className="font-semibold text-forest hover:text-forest-deep">
             +254 700 000 000
@@ -33,7 +33,7 @@ export function ContactForm() {
             setSent(false);
             setName("");
           }}
-          className="mt-4 text-[13.5px] font-semibold text-forest hover:text-forest-deep"
+          className="mt-4 text-[15.5px] font-semibold text-forest hover:text-forest-deep"
         >
           Send another message
         </button>
@@ -89,7 +89,7 @@ export function ContactForm() {
       </label>
       <button
         type="submit"
-        className="rounded-lg bg-ember px-[22px] py-3 text-[15px] font-semibold text-white transition hover:bg-ember-deep"
+        className="rounded-lg bg-ember px-[22px] py-3 text-[17px] font-semibold text-white transition hover:bg-ember-deep"
       >
         Send message
       </button>

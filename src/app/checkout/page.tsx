@@ -67,7 +67,7 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-xl px-5 py-16 text-center">
-        <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Checkout</h1>
+        <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Checkout</h1>
         <p className="mt-3 text-ink-soft">Your cart is empty.</p>
         <Link href="/shop" className="mt-6 inline-block font-semibold text-forest underline">
           Go to shop
@@ -284,8 +284,8 @@ export default function CheckoutPage() {
     <div className="mx-auto max-w-xl px-5 py-10">
       <CheckoutAuthGate open={needsAuthChoice} onCheckoutAsGuest={() => setGuestCheckout(true)} />
 
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Checkout</h1>
-      <p className="mt-2 text-[14.5px] text-ink-soft">
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Checkout</h1>
+      <p className="mt-2 text-[16.5px] text-ink-soft">
         Nationwide delivery across Kenya
       </p>
 
@@ -497,7 +497,7 @@ export default function CheckoutPage() {
         <button
           type="submit"
           disabled={loading || (payment === "mpesa" && !paid)}
-          className="w-full rounded-lg bg-ember py-3 text-[15px] font-semibold text-white hover:bg-ember-deep disabled:opacity-60"
+          className="w-full rounded-lg bg-ember py-3 text-[17px] font-semibold text-white hover:bg-ember-deep disabled:opacity-60"
         >
           {loading ? "Placing order…" : `Place order — ${formatKes(payable)}`}
         </button>

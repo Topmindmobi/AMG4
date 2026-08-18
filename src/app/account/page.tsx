@@ -40,7 +40,7 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-xl px-5 py-10">
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Account</h1>
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Account</h1>
       <dl className="mt-8 space-y-3 text-sm">
         <div>
           <dt className="text-ink-soft">Name</dt>

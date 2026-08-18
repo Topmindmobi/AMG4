@@ -123,7 +123,7 @@ export function RiderPaymentPanel({
         </button>
       </form>
 
-      <div className="flex items-center gap-2 text-[11px] text-sand/40">
+      <div className="flex items-center gap-2 text-[13px] text-sand/40">
         <span className="h-px flex-1 bg-white/10" />
         or cash
         <span className="h-px flex-1 bg-white/10" />

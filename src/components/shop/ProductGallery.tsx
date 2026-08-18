@@ -36,7 +36,7 @@ export function ProductGallery({
           onError={() => setBroken((b) => ({ ...b, [current]: true }))}
         />
         {list.length > 1 && (
-          <p className="absolute bottom-3 right-3 rounded-md bg-charcoal/70 px-2 py-1 text-[11px] text-white">
+          <p className="absolute bottom-3 right-3 rounded-md bg-charcoal/70 px-2 py-1 text-[13px] text-white">
             {safeIndex + 1} / {list.length}
           </p>
         )}

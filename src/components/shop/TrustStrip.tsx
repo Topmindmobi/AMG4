@@ -41,7 +41,7 @@ export function TrustStrip() {
           {PILLS.map((pill) => (
             <div
               key={pill.label}
-              className="flex items-center gap-1.5 rounded-full border border-line bg-sand px-3.5 py-2 text-[13px] font-semibold text-forest"
+              className="flex items-center gap-1.5 rounded-full border border-line bg-sand px-3.5 py-2 text-[15px] font-semibold text-forest"
             >
               <svg
                 width="15"

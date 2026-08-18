@@ -13,12 +13,12 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-[1120px] flex-wrap justify-between gap-5">
         <div>
           <AmgLogo className="mb-2.5 h-[22px] w-auto" />
-          <p className="max-w-[40ch] text-[12.5px] text-ink-soft">
+          <p className="max-w-[40ch] text-[14.5px] text-ink-soft">
             Kenya&apos;s nationwide marketplace — delivering to Nairobi, Mombasa, Kisumu, Homa Bay
             and beyond.
           </p>
         </div>
-        <div className="flex flex-wrap gap-[22px] text-[13.5px] font-semibold text-forest">
+        <div className="flex flex-wrap gap-[22px] text-[15.5px] font-semibold text-forest">
           <Link href="/" className="hover:text-forest-deep">
             Home
           </Link>

@@ -158,7 +158,7 @@ export default function QuotePage() {
   return (
     <div className="mx-auto max-w-2xl px-5 py-10">
       <p className="text-xs font-bold uppercase tracking-[0.09em] text-ember">Building materials</p>
-      <h1 className="mt-2 font-display text-[clamp(28px,4vw,36px)] text-charcoal">
+      <h1 className="mt-2 font-display text-[clamp(30px,4vw,38px)] text-charcoal">
         Get an instant quote
       </h1>
       <p className="mt-3 text-ink-soft">
@@ -254,7 +254,7 @@ export default function QuotePage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-ember py-3 text-[15px] font-semibold text-white hover:bg-ember-deep disabled:opacity-60"
+            className="w-full rounded-lg bg-ember py-3 text-[17px] font-semibold text-white hover:bg-ember-deep disabled:opacity-60"
           >
             {loading ? "Building your quote…" : "Get instant quote"}
           </button>

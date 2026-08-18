@@ -72,7 +72,7 @@ export function NotificationBell({ iconClassName = "text-forest" }: { iconClassN
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         {unread > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-ember px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-1.5 -top-1.5 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-ember px-1 text-[12px] font-bold text-white">
             {unread}
           </span>
         )}
@@ -96,7 +96,7 @@ export function NotificationBell({ iconClassName = "text-forest" }: { iconClassN
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="font-medium">{note.title}</span>
-                    <span className="shrink-0 text-[11px] text-ink-soft">{timeAgo(note.created_at)}</span>
+                    <span className="shrink-0 text-[13px] text-ink-soft">{timeAgo(note.created_at)}</span>
                   </span>
                   <span className="mt-0.5 block text-xs text-ink-soft">{note.body}</span>
                 </button>

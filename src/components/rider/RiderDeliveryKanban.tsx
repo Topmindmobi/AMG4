@@ -190,7 +190,7 @@ export function RiderDeliveryKanban({
             >
               <header className="mb-3 border-b border-white/10 pb-2">
                 <h2 className="font-display text-lg text-sand">{col.title}</h2>
-                <p className="text-[11px] text-sand/45">{col.hint}</p>
+                <p className="text-[13px] text-sand/45">{col.hint}</p>
                 <p className="mt-1 text-xs font-semibold text-ember">
                   {list.length}
                 </p>
@@ -236,17 +236,17 @@ export function RiderDeliveryKanban({
                               {formatKes(Number(order.total_kes))}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-[11px] text-sand/50">
+                          <p className="mt-0.5 text-[13px] text-sand/50">
                             {order.phone} · {order.town}
                           </p>
-                          <p className="mt-0.5 text-[11px] text-sand/45">
+                          <p className="mt-0.5 text-[13px] text-sand/45">
                             {DELIVERY_METHOD_LABELS[order.delivery_method]}
                             {order.delivery_method === "dropoff" &&
                             order.dropoff_point_name
                               ? ` — ${order.dropoff_point_name}`
                               : ` — ${order.address}`}
                           </p>
-                          <p className="mt-1 text-[11px]">
+                          <p className="mt-1 text-[13px]">
                             <span
                               className={
                                 order.paid ? "text-sand" : "font-semibold text-ember"
@@ -256,7 +256,7 @@ export function RiderDeliveryKanban({
                             </span>
                           </p>
                           {stage === "failed" && order.rider_fail_reason && (
-                            <p className="mt-1 text-[11px] text-ember">
+                            <p className="mt-1 text-[13px] text-ember">
                               {order.rider_fail_reason}
                             </p>
                           )}
@@ -268,7 +268,7 @@ export function RiderDeliveryKanban({
                                 type="button"
                                 disabled={Boolean(busy)}
                                 onClick={() => void applyMove(order.id, next)}
-                                className="border border-white/15 px-2 py-1 text-[10px] font-semibold text-sand/70 hover:border-ember hover:text-ember disabled:opacity-40"
+                                className="border border-white/15 px-2 py-1 text-[12px] font-semibold text-sand/70 hover:border-ember hover:text-ember disabled:opacity-40"
                               >
                                 →{" "}
                                 {RIDER_DELIVERY_COLUMNS.find((c) => c.id === next)
@@ -281,7 +281,7 @@ export function RiderDeliveryKanban({
                             !order.paid && (
                               <button
                                 type="button"
-                                className="mt-2 text-[11px] font-semibold text-ember underline"
+                                className="mt-2 text-[13px] font-semibold text-ember underline"
                                 onClick={() => setPayForId(order.id)}
                               >
                                 Collect payment (M-Pesa / cash)
@@ -293,7 +293,7 @@ export function RiderDeliveryKanban({
                   );
                 })}
                 {list.length === 0 && (
-                  <li className="border border-dashed border-white/10 px-3 py-6 text-center text-[11px] text-sand/40">
+                  <li className="border border-dashed border-white/10 px-3 py-6 text-center text-[13px] text-sand/40">
                     {highlight ? "Drop here" : "Empty"}
                   </li>
                 )}

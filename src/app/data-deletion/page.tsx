@@ -11,17 +11,17 @@ export default function DataDeletionPage() {
   return (
     <div className="mx-auto max-w-[720px] px-5 py-10">
       <p className="mb-3 text-xs font-bold uppercase tracking-[0.09em] text-ember">Legal</p>
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">
         Account &amp; Data Deletion
       </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+      <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
         You can permanently delete your AMG Store account and profile at any time, directly from
         the site — no need to contact support.
       </p>
 
-      <div className="mt-10 space-y-10 text-[14.5px] leading-relaxed text-ink-soft">
+      <div className="mt-10 space-y-10 text-[16.5px] leading-relaxed text-ink-soft">
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">How to delete your account</h2>
+          <h2 className="font-display text-[24px] text-charcoal">How to delete your account</h2>
           <ol className="list-decimal space-y-2 pl-5">
             <li>
               Sign in at{" "}
@@ -46,7 +46,7 @@ export default function DataDeletionPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">What gets deleted</h2>
+          <h2 className="font-display text-[24px] text-charcoal">What gets deleted</h2>
           <ul className="list-disc space-y-2 pl-5">
             <li>Your login credentials (email/password or Google sign-in link).</li>
             <li>Your profile — name, phone number, delivery town.</li>
@@ -55,7 +55,7 @@ export default function DataDeletionPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">What&apos;s retained, and why</h2>
+          <h2 className="font-display text-[24px] text-charcoal">What&apos;s retained, and why</h2>
           <p>
             Your past orders (items, prices, delivery status) are kept as business records — this is
             standard practice for accounting, tax, and dispute-resolution purposes, and matches what
@@ -70,7 +70,7 @@ export default function DataDeletionPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">Can&apos;t sign in?</h2>
+          <h2 className="font-display text-[24px] text-charcoal">Can&apos;t sign in?</h2>
           <p>
             If you&apos;ve lost access to your account and can&apos;t use the self-service option
             above, contact us via the{" "}
@@ -82,7 +82,7 @@ export default function DataDeletionPage() {
         </section>
       </div>
 
-      <div className="mt-10 flex flex-wrap gap-3 text-[13.5px] font-semibold">
+      <div className="mt-10 flex flex-wrap gap-3 text-[15.5px] font-semibold">
         <Link href="/privacy" className="text-forest hover:text-forest-deep">
           Privacy Policy
         </Link>

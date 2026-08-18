@@ -402,7 +402,7 @@ export default function AdminOrdersPage() {
                             {SUPPLY_STATUS_LABELS[group.supply_request.status]}
                           </p>
                           {group.supply_request.logistics && (
-                            <p className="mt-1 max-w-[220px] text-[11px] leading-relaxed text-ink-soft">
+                            <p className="mt-1 max-w-[220px] text-[13px] leading-relaxed text-ink-soft">
                               {SUPPLY_METHOD_LABELS[group.supply_request.logistics.method] ??
                                 group.supply_request.logistics.method}
                               {" → "}
@@ -415,7 +415,7 @@ export default function AdminOrdersPage() {
                             </p>
                           )}
                           {group.supply_request.dispatch && (
-                            <p className="mt-1 max-w-[220px] text-[11px] leading-relaxed text-charcoal">
+                            <p className="mt-1 max-w-[220px] text-[13px] leading-relaxed text-charcoal">
                               {SUPPLY_VEHICLE_LABELS[group.supply_request.dispatch.vehicle_type]}{" "}
                               {group.supply_request.dispatch.vehicle_plate}
                               <br />

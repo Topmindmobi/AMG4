@@ -54,7 +54,7 @@ export default function AccountOrdersPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10">
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">My orders</h1>
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">My orders</h1>
       {orders.length === 0 ? (
         <p className="mt-6 text-ink-soft">
           No orders yet.{" "}

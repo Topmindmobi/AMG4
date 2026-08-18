@@ -200,7 +200,7 @@ export function SupplyKanban({
             >
               <header className="mb-3 pointer-events-none">
                 <h2 className="text-sm font-semibold text-charcoal">{col.title}</h2>
-                <p className="mt-0.5 text-[11px] text-ink-soft">{col.hint}</p>
+                <p className="mt-0.5 text-[13px] text-ink-soft">{col.hint}</p>
                 <p className="mt-1 text-xs font-medium text-forest">
                   {byColumn[col.id].length} order{byColumn[col.id].length === 1 ? "" : "s"}
                 </p>
@@ -249,7 +249,7 @@ export function SupplyKanban({
                           >
                             {r.id.slice(0, 12)}
                           </Link>
-                          <p className="mt-1 text-[11px] text-ink-soft">
+                          <p className="mt-1 text-[13px] text-ink-soft">
                             Order {r.order_id.slice(0, 12)} · Client town {r.customer_town}
                           </p>
                           <p className="mt-2 text-xs text-ink-soft">
@@ -259,7 +259,7 @@ export function SupplyKanban({
                             {formatKes(r.total_kes)}
                           </p>
                           {r.logistics ? (
-                            <p className="mt-2 text-[11px] leading-relaxed text-ink-soft">
+                            <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">
                               {SUPPLY_METHOD_LABELS[r.logistics.method] ?? r.logistics.method}
                               {" → "}
                               {r.logistics.amg_location_name}
@@ -268,12 +268,12 @@ export function SupplyKanban({
                               {new Date(r.logistics.planned_dispatch_at).toLocaleString()}
                             </p>
                           ) : r.status === "confirmed" ? (
-                            <p className="mt-2 text-[11px] font-medium text-ember">
+                            <p className="mt-2 text-[13px] font-medium text-ember">
                               Logistics plan missing — drag to Dispatched to add it
                             </p>
                           ) : null}
                           {r.dispatch && (
-                            <p className="mt-2 text-[11px] leading-relaxed text-charcoal">
+                            <p className="mt-2 text-[13px] leading-relaxed text-charcoal">
                               {SUPPLY_VEHICLE_LABELS[r.dispatch.vehicle_type]} ·{" "}
                               {r.dispatch.vehicle_plate}
                               <br />
@@ -281,12 +281,12 @@ export function SupplyKanban({
                             </p>
                           )}
                           {col.id === "dispatched" && (
-                            <p className="mt-3 text-[11px] text-ink-soft">
+                            <p className="mt-3 text-[13px] text-ink-soft">
                               Waiting for AMG inspection &amp; fulfill certification.
                             </p>
                           )}
                           {col.id === "fulfilled" && r.fulfilled_at && (
-                            <p className="mt-3 text-[11px] text-forest">
+                            <p className="mt-3 text-[13px] text-forest">
                               Certified {new Date(r.fulfilled_at).toLocaleString()}
                             </p>
                           )}

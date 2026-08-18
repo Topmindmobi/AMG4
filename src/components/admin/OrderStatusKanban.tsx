@@ -292,7 +292,7 @@ export function OrderStatusKanban({
                             {(order.items?.length ?? 0) > 3 ? "…" : ""}
                           </p>
                           {srs.length > 0 && (
-                            <p className="mt-1 text-[11px] text-ink-soft">
+                            <p className="mt-1 text-[13px] text-ink-soft">
                               {srs
                                 .map(
                                   (r) =>
@@ -305,7 +305,7 @@ export function OrderStatusKanban({
                             <RiderDeliveryTracker order={order} audience="admin" />
                           )}
                           {summary.count > 0 && (
-                            <p className="mt-1 text-[11px] text-forest">
+                            <p className="mt-1 text-[13px] text-forest">
                               Rated {summary.average}/5 ·{" "}
                               {Object.entries(summary.bySubject)
                                 .map(
@@ -493,7 +493,7 @@ function ActionBtn({ label, onClick }: { label: string; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="border border-forest px-2 py-1 text-[11px] font-semibold text-forest hover:bg-forest/5"
+      className="border border-forest px-2 py-1 text-[13px] font-semibold text-forest hover:bg-forest/5"
     >
       {label}
     </button>
