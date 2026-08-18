@@ -1,6 +1,6 @@
-# AMG.COM Marketplace
+# AMG Stores Marketplace
 
-Full marketplace for **AMG.COM** — targeting locals in Homabay & Migori Counties, with pilot shops in Homabay and Mbita.
+Full marketplace for **AMG Stores** — targeting locals in Homabay & Migori Counties, with pilot shops in Homabay and Mbita.
 
 Stack: **Next.js (App Router)**, **Tailwind CSS**, **Supabase** (Auth, Postgres, Storage). Demo mode runs without Supabase.
 
@@ -15,7 +15,7 @@ Stack: **Next.js (App Router)**, **Tailwind CSS**, **Supabase** (Auth, Postgres,
 - Customer accounts and order history
 - Admin console: dashboard, products, orders workflow, quotes, suppliers, categories, riders
 - Admin reports: overview, financial, sales, products, logistics, payments, quotes, riders — with trend charts, CSV export, and date-range presets
-- Seeded catalog from the AMG.COM blueprint (electronics, appliances, agri, hardware, and more)
+- Seeded catalog from the AMG Stores blueprint (electronics, appliances, agri, hardware, and more)
 
 ## Quick start (demo mode)
 

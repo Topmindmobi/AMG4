@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { ContactForm } from "@/components/shop/ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contacts — AMG.COM",
+  title: "Contacts — AMG Stores",
   description:
-    "Get in touch with AMG.COM for orders, delivery questions, or supplier inquiries anywhere in Kenya — Nairobi, Mombasa, Kisumu, Homa Bay and beyond.",
+    "Get in touch with AMG Stores for orders, delivery questions, or supplier inquiries anywhere in Kenya — Nairobi, Mombasa, Kisumu, Homa Bay and beyond.",
 };
 
 export default function ContactPage() {

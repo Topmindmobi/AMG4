@@ -1,4 +1,4 @@
-# AMG.COM — production image for DigitalOcean App Platform or Droplets
+# AMG Stores — production image for DigitalOcean App Platform or Droplets
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./

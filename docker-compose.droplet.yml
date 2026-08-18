@@ -1,4 +1,4 @@
-# AMG.COM — separate Docker Compose project for an existing DigitalOcean droplet
+# AMG Stores — separate Docker Compose project for an existing DigitalOcean droplet
 # (shared with cla-lms and tender-intel). Own network, own port, no database
 # (Supabase stays external — this app has no local Postgres).
 #

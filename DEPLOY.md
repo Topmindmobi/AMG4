@@ -1,4 +1,4 @@
-# Deploy AMG.COM
+# Deploy AMG Stores
 
 Supabase (Auth, Postgres, Storage) stays **external** for production. Run migrations and seed in your Supabase project before going live — see [README](README.md#supabase-setup-production).
 
@@ -73,7 +73,7 @@ doctl apps create-deployment <APP_ID>
 | `TWILIO_PHONE_NUMBER` | No* | Twilio sender number in E.164 (e.g. `+254…`), **or** set Messaging Service SID |
 | `TWILIO_MESSAGING_SERVICE_SID` | No | Optional alternative to `TWILIO_PHONE_NUMBER` |
 | `RESEND_API_KEY` | No* | Resend API key — email on the same order events as SMS |
-| `EMAIL_FROM` | No* | Sender address, e.g. `"AMG.COM <orders@yourdomain.com>"` |
+| `EMAIL_FROM` | No* | Sender address, e.g. `"AMG Stores <orders@yourdomain.com>"` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No* | Web Push public key (safe to expose) — rider payout alerts |
 | `VAPID_PUBLIC_KEY` | No* | Same value as above, read server-side |
 | `VAPID_PRIVATE_KEY` | No* | Web Push private key (**Run time** only — never bake into client) |

@@ -303,14 +303,14 @@ export const DEMO_PRODUCTS: Product[] = [
     "prod-1", "cat-laptops", "sup-1",
     "HP 15 Laptop 8GB/256GB", "hp-15-laptop",
     "Everyday laptop for school, office work, and browsing.",
-    "The HP 15 is a dependable laptop for students and small businesses around Homabay and Mbita. It comes with 8GB RAM and a 256GB SSD for fast boot times, a full-size keyboard for typing notes or reports, and Wi‑Fi for online classes or M‑Pesa business tools. Ideal for Word, Excel, Zoom, and light design. Local warranty support available through AMG.COM partner shops. Delivery by motorcycle within pilot towns.",
+    "The HP 15 is a dependable laptop for students and small businesses around Homabay and Mbita. It comes with 8GB RAM and a 256GB SSD for fast boot times, a full-size keyboard for typing notes or reports, and Wi‑Fi for online classes or M‑Pesa business tools. Ideal for Word, Excel, Zoom, and light design. Local warranty support available through AMG Stores partner shops. Delivery by motorcycle within pilot towns.",
     52000, 12, ["Homabay", "Mbita"],
   ),
   p(
     "prod-2", "cat-laptops", "sup-1",
     "Wireless Mouse & Keyboard Combo", "wireless-mouse-keyboard",
     "Plug-and-play USB combo for desktops and laptops.",
-    "This wireless mouse and keyboard set uses a single USB dongle, so you avoid cable clutter on shop counters or home desks. Soft keys reduce typing noise, and the mouse fits either hand. Compatible with Windows and most Linux setups. Batteries included. Perfect add-on when buying a laptop from AMG.COM or upgrading an older PC.",
+    "This wireless mouse and keyboard set uses a single USB dongle, so you avoid cable clutter on shop counters or home desks. Soft keys reduce typing noise, and the mouse fits either hand. Compatible with Windows and most Linux setups. Batteries included. Perfect add-on when buying a laptop from AMG Stores or upgrading an older PC.",
     2500, 40, ["Homabay", "Mbita", "Migori"],
   ),
   p(
@@ -443,7 +443,7 @@ export const DEMO_PRODUCTS: Product[] = [
     "prod-21", "cat-sport", null,
     "Football Size 5", "football-size-5",
     "Size 5 match ball for training and school games.",
-    "Official size 5 football for academies, schools, and estate matches. Durable outer for dusty pitches. Pump separately if needed. Encourages youth sports across Homabay, Mbita, and Migori. Bulk pricing for clubs—contact AMG.COM after order.",
+    "Official size 5 football for academies, schools, and estate matches. Durable outer for dusty pitches. Pump separately if needed. Encourages youth sports across Homabay, Mbita, and Migori. Bulk pricing for clubs—contact AMG Stores after order.",
     1500, 30, ["Homabay", "Mbita", "Migori"],
   ),
   p(

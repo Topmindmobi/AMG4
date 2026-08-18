@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     phone,
     amountKes,
     accountRef: body.accountRef || "AMGCOM",
-    description: "AMG.COM order",
+    description: "AMG Stores order",
   });
 
   if (!result.initiated) {

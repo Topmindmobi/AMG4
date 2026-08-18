@@ -115,7 +115,7 @@ export default function ReportsOverviewPage() {
     <div>
       <h1 className="font-display text-3xl text-charcoal">Reports</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Financial, sales, product, logistics, and payment analytics for AMG.COM.
+        Financial, sales, product, logistics, and payment analytics for AMG Stores.
       </p>
       <Suspense fallback={null}>
         <ReportTabs />

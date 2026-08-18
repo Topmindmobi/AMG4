@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "About — AMG.COM",
+  title: "About — AMG Stores",
   description:
-    "AMG.COM is Kenya's nationwide marketplace — electronics, farm supplies, hardware, and home essentials delivered from Nairobi to Mombasa, Kisumu to Homa Bay.",
+    "AMG Stores is Kenya's nationwide marketplace — electronics, farm supplies, hardware, and home essentials delivered from Nairobi to Mombasa, Kisumu to Homa Bay.",
 };
 
 export default function AboutPage() {
@@ -13,9 +13,9 @@ export default function AboutPage() {
       <p className="mb-3 text-xs font-bold uppercase tracking-[0.09em] text-ember">
         Nairobi · Mombasa · Kisumu · Homa Bay
       </p>
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">About AMG.COM</h1>
+      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">About AMG Stores</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-        AMG.COM is Kenya&apos;s nationwide marketplace. We connect partner shops across the
+        AMG Stores is Kenya&apos;s nationwide marketplace. We connect partner shops across the
         country — from Nairobi, Mombasa, and Kisumu to Homa Bay, Mbita, and Migori — with
         customers who need electronics, farm supplies, hardware, school books, and everyday
         essentials — delivered by motorcycle the same day when possible.

@@ -1078,7 +1078,7 @@ export function requestSupplyFromSupplier(
     })),
     total_kes: lines.reduce((s, i) => s + i.price_kes * i.qty, 0),
     customer_town: order.town,
-    delivery_note: `Supply to AMG.COM client in ${order.town}. AMG will handle final dispatch.`,
+    delivery_note: `Supply to AMG Stores client in ${order.town}. AMG will handle final dispatch.`,
     created_at: new Date().toISOString(),
     confirmed_at: null,
     logistics: null,
@@ -1101,7 +1101,7 @@ export function requestSupplyFromSupplier(
       .join(", ");
     pushNotification({
       user_id: supplierUser.id,
-      title: "New supply request from AMG.COM",
+      title: "New supply request from AMG Stores",
       body: `Please supply ${itemSummary}. Total ${formatKes(request.total_kes)} for AMG's client in ${order.town}.`,
       link: `/supplier/requests/${request.id}`,
       order_id: orderId,
@@ -1195,7 +1195,7 @@ export function fulfillOrderWithSupplier(
     })),
     total_kes: lines.reduce((s, i) => s + i.price_kes * i.qty, 0),
     customer_town: order.town,
-    delivery_note: `Supply to AMG.COM client in ${order.town}. Selected via value-for-money analysis. AMG will handle final dispatch.`,
+    delivery_note: `Supply to AMG Stores client in ${order.town}. Selected via value-for-money analysis. AMG will handle final dispatch.`,
     created_at: new Date().toISOString(),
     confirmed_at: null,
     logistics: null,
@@ -1218,7 +1218,7 @@ export function fulfillOrderWithSupplier(
       .join(", ");
     pushNotification({
       user_id: supplierUser.id,
-      title: "New supply request from AMG.COM",
+      title: "New supply request from AMG Stores",
       body: `Please supply ${itemSummary}. Total ${formatKes(request.total_kes)} for AMG's client in ${order.town}.`,
       link: `/supplier/requests/${request.id}`,
       order_id: orderId,
@@ -1429,7 +1429,7 @@ export function confirmOrderToBuyer(orderId: string): Order {
   if (order.user_id) {
     pushNotification({
       user_id: order.user_id,
-      title: "Your AMG.COM order is confirmed",
+      title: "Your AMG Stores order is confirmed",
       body: `Order ${orderId} is confirmed. We will dispatch soon to ${order.town}.`,
       link: `/order/${orderId}`,
       order_id: orderId,
@@ -1529,7 +1529,7 @@ function riderStageMessage(
     },
     paid: {
       customerTitle: "Payment received — delivery complete",
-      customerBody: `Payment for order ${ref} is registered. Thank you for shopping with AMG.COM.`,
+      customerBody: `Payment for order ${ref} is registered. Thank you for shopping with AMG Stores.`,
       adminTitle: `Paid — trip closed`,
       adminBody: `Order ${ref} paid and closed by ${rider}.`,
     },

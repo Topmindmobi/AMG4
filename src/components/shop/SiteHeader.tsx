@@ -32,7 +32,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-mist">
       <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-4 px-5 py-3.5">
-        <Link href="/" className="inline-flex shrink-0 items-center" aria-label="AMG.COM home">
+        <Link href="/" className="inline-flex shrink-0 items-center" aria-label="AMG Stores home">
           <AmgLogo priority className="h-8 w-auto sm:h-9" />
         </Link>
 

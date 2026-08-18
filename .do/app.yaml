@@ -1,4 +1,4 @@
-# DigitalOcean App Platform spec for AMG.COM
+# DigitalOcean App Platform spec for AMG Stores
 # Set SECRET values in the DO UI (or via doctl). Do not commit real keys.
 name: amg-com
 region: fra

@@ -20,14 +20,14 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "AMG.COM — Kenya's Nationwide Marketplace",
+  title: "AMG Stores — Kenya's Nationwide Marketplace",
   description:
     "Shop electronics, appliances, farm produce, hardware and more. Nationwide delivery across Nairobi, Mombasa, Kisumu, Homa Bay and beyond.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "AMG.COM",
+    title: "AMG Stores",
   },
   icons: {
     icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],

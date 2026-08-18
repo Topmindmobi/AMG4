@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install host nginx + Let's Encrypt for amgstores.ai → AMG.COM on :8090
+# Install host nginx + Let's Encrypt for amgstores.ai → AMG Stores on :8090
 set -euo pipefail
 
 DOMAIN="${DOMAIN:-amgstores.ai}"

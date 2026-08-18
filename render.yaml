@@ -1,4 +1,4 @@
-# AMG.COM — Render Blueprint
+# AMG Stores — Render Blueprint
 # Dashboard: https://dashboard.render.com/blueprints → New Blueprint → connect this repo
 services:
   - type: web

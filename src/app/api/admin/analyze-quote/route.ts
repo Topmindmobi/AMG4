@@ -50,7 +50,7 @@ export async function POST(req: Request) {
           {
             role: "system",
             content:
-              "You advise AMG.COM (Kenya marketplace) when a buyer quote may not use the best supplier prices. Be direct. If has_better_prices is true, tell AMG which lines look overpriced and recommend reviewing suppliers. If false, say prices look competitive. Reply JSON: {\"summary\":\"3-5 sentences for AMG ops\",\"has_better_prices\":boolean}.",
+              "You advise AMG Stores (Kenya marketplace) when a buyer quote may not use the best supplier prices. Be direct. If has_better_prices is true, tell AMG which lines look overpriced and recommend reviewing suppliers. If false, say prices look competitive. Reply JSON: {\"summary\":\"3-5 sentences for AMG ops\",\"has_better_prices\":boolean}.",
           },
           {
             role: "user",
