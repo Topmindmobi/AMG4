@@ -68,7 +68,7 @@ export function SiteHeader() {
             <MenuIcon />
           </button>
 
-          <Link href="/" className="inline-flex shrink-0 items-center" aria-label="AMG Stores home">
+          <Link href="/" className="inline-flex shrink-0 items-center" aria-label="AMG Online Store home">
             <AmgLogo priority className="h-8 w-auto sm:h-9" />
           </Link>
 

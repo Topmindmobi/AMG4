@@ -1,4 +1,4 @@
-// AMG Stores service worker: offline asset/page caching + background sync trigger
+// AMG Online Store service worker: offline asset/page caching + background sync trigger
 // for the order queue, plus the existing web-push handlers.
 //
 // Bump CACHE_VERSION whenever caching strategy changes so old caches get cleared.
@@ -109,9 +109,9 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "AMG Stores", body: event.data ? event.data.text() : "" };
+    data = { title: "AMG Online Store", body: event.data ? event.data.text() : "" };
   }
-  const title = data.title || "AMG Stores";
+  const title = data.title || "AMG Online Store";
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || "",

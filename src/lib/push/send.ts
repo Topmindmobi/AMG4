@@ -14,7 +14,7 @@ let configured = false;
 function ensureConfigured() {
   if (configured) return;
   webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT?.trim() || "mailto:admin@amg.com",
+    process.env.VAPID_SUBJECT?.trim() || "mailto:admin@amgstores.ai",
     process.env.VAPID_PUBLIC_KEY!.trim(),
     process.env.VAPID_PRIVATE_KEY!.trim(),
   );

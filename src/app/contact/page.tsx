@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { ContactForm } from "@/components/shop/ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contacts — AMG Stores",
+  title: "Contacts — AMG Online Store",
   description:
-    "Get in touch with AMG Stores for orders, delivery questions, or supplier inquiries anywhere in Kenya — Nairobi, Mombasa, Kisumu, Homa Bay and beyond.",
+    "Get in touch with AMG Online Store for orders, delivery questions, or supplier inquiries anywhere in Kenya — Nairobi, Mombasa, Kisumu, Homa Bay and beyond.",
 };
 
 export default function ContactPage() {
@@ -30,10 +30,10 @@ export default function ContactPage() {
         <div className="rounded-[10px] border border-line bg-sand px-4 py-4">
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-ember">Email</p>
           <a
-            href="mailto:hello@amg.com"
+            href="mailto:hello@amgstores.ai"
             className="mt-1.5 block text-[17px] font-semibold text-forest hover:text-forest-deep"
           >
-            hello@amg.com
+            hello@amgstores.ai
           </a>
           <p className="mt-1 text-[14.5px] text-ink-soft">Orders &amp; supplier inquiries</p>
         </div>

@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { DashboardShell, type NavGroup } from "@/components/layout/DashboardShell";
+import { InitialsAvatar } from "@/components/shared/InitialsAvatar";
+import { RoleGuardLoading } from "@/components/shared/RoleGuardLoading";
 import { useAuth } from "@/lib/auth-context";
+import { useRoleGuard } from "@/lib/hooks/useRoleGuard";
 import {
   getDemoNotifications,
   markDemoNotificationRead,
@@ -38,33 +41,18 @@ const navGroups: NavGroup[] = [
 ];
 
 export function SupplierShell({ children }: { children: ReactNode }) {
-  const { user, loading, isSupplier, logout } = useAuth();
-  const router = useRouter();
+  const { logout } = useAuth();
   const pathname = usePathname();
+  const { user, ready } = useRoleGuard("supplier");
   const [notes, setNotes] = useState<AppNotification[]>([]);
-
-  useEffect(() => {
-    if (loading) return;
-    if (!user) {
-      router.replace("/auth/login?next=/supplier");
-      return;
-    }
-    if (!isSupplier) {
-      router.replace(user.role === "admin" ? "/admin" : "/account");
-    }
-  }, [user, loading, isSupplier, router]);
 
   useEffect(() => {
     if (!user || !isDemoMode()) return;
     void Promise.resolve(getDemoNotifications(user.id).slice(0, 8)).then(setNotes);
   }, [user, pathname]);
 
-  if (loading || !user || !isSupplier) {
-    return (
-      <div className="min-h-[50vh] bg-mist px-4 py-16 text-ink-soft">
-        Checking supplier access…
-      </div>
-    );
+  if (!ready || !user) {
+    return <RoleGuardLoading label="Checking supplier access…" />;
   }
 
   const unread = notes.filter((n) => !n.read);
@@ -72,17 +60,38 @@ export function SupplierShell({ children }: { children: ReactNode }) {
   return (
     <DashboardShell
       navGroups={navGroups}
-      eyebrow="Supplier portal"
-      identityLine={user.full_name ?? undefined}
+      contextCard={
+        <div className="flex flex-col gap-1 rounded-[10px] bg-white/[0.09] p-3.5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#8b95a8]">
+            Supplier portal
+          </p>
+          <p className="text-xs text-[#c7ceda]">{user.full_name ?? "Supplier"}</p>
+        </div>
+      }
       pathname={pathname}
       footer={
-        <button
-          type="button"
-          onClick={() => void logout()}
-          className="block w-full px-3 py-2 text-left text-sm font-semibold text-ink-soft hover:text-charcoal"
-        >
-          Log out
-        </button>
+        <div className="flex flex-col gap-3.5">
+          <div className="flex items-center gap-2.5">
+            <InitialsAvatar
+              name={user.full_name}
+              fallback="Supplier"
+              className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-white/[0.14] text-xs font-bold text-[#dfe3ea]"
+            />
+            <div className="flex flex-col">
+              <span className="text-[13px] font-medium text-white">
+                {user.full_name ?? "Supplier"}
+              </span>
+              <span className="text-[11px] text-[#7e8798]">Supplier</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="text-left text-[13px] text-[#b6bece] transition hover:text-white"
+          >
+            Log out
+          </button>
+        </div>
       }
     >
       {unread.length > 0 && (

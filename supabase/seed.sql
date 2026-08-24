@@ -1,4 +1,4 @@
--- Seed categories, suppliers, and sample products for AMG Stores
+-- Seed categories, suppliers, and sample products for AMG Online Store
 -- Run after 001_schema.sql in the Supabase SQL editor.
 
 insert into public.categories (id, slug, name, parent_id, sort_order, description) values

@@ -42,7 +42,7 @@ export function ReportBar({
         <span className="text-charcoal/80">{label}</span>
         <span className="tabular-nums text-ink-soft">{display}</span>
       </div>
-      <div className="h-2 rounded-full bg-white/10">
+      <div className="h-2 rounded-full bg-white/10" aria-hidden>
         <div className="h-2 rounded-full bg-ember" style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -61,9 +61,16 @@ export function ReportStackedBar({
 }) {
   const total = segments.reduce((s, seg) => s + seg.value, 0) || 1;
   const colors = [SERIES_A, SERIES_B, "#9085e9", "#199e70"];
+  const summary = segments
+    .map((seg) => `${seg.label} ${((seg.value / total) * 100).toFixed(0)}%`)
+    .join(", ");
   return (
     <div>
-      <div className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-white/10">
+      <div
+        className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-white/10"
+        role="img"
+        aria-label={summary}
+      >
         {segments.map((seg, i) => {
           const pct = (seg.value / total) * 100;
           if (pct <= 0) return null;
@@ -72,6 +79,7 @@ export function ReportStackedBar({
               key={seg.label}
               style={{ width: `${pct}%`, backgroundColor: colors[i % colors.length] }}
               title={`${seg.label}: ${pct.toFixed(0)}%`}
+              aria-hidden
             />
           );
         })}
@@ -129,12 +137,15 @@ export function ReportTrendChart({
   }
 
   const active = hover != null ? coords[hover] : null;
+  const trendLabel = `Trend chart, ${points[0].date} to ${points[points.length - 1].date}: peak ${formatValue(max)}`;
 
   return (
     <div className="relative">
       <svg
         viewBox={`0 0 ${TREND_WIDTH} ${TREND_HEIGHT}`}
         className="w-full touch-none"
+        role="img"
+        aria-label={trendLabel}
         onMouseLeave={() => setHover(null)}
         onMouseMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();

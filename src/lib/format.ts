@@ -2,6 +2,16 @@ export function formatKes(amount: number): string {
   return `KES ${amount.toLocaleString("en-KE")}`;
 }
 
+/** Up to 2 uppercase initials from a display name, e.g. "Jane Doe" -> "JD". */
+export function getInitials(name: string | null | undefined, fallback: string): string {
+  return (name ?? fallback)
+    .split(" ")
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
 export function slugify(value: string): string {
   return value
     .toLowerCase()

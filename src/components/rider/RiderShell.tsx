@@ -1,85 +1,84 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
-import { AmgLogo } from "@/components/brand/AmgLogo";
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+import { DashboardShell, type NavGroup } from "@/components/layout/DashboardShell";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { InitialsAvatar } from "@/components/shared/InitialsAvatar";
+import { RoleGuardLoading } from "@/components/shared/RoleGuardLoading";
 import { useAuth } from "@/lib/auth-context";
+import { useRoleGuard } from "@/lib/hooks/useRoleGuard";
 
-const links = [
-  { href: "/rider", label: "Delivery kanban", exact: true },
+const navGroups: NavGroup[] = [
+  {
+    title: "Today",
+    links: [
+      { href: "/rider", label: "Delivery board", exact: true },
+      { label: "Route map", comingSoon: true },
+      { label: "Remittance", comingSoon: true },
+    ],
+  },
+  {
+    title: "Account",
+    links: [
+      { label: "History", comingSoon: true },
+      { label: "Earnings", comingSoon: true },
+      { href: "/account", label: "Settings" },
+    ],
+  },
 ];
 
 export function RiderShell({ children }: { children: ReactNode }) {
-  const { user, loading, isRider, logout } = useAuth();
-  const router = useRouter();
+  const { logout } = useAuth();
   const pathname = usePathname();
+  const { user, ready } = useRoleGuard("rider");
 
-  useEffect(() => {
-    if (loading) return;
-    if (!user) {
-      router.replace("/auth/login?next=/rider");
-      return;
-    }
-    if (!isRider) {
-      router.replace(user.role === "admin" ? "/admin" : "/account");
-    }
-  }, [user, loading, isRider, router]);
-
-  if (loading || !user || !isRider) {
-    return (
-      <div className="min-h-[50vh] bg-mist px-4 py-16 text-ink-soft">
-        Checking rider access…
-      </div>
-    );
+  if (!ready || !user) {
+    return <RoleGuardLoading label="Checking rider access…" />;
   }
 
   return (
-    <div className="min-h-[70vh] bg-mist text-charcoal">
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="inline-flex">
-            <AmgLogo className="h-7 w-auto" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <NotificationBell iconClassName="text-charcoal/80" />
-            <button
-              type="button"
-              onClick={() => void logout()}
-              className="text-sm text-ink-soft hover:text-charcoal"
-            >
-              Log out
-            </button>
+    <DashboardShell
+      navGroups={navGroups}
+      contextCard={
+        <div className="flex flex-col gap-2 rounded-[10px] bg-white/[0.09] p-3.5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#c9cee6]">
+            Rider portal
+          </p>
+          <div className="flex items-center gap-2.5">
+            <InitialsAvatar
+              name={user.full_name}
+              fallback="Rider"
+              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-white/[0.16] text-xs font-bold text-white"
+            />
+            <span className="text-sm font-bold text-white">{user.full_name ?? "Rider"}</span>
           </div>
         </div>
-        <p className="mt-3 text-xs uppercase tracking-wide text-ink-soft">
-          Rider portal
-        </p>
-        <p className="mt-1 text-lg font-semibold text-charcoal">{user.full_name}</p>
-        <p className="mt-1 text-xs text-ink-soft">
-          You are responsible for each assigned order until payment is registered.
-        </p>
-        <nav className="mt-4 flex flex-wrap gap-3 text-sm">
-          {links.map((link) => {
-            const active = link.exact
-              ? pathname === link.href
-              : pathname.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={
-                  active ? "text-ember" : "text-ink-soft transition hover:text-charcoal"
-                }
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="mt-6">{children}</div>
-      </div>
-    </div>
+      }
+      topBarExtra={<NotificationBell iconClassName="text-ink/80" />}
+      pathname={pathname}
+      footer={
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5 rounded-[10px] bg-white/[0.09] p-3.5">
+            <span className="text-[11px] leading-relaxed text-[#c9cee6]">
+              You are responsible for each assigned order until payment is registered.
+            </span>
+            <Link href="/contact" className="text-xs font-bold text-[#ffb593] hover:text-white">
+              Escalate an issue →
+            </Link>
+          </div>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="text-left text-[13px] text-[#c3c7e4] transition hover:text-white"
+          >
+            Log out
+          </button>
+        </div>
+      }
+    >
+      {children}
+    </DashboardShell>
   );
 }

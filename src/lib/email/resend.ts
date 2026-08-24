@@ -10,22 +10,22 @@ function buildSubjectAndBody(event: OrderSmsEvent, orderId: string): { subject: 
   const ref = shortOrderRef(orderId);
   const body: Record<OrderSmsEvent, { subject: string; line: string }> = {
     confirmed: {
-      subject: `Your AMG Stores order ${ref} is confirmed`,
+      subject: `Your AMG Online Store order ${ref} is confirmed`,
       line: "We'll dispatch it soon.",
     },
     dispatched: {
-      subject: `Your AMG Stores order ${ref} is out for delivery`,
+      subject: `Your AMG Online Store order ${ref} is out for delivery`,
       line: "Our rider is on the way.",
     },
     delivered: {
-      subject: `Your AMG Stores order ${ref} has been delivered`,
-      line: "Asante for shopping with AMG Stores!",
+      subject: `Your AMG Online Store order ${ref} has been delivered`,
+      line: "Asante for shopping with AMG Online Store!",
     },
   };
   const { subject, line } = body[event];
   return {
     subject,
-    html: `<p>Hi,</p><p>Order <strong>${ref}</strong>: ${line}</p><p>Track it any time at your AMG Stores order page.</p>`,
+    html: `<p>Hi,</p><p>Order <strong>${ref}</strong>: ${line}</p><p>Track it any time at your AMG Online Store order page.</p>`,
   };
 }
 
@@ -91,10 +91,10 @@ export async function sendAccountWelcomeEmail(input: {
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM!.trim(),
       to: input.to,
-      subject: "Your AMG Stores account",
+      subject: "Your AMG Online Store account",
       html: `<p>Hi ${name},</p>
-<p>We created an AMG Stores account for you so you can track orders and reorder easily.</p>
-<p>Sign in at your AMG Stores site with:</p>
+<p>We created an AMG Online Store account for you so you can track orders and reorder easily.</p>
+<p>Sign in at your AMG Online Store site with:</p>
 <ul>
   <li>Email: <strong>${input.to}</strong></li>
   <li>Temporary password: <strong>${input.temporaryPassword}</strong></li>

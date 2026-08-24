@@ -9,7 +9,7 @@ import {
   SUPPLY_VEHICLE_LABELS,
   TOWNS,
 } from "@/lib/format";
-import { getDemoDropoffPoints } from "@/lib/store/demo-store";
+import { listDropoffPoints } from "@/lib/data/delivery";
 import type {
   DropoffPoint,
   SupplyDispatchDetails,
@@ -374,9 +374,10 @@ function LogisticsPlanModal({
   }, []);
 
   useEffect(() => {
-    const points = getDemoDropoffPoints(town);
-    setHubs(points);
-    setLocationId((prev) => (points.some((p) => p.id === prev) ? prev : points[0]?.id ?? ""));
+    void listDropoffPoints(town).then((points) => {
+      setHubs(points);
+      setLocationId((prev) => (points.some((p) => p.id === prev) ? prev : points[0]?.id ?? ""));
+    });
   }, [town]);
 
   const selectedHub = hubs.find((h) => h.id === locationId) ?? null;

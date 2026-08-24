@@ -1,6 +1,6 @@
 {
-  "name": "AMG Stores — Kenya's Nationwide Marketplace",
-  "short_name": "AMG Stores",
+  "name": "AMG Online Store — Kenya's Nationwide Marketplace",
+  "short_name": "AMG",
   "description": "Order from Kenya's nationwide marketplace, with offline browsing and background sync.",
   "start_url": "/?source=pwa",
   "id": "/?source=pwa",

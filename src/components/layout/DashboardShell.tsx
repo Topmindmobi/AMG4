@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { AmgLogo } from "@/components/brand/AmgLogo";
 
-export type NavLink = { href: string; label: string; exact?: boolean };
+export type NavLink =
+  | { href: string; label: string; exact?: boolean; badge?: string; comingSoon?: false }
+  | { href?: undefined; label: string; badge?: string; comingSoon: true };
 export type NavGroup = { title?: string; links: NavLink[] };
 
 function isActive(pathname: string, link: NavLink): boolean {
+  if (!link.href) return false;
   return link.exact
     ? pathname === link.href
     : pathname === link.href || pathname.startsWith(`${link.href}/`);
@@ -27,12 +30,26 @@ function NavLinks({
       {navGroups.map((group, i) => (
         <div key={group.title ?? i}>
           {group.title && (
-            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
+            <p className="px-3 pb-1.5 pt-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-white/95 first:pt-0">
               {group.title}
             </p>
           )}
           <div className="flex flex-col gap-0.5">
             {group.links.map((link) => {
+              if (link.comingSoon) {
+                return (
+                  <span
+                    key={link.label}
+                    title="Coming soon"
+                    className="flex items-center justify-between gap-2.5 rounded-lg px-3 py-2.5 text-sm text-[#6d7789]"
+                  >
+                    <span>{link.label}</span>
+                    {link.badge && (
+                      <span className="font-mono text-[11px] text-[#5d6a82]">{link.badge}</span>
+                    )}
+                  </span>
+                );
+              }
               const active = isActive(pathname, link);
               return (
                 <Link
@@ -40,13 +57,16 @@ function NavLinks({
                   href={link.href}
                   onClick={onLinkClick}
                   aria-current={active ? "page" : undefined}
-                  className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${
+                  className={`flex items-center justify-between gap-2.5 rounded-lg px-3 py-2.5 text-sm transition ${
                     active
-                      ? "bg-sand text-ember"
-                      : "text-ink-soft hover:bg-sand hover:text-charcoal"
+                      ? "bg-accent/[0.22] font-bold text-[#ff9c6b]"
+                      : "font-normal text-[#b6bece] hover:bg-white/[0.07] hover:text-white"
                   }`}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {link.badge && (
+                    <span className="font-mono text-[11px] text-[#7e8798]">{link.badge}</span>
+                  )}
                 </Link>
               );
             })}
@@ -57,27 +77,65 @@ function NavLinks({
   );
 }
 
+function SidebarContent({
+  navGroups,
+  contextCard,
+  footer,
+  pathname,
+  onLinkClick,
+}: {
+  navGroups: NavGroup[];
+  contextCard: ReactNode;
+  footer?: ReactNode;
+  pathname: string;
+  onLinkClick?: () => void;
+}) {
+  return (
+    <>
+      <div className="px-[22px] pb-[22px]">
+        <Link href="/" className="inline-flex items-center gap-2.5">
+          <span className="flex h-[30px] w-[30px] items-center justify-center rounded-[7px] bg-accent font-display-serif text-[15px] text-white">
+            A
+          </span>
+          <span className="text-[15px] font-bold tracking-[0.04em] text-white">AMG</span>
+        </Link>
+      </div>
+
+      <div className="mx-[22px] mb-5">{contextCard}</div>
+
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3">
+        <NavLinks navGroups={navGroups} pathname={pathname} onLinkClick={onLinkClick} />
+      </nav>
+
+      {footer && (
+        <div className="mt-auto border-t border-white/[0.09] px-[22px] pt-4 pb-6">{footer}</div>
+      )}
+    </>
+  );
+}
+
 /**
- * Shared shell for the admin and supplier portals: a persistent sidebar on
- * desktop (lg: and up, screen real estate to spare, sidebar collapsing would
- * just add a click for no reason) and the same slide-in drawer pattern used
- * for the storefront's mobile nav below that — a full-screen overlay isn't
- * warranted once there's room for a permanent one, but it's still the right
- * call on a phone.
+ * Shared shell for the admin, supplier, and rider portals: a persistent dark
+ * indigo-gradient sidebar on desktop (lg: and up) and the same slide-in
+ * drawer pattern used for the storefront's mobile nav below that.
+ *
+ * `contextCard` replaces what used to be a fixed eyebrow+identityLine pair —
+ * admin/supplier pass a small two-line text card, rider passes a richer
+ * identity card (avatar, shift status). Keeping it a plain ReactNode slot
+ * means this shell doesn't need to know the shape of what each portal wants
+ * to show there.
  */
 export function DashboardShell({
   children,
   navGroups,
-  eyebrow,
-  identityLine,
+  contextCard,
   topBarExtra,
   footer,
   pathname,
 }: {
   children: ReactNode;
   navGroups: NavGroup[];
-  eyebrow: string;
-  identityLine?: string;
+  contextCard: ReactNode;
   topBarExtra?: ReactNode;
   footer?: ReactNode;
   pathname: string;
@@ -100,25 +158,15 @@ export function DashboardShell({
   }, [open]);
 
   return (
-    <div className="bg-mist text-charcoal lg:flex lg:min-h-screen">
-      <aside className="hidden shrink-0 border-r border-line bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col">
-        <div className="border-b border-line px-5 py-4">
-          <Link href="/" className="inline-flex">
-            <AmgLogo className="h-7 w-auto" />
-          </Link>
-        </div>
-        <div className="px-5 pt-4">
-          <p className="text-xs uppercase tracking-wide text-ink-soft">{eyebrow}</p>
-          {identityLine && <p className="mt-1 text-sm text-ink-soft">{identityLine}</p>}
-        </div>
-        <nav className="mt-4 flex flex-1 flex-col gap-5 overflow-y-auto px-3 pb-4">
-          <NavLinks navGroups={navGroups} pathname={pathname} />
-        </nav>
-        {footer && <div className="border-t border-line px-3 py-4">{footer}</div>}
+    <div className="bg-canvas text-ink lg:flex lg:min-h-screen">
+      <aside
+        className="hidden shrink-0 bg-[linear-gradient(180deg,#141768_0%,#1d1c6e_45%,#332d78_100%)] pt-6 text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-[236px] lg:flex-col"
+      >
+        <SidebarContent navGroups={navGroups} contextCard={contextCard} footer={footer} pathname={pathname} />
       </aside>
 
       <div className="min-w-0 lg:flex-1">
-        <div className="sticky top-0 z-30 border-b border-line bg-mist">
+        <div className="sticky top-0 z-30 border-b border-card-border bg-canvas">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <div className="flex items-center gap-3">
               <button
@@ -127,7 +175,7 @@ export function DashboardShell({
                 aria-label="Open menu"
                 aria-expanded={open}
                 aria-controls="dashboard-drawer"
-                className="inline-flex items-center justify-center text-forest lg:hidden"
+                className="inline-flex items-center justify-center text-ink lg:hidden"
               >
                 <MenuIcon />
               </button>
@@ -157,34 +205,27 @@ export function DashboardShell({
           role="dialog"
           aria-modal="true"
           aria-label="Navigation"
-          className={`absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col overflow-y-auto bg-mist text-charcoal shadow-xl transition-transform duration-300 ease-out ${
+          className={`absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col overflow-y-auto bg-[linear-gradient(180deg,#141768_0%,#1d1c6e_45%,#332d78_100%)] pt-6 text-white shadow-xl transition-transform duration-300 ease-out ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="flex items-center justify-between gap-2 border-b border-line px-5 py-4">
-            <Link href="/" className="inline-flex">
-              <AmgLogo className="h-7 w-auto" />
-            </Link>
+          <div className="mb-2 flex items-center justify-end px-[22px]">
             <button
               type="button"
               onClick={closeDrawer}
               aria-label="Close menu"
-              className="inline-flex items-center justify-center p-1 text-forest"
+              className="inline-flex items-center justify-center rounded-lg bg-white/[0.08] p-1.5 text-white"
             >
               <CloseIcon />
             </button>
           </div>
-
-          <div className="px-5 pt-4">
-            <p className="text-xs uppercase tracking-wide text-ink-soft">{eyebrow}</p>
-            {identityLine && <p className="mt-1 text-sm text-ink-soft">{identityLine}</p>}
-          </div>
-
-          <nav className="mt-4 flex flex-1 flex-col gap-5 px-3 pb-4">
-            <NavLinks navGroups={navGroups} pathname={pathname} onLinkClick={closeDrawer} />
-          </nav>
-
-          {footer && <div className="border-t border-line px-3 py-4">{footer}</div>}
+          <SidebarContent
+            navGroups={navGroups}
+            contextCard={contextCard}
+            footer={footer}
+            pathname={pathname}
+            onLinkClick={closeDrawer}
+          />
         </div>
       </div>
     </div>
@@ -201,7 +242,7 @@ function MenuIcon() {
 
 function CloseIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
       <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
     </svg>
   );

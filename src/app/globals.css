@@ -16,6 +16,36 @@
   --line: #dbe1ea;
   --background: var(--mist);
   --foreground: var(--charcoal);
+
+  /* Design-handoff refresh (admin/supplier/rider dashboards) — additive,
+     the tokens above stay in use everywhere this hasn't landed yet. */
+  --indigo-deep: #141768;
+  --indigo: #1d1c6e;
+  --indigo-light: #332d78;
+  --indigo-border: #3b3789;
+  --canvas: #eef0f4;
+  --card-border: #e2e5ec;
+  --subtle-fill: #f7f8fa;
+  --divider: #eceef3;
+  --chip-fill: #f0f2f6;
+  --ink: #141c2e;
+  --ink-body: #3d465a;
+  --ink-secondary: #5d6678;
+  --ink-muted: #6b7488;
+  --ink-faint: #8a93a5;
+  --accent: #e5581f;
+  --accent-hover: #c94a15;
+  --accent-tint: #fdece3;
+  --success: #1f9d6a;
+  --success-on-dark: #4fd39b;
+  --success-tint: #e2f4ea;
+  --warning: #d9a01f;
+  --warning-tint: #fdf3d7;
+  --warning-ink: #8a6410;
+  --danger: #a52020;
+  --danger-tint: #fbe4e4;
+  --info-bg: #e8ecf5;
+  --info-fg: #2c3550;
   /* Keep native form controls light — OS dark mode + Tailwind
      preflight (transparent select bg) otherwise flashes black.
      Also set early via <meta>/<style> in layout.tsx. */
@@ -39,6 +69,43 @@
   --color-line: var(--line);
   --font-sans: var(--font-work-sans);
   --font-display: var(--font-fraunces);
+
+  --color-indigo-deep: var(--indigo-deep);
+  --color-indigo: var(--indigo);
+  --color-indigo-light: var(--indigo-light);
+  --color-indigo-border: var(--indigo-border);
+  --color-canvas: var(--canvas);
+  --color-card-border: var(--card-border);
+  --color-subtle-fill: var(--subtle-fill);
+  --color-divider: var(--divider);
+  --color-chip-fill: var(--chip-fill);
+  --color-ink: var(--ink);
+  --color-ink-body: var(--ink-body);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-tint: var(--accent-tint);
+  --color-success: var(--success);
+  --color-success-on-dark: var(--success-on-dark);
+  --color-success-tint: var(--success-tint);
+  --color-warning: var(--warning);
+  --color-warning-tint: var(--warning-tint);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+  --font-display-serif: var(--font-source-serif);
+  --font-dm: var(--font-dm-sans);
+  --font-mono: var(--font-dm-mono);
+}
+
+.font-display-serif {
+  font-family: var(--font-source-serif), Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 /*

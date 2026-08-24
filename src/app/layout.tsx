@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Work_Sans } from "next/font/google";
+import { DM_Mono, DM_Sans, Fraunces, Source_Serif_4, Work_Sans } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider } from "@/lib/cart";
 import { PwaManager } from "@/components/pwa/PwaManager";
@@ -19,15 +19,33 @@ const fraunces = Fraunces({
   weight: ["500", "600", "700", "900"],
 });
 
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
+
+const dmMono = DM_Mono({
+  variable: "--font-dm-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
 export const metadata: Metadata = {
-  title: "AMG Stores — Kenya's Nationwide Marketplace",
+  title: "AMG Online Store — Kenya's Nationwide Marketplace",
   description:
     "Shop electronics, appliances, farm produce, hardware and more. Nationwide delivery across Nairobi, Mombasa, Kisumu, Homa Bay and beyond.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "AMG Stores",
+    title: "AMG Online Store",
   },
   icons: {
     icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
@@ -57,7 +75,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${workSans.variable} ${fraunces.variable} h-full`}
+      className={`${workSans.variable} ${fraunces.variable} ${sourceSerif.variable} ${dmSans.variable} ${dmMono.variable} h-full`}
       style={{ colorScheme: "light" }}
     >
       <head>
