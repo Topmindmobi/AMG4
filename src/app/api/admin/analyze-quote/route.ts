@@ -1,11 +1,29 @@
 import { NextResponse } from "next/server";
 import type { QuoteMarketAnalysis } from "@/lib/types";
+import { requireAdminSession } from "@/lib/supabase/route-auth";
 
 /**
  * Optional AI narrative on top of heuristic quote market analysis.
  * Without OPENAI_API_KEY, returns the heuristic summary unchanged.
+ *
+ * Admin-only: this lives under /api/admin/ and spends OPENAI_API_KEY credits
+ * on every call, but had no auth check at all. NOTE — src/app/quote/page.tsx
+ * (the public buyer-facing quote form) also calls this today, but only in
+ * its isDemoMode() branch; its caller (src/lib/quote-ai.ts) already treats a
+ * non-ok response as "fall back to the heuristic summary" (`if (!res.ok)
+ * return heuristic`), so locking this down doesn't break that page — it
+ * just means demo-mode buyers see the heuristic-only summary instead of an
+ * AI-refined one for their own quote preview, while admins reviewing the
+ * same quote later in /admin/quotes still get the full AI narrative. Real
+ * (non-demo) checkout never called this endpoint from that page to begin
+ * with.
  */
 export async function POST(req: Request) {
+  const admin = await requireAdminSession();
+  if (!admin) {
+    return NextResponse.json({ error: "Not authorized" }, { status: 401 });
+  }
+
   let body: {
     quoteId?: string;
     customerName?: string;
@@ -50,7 +68,7 @@ export async function POST(req: Request) {
           {
             role: "system",
             content:
-              "You advise AMG Stores (Kenya marketplace) when a buyer quote may not use the best supplier prices. Be direct. If has_better_prices is true, tell AMG which lines look overpriced and recommend reviewing suppliers. If false, say prices look competitive. Reply JSON: {\"summary\":\"3-5 sentences for AMG ops\",\"has_better_prices\":boolean}.",
+              "You advise AMG Online Store (Kenya marketplace) when a buyer quote may not use the best supplier prices. Be direct. If has_better_prices is true, tell AMG which lines look overpriced and recommend reviewing suppliers. If false, say prices look competitive. Reply JSON: {\"summary\":\"3-5 sentences for AMG ops\",\"has_better_prices\":boolean}.",
           },
           {
             role: "user",

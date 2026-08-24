@@ -1,5 +1,5 @@
 export type PayNowResult =
-  | { paid: true; simulated: boolean; message?: string }
+  | { paid: true; simulated: boolean; message?: string; checkoutRequestId: string }
   | { paid: false; simulated: boolean; error: string };
 
 /**
@@ -32,7 +32,12 @@ export async function payNowWithMpesa(input: {
     }
 
     if (data.status === "paid") {
-      return { paid: true, simulated: Boolean(data.simulated), message: data.message };
+      return {
+        paid: true,
+        simulated: Boolean(data.simulated),
+        message: data.message,
+        checkoutRequestId: data.checkoutRequestId ?? "",
+      };
     }
 
     // Real STK push in flight — poll for the buyer's phone confirmation.
@@ -46,7 +51,7 @@ export async function payNowWithMpesa(input: {
           status?: string;
           reason?: string;
         };
-        if (pollData.status === "paid") return { paid: true, simulated: false };
+        if (pollData.status === "paid") return { paid: true, simulated: false, checkoutRequestId: id };
         if (pollData.status === "failed") {
           return { paid: false, simulated: false, error: pollData.reason || "Payment declined" };
         }

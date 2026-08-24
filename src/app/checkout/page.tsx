@@ -17,9 +17,9 @@ import {
 } from "@/lib/order-confirmation";
 import { isDemoMode } from "@/lib/supabase/config";
 import { getErrorMessage } from "@/lib/supabase/errors";
-import { submitOrder } from "@/lib/offline/order-queue";
+import { submitOrder, type PlaceOrderInput } from "@/lib/offline/order-queue";
 import { createDemoOrder, ensureDemoCustomerAccount } from "@/lib/store/demo-store";
-import type { DeliveryMethod, DropoffPoint, PaymentMethod, Town } from "@/lib/types";
+import type { DeliveryMethod, DropoffPoint, OrderItem, PaymentMethod, Town } from "@/lib/types";
 import type { EnsureCustomerAccountResult } from "@/lib/auth/ensure-customer-account";
 
 type PayState = "idle" | "processing" | "paid" | "failed";
@@ -39,6 +39,7 @@ export default function CheckoutPage() {
   const [mpesaPhone, setMpesaPhone] = useState(user?.phone ?? "");
   const [payState, setPayState] = useState<PayState>("idle");
   const [payMessage, setPayMessage] = useState<string | null>(null);
+  const [paymentToken, setPaymentToken] = useState<string | null>(null);
 
   const needsAuthChoice = !authLoading && !user && !guestCheckout;
 
@@ -58,6 +59,7 @@ export default function CheckoutPage() {
     setPayment(method);
     setPayState("idle");
     setPayMessage(null);
+    setPaymentToken(null);
   }
 
   const paid = payment === "mpesa" && payState === "paid";
@@ -79,6 +81,7 @@ export default function CheckoutPage() {
   async function payNow() {
     setPayState("processing");
     setPayMessage(null);
+    setPaymentToken(null);
     const result = await payNowWithMpesa({
       phone: mpesaPhone,
       amountKes: total,
@@ -86,6 +89,7 @@ export default function CheckoutPage() {
     });
     if (result.paid) {
       setPayState("paid");
+      setPaymentToken(result.checkoutRequestId || null);
       setPayMessage(
         result.simulated
           ? "Payment confirmed (simulated — M-Pesa isn't connected in this environment)."
@@ -199,15 +203,18 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Client-generated id + insert without RETURNING avoids RLS failure:
-      // SELECT policies block guest rows (user_id null), and INSERT…RETURNING
-      // requires the new row to pass SELECT as well. Same shape is reused as
-      // the offline-queue payload when the device has no connectivity.
+      // Client-generated id: doubles as place_order()'s idempotency key, so
+      // a retried offline-queue submission after a lost response can't
+      // double-insert (see supabase/migrations/019_place_order_rpc.sql and
+      // src/lib/offline/order-queue.ts). Pricing/totals are computed
+      // server-side inside that RPC from the real products table — this
+      // component no longer sends price_kes, a total, or a paid boolean for
+      // the order to be created with (paid is always inserted false; see
+      // the confirm-order-payment call below for how a completed M-Pesa
+      // pay-now actually gets recorded).
       const orderId = crypto.randomUUID();
-      const createdAt = new Date().toISOString();
-      const discount_kes = paid ? Math.round(total * PAY_NOW_DISCOUNT_RATE) : 0;
 
-      const orderRow = {
+      const orderInput: PlaceOrderInput = {
         id: orderId,
         user_id: payload.user_id,
         customer_name: payload.customer_name,
@@ -217,62 +224,101 @@ export default function CheckoutPage() {
         address: payload.address,
         payment_method: payload.payment_method,
         mpesa_phone: payload.mpesa_phone,
-        paid: payload.paid,
-        paid_at: payload.paid ? createdAt : null,
-        subtotal_kes: total,
-        discount_kes,
         delivery_method: payload.delivery_method,
         dropoff_point_id: payload.dropoff_point_id,
         dropoff_point_name: dropoff?.name ?? null,
-        status: "pending",
-        total_kes: total - discount_kes,
+        items: payload.items.map((i) => ({ productId: i.productId, qty: i.qty })),
       };
 
-      const lineItems = payload.items.map((i) => ({
-        id: crypto.randomUUID(),
-        order_id: orderId,
-        product_id: i.productId,
-        name_snapshot: i.name,
-        price_kes: i.price_kes,
-        qty: i.qty,
-      }));
+      const result = await submitOrder(orderInput);
 
-      const { queued } = await submitOrder(orderRow, lineItems);
+      if (!result.queued) {
+        // Authoritative row straight from place_order() — real server-side
+        // prices/totals, paid always false at this point.
+        stashOrderConfirmation(result.order as unknown as PlacedOrderSnapshot);
 
-      const snapshot: PlacedOrderSnapshot = {
-        id: orderId,
-        user_id: payload.user_id,
-        customer_name: payload.customer_name,
-        phone: payload.phone,
-        email: payload.email,
-        town: payload.town,
-        address: payload.address,
-        payment_method: payload.payment_method,
-        mpesa_phone: payload.mpesa_phone,
-        paid: payload.paid,
-        paid_at: payload.paid ? createdAt : null,
-        subtotal_kes: total,
-        discount_kes,
-        delivery_method: payload.delivery_method,
-        dropoff_point_id: payload.dropoff_point_id,
-        dropoff_point_name: dropoff?.name ?? null,
-        rider_id: null,
-        rider_name_snapshot: null,
-        delivered_at: null,
-        status: "pending",
-        total_kes: total - discount_kes,
-        created_at: createdAt,
-        items: lineItems.map((i) => ({
-          ...i,
-          supplier_id: null,
-          supplier_name_snapshot: null,
-        })),
-      };
-      stashOrderConfirmation(snapshot);
+        if (payment === "mpesa" && paid && paymentToken) {
+          try {
+            const confirmRes = await fetch("/api/mpesa/confirm-order-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderId, checkoutRequestId: paymentToken }),
+            });
+            const confirmData = (await confirmRes.json()) as {
+              ok: boolean;
+              paid?: boolean;
+              paid_at?: string;
+              discount_kes?: number;
+              total_kes?: number;
+            };
+            if (confirmData.ok && confirmData.paid) {
+              // Guests aren't signed into the account silently created for
+              // them, so the confirmation page's live re-fetch (gated to the
+              // order owner or an admin) won't pick up this update for them —
+              // refresh the stashed snapshot in place so they still see
+              // "paid" immediately.
+              stashOrderConfirmation({
+                ...(result.order as unknown as PlacedOrderSnapshot),
+                paid: true,
+                paid_at: confirmData.paid_at ?? null,
+                discount_kes: confirmData.discount_kes ?? 0,
+                total_kes: confirmData.total_kes ?? (result.order as { total_kes?: number }).total_kes ?? total,
+              });
+            }
+          } catch {
+            // Soft-fail: the buyer already paid via M-Pesa and the order is
+            // placed; if this confirmation call is lost the order simply
+            // stays "unpaid" until an admin reconciles it against the
+            // M-Pesa transaction — it never blocks checkout completion.
+          }
+        }
+      } else {
+        // Offline: no server-confirmed row yet (order-queue.ts replays
+        // place_order() once connectivity returns). Stash a best-effort
+        // local estimate so the confirmation page has something to show in
+        // the meantime; paid is always shown false here since real payment
+        // confirmation only happens once the order exists server-side.
+        const estimate: PlacedOrderSnapshot = {
+          id: orderId,
+          user_id: payload.user_id,
+          customer_name: payload.customer_name,
+          phone: payload.phone,
+          email: payload.email,
+          town: payload.town,
+          address: payload.address,
+          payment_method: payload.payment_method,
+          mpesa_phone: payload.mpesa_phone,
+          paid: false,
+          paid_at: null,
+          subtotal_kes: total,
+          discount_kes: 0,
+          delivery_method: payload.delivery_method,
+          dropoff_point_id: payload.dropoff_point_id,
+          dropoff_point_name: dropoff?.name ?? null,
+          rider_id: null,
+          rider_name_snapshot: null,
+          delivered_at: null,
+          status: "pending",
+          total_kes: total,
+          created_at: new Date().toISOString(),
+          items: payload.items.map((i) => ({
+            id: crypto.randomUUID(),
+            order_id: orderId,
+            product_id: i.productId,
+            name_snapshot: i.name,
+            price_kes: i.price_kes,
+            qty: i.qty,
+            supplier_id: null,
+            supplier_name_snapshot: null,
+          })) as OrderItem[],
+        };
+        stashOrderConfirmation(estimate);
+      }
+
       if (accountNotice) stashAccountCreatedNotice(orderId, accountNotice);
 
       clear();
-      router.push(queued ? `/order/${orderId}?queued=1` : `/order/${orderId}`);
+      router.push(result.queued ? `/order/${orderId}?queued=1` : `/order/${orderId}`);
     } catch (err) {
       setError(getErrorMessage(err, "Could not place order"));
     } finally {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { addSubscriptionMemory } from "@/lib/push/store";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { requireSession } from "@/lib/supabase/route-auth";
 
 export const runtime = "nodejs";
 
@@ -27,10 +28,19 @@ export async function POST(request: Request) {
   }
 
   if (isSupabaseConfigured()) {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const { error } = await supabase.from("push_subscriptions").upsert({
-      user_id: userId,
+    // Derive the owner from the caller's real session instead of trusting the
+    // client-supplied userId — previously a caller could register their own
+    // device under someone else's userId, redirecting that user's future push
+    // notifications. (In practice push_subscriptions' RLS `with check
+    // (auth.uid() = user_id)` already blocked the cross-user write at the DB
+    // layer for any real session — this makes the intent explicit and turns a
+    // silent RLS denial into a clear 401 for an unauthenticated caller.)
+    const session = await requireSession();
+    if (!session) {
+      return NextResponse.json({ ok: false, error: "Not signed in" }, { status: 401 });
+    }
+    const { error } = await session.server.from("push_subscriptions").upsert({
+      user_id: session.userId,
       endpoint,
       p256dh: keys.p256dh,
       auth: keys.auth,
@@ -41,6 +51,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  // Demo mode (Supabase not configured): purely an ephemeral, per-process,
+  // in-memory store with no real user data or RLS behind it — not the
+  // vulnerability described in the audit, left as-is.
   addSubscriptionMemory({
     user_id: userId,
     endpoint,

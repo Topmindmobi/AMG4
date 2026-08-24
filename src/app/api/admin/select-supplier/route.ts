@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminSession } from "@/lib/supabase/route-auth";
 
 type ScorecardIn = {
   supplierId: string;
@@ -17,6 +18,11 @@ type ScorecardIn = {
  * Without OPENAI_API_KEY, returns the top local value-for-money supplier.
  */
 export async function POST(req: Request) {
+  const admin = await requireAdminSession();
+  if (!admin) {
+    return NextResponse.json({ error: "Not authorized" }, { status: 401 });
+  }
+
   let body: {
     orderId?: string;
     customerTown?: string;
