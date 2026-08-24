@@ -1,4 +1,14 @@
-import type { Category, Order, Product, Profile, Supplier, Town } from "./types";
+import type {
+  Category,
+  DropoffPoint,
+  Order,
+  Product,
+  Profile,
+  Rider,
+  Supplier,
+  SupplierAddress,
+  Town,
+} from "./types";
 
 const now = "2026-07-01T10:00:00.000Z";
 
@@ -9,6 +19,7 @@ export const DEMO_ADMIN: Profile = {
   role: "admin",
   town: "Homabay",
   supplier_id: null,
+  rider_id: null,
   created_at: now,
 };
 
@@ -19,6 +30,7 @@ export const DEMO_CUSTOMER: Profile = {
   role: "customer",
   town: "Mbita",
   supplier_id: null,
+  rider_id: null,
   created_at: now,
 };
 
@@ -30,6 +42,7 @@ export const DEMO_SUPPLIER_USERS: Profile[] = [
     role: "supplier",
     town: "Homabay",
     supplier_id: "sup-1",
+    rider_id: null,
     created_at: now,
   },
   {
@@ -39,6 +52,7 @@ export const DEMO_SUPPLIER_USERS: Profile[] = [
     role: "supplier",
     town: "Mbita",
     supplier_id: "sup-2",
+    rider_id: null,
     created_at: now,
   },
   {
@@ -48,7 +62,110 @@ export const DEMO_SUPPLIER_USERS: Profile[] = [
     role: "supplier",
     town: "Migori",
     supplier_id: "sup-3",
+    rider_id: null,
     created_at: now,
+  },
+];
+
+export const DEMO_RIDERS: Rider[] = [
+  {
+    id: "rider-1",
+    name: "Brian Otieno",
+    phone: "0733001100",
+    town: "Homabay",
+    vehicle: "boda",
+    active: true,
+    created_at: now,
+  },
+  {
+    id: "rider-2",
+    name: "Faith Anyango",
+    phone: "0733002200",
+    town: "Mbita",
+    vehicle: "van",
+    active: true,
+    created_at: now,
+  },
+  {
+    id: "rider-3",
+    name: "Kevin Omondi",
+    phone: "0733003300",
+    town: "Migori",
+    vehicle: "truck",
+    active: true,
+    created_at: now,
+  },
+];
+
+export const DEMO_RIDER_USERS: Profile[] = [
+  {
+    id: "demo-rider-1",
+    full_name: "Brian Otieno",
+    phone: "0733001100",
+    role: "rider",
+    town: "Homabay",
+    supplier_id: null,
+    rider_id: "rider-1",
+    created_at: now,
+  },
+  {
+    id: "demo-rider-2",
+    full_name: "Faith Anyango",
+    phone: "0733002200",
+    role: "rider",
+    town: "Mbita",
+    supplier_id: null,
+    rider_id: "rider-2",
+    created_at: now,
+  },
+  {
+    id: "demo-rider-3",
+    full_name: "Kevin Omondi",
+    phone: "0733003300",
+    role: "rider",
+    town: "Migori",
+    supplier_id: null,
+    rider_id: "rider-3",
+    created_at: now,
+  },
+];
+
+export const DEMO_DROPOFF_POINTS: DropoffPoint[] = [
+  {
+    id: "drop-homabay-1",
+    town: "Homabay",
+    name: "AMG Hub — Arujo Road",
+    description: "Next to Arujo Road matatu stage, opposite Equity Bank.",
+  },
+  {
+    id: "drop-homabay-2",
+    town: "Homabay",
+    name: "Homabay Bus Park Kiosk",
+    description: "AMG collection kiosk at the main bus park.",
+  },
+  {
+    id: "drop-mbita-1",
+    town: "Mbita",
+    name: "Mbita Pier Market Stall",
+    description: "Market stall row near the ferry pier.",
+  },
+  {
+    id: "drop-mbita-2",
+    town: "Mbita",
+    name: "Mbita Town Square Kiosk",
+    description: "Beside the town square boda stage.",
+  },
+  {
+    id: "drop-migori-1",
+    town: "Migori",
+    name: "Migori Hardware Row",
+    description: "Hardware Row, near Migori Hardware Hub.",
+  },
+  {
+    id: "drop-migori-2",
+    town: "Migori",
+    name: "Migori Bus Terminal Kiosk",
+    description: "AMG collection kiosk at the bus terminal.",
   },
 ];
 
@@ -75,6 +192,52 @@ export const DEMO_SUPPLIERS: Supplier[] = [
     contact_phone: "0722003300",
     town: "Migori",
     notes: "Cement, iron sheets, paints",
+    created_at: now,
+  },
+];
+
+/** Seed origin addresses (manual + map pins) for distance / transport ranking. */
+export const DEMO_SUPPLIER_ADDRESSES: SupplierAddress[] = [
+  {
+    id: "saddr-1",
+    supplier_id: "sup-1",
+    label: "shop",
+    name: "Lakeview shop — Arujo",
+    town: "Homabay",
+    line1: "Arujo Road, next to Equity Bank",
+    phone: "0722001100",
+    maps_url: "https://www.google.com/maps?q=-0.5301,34.4612",
+    lat: -0.5301,
+    lng: 34.4612,
+    is_default: true,
+    created_at: now,
+  },
+  {
+    id: "saddr-2",
+    supplier_id: "sup-2",
+    label: "warehouse",
+    name: "Ruma packing shed",
+    town: "Mbita",
+    line1: "Near Mbita Pier market, packing shed gate B",
+    phone: "0722002200",
+    maps_url: "https://www.google.com/maps?q=-0.4258,34.2089",
+    lat: -0.4258,
+    lng: 34.2089,
+    is_default: true,
+    created_at: now,
+  },
+  {
+    id: "saddr-3",
+    supplier_id: "sup-3",
+    label: "warehouse",
+    name: "Hardware Row yard",
+    town: "Migori",
+    line1: "Hardware Row, behind Migori Hardware Hub",
+    phone: "0722003300",
+    maps_url: "https://www.google.com/maps?q=-1.0682,34.4785",
+    lat: -1.0682,
+    lng: 34.4785,
+    is_default: true,
     created_at: now,
   },
 ];
@@ -140,14 +303,14 @@ export const DEMO_PRODUCTS: Product[] = [
     "prod-1", "cat-laptops", "sup-1",
     "HP 15 Laptop 8GB/256GB", "hp-15-laptop",
     "Everyday laptop for school, office work, and browsing.",
-    "The HP 15 is a dependable laptop for students and small businesses around Homabay and Mbita. It comes with 8GB RAM and a 256GB SSD for fast boot times, a full-size keyboard for typing notes or reports, and Wi‑Fi for online classes or M‑Pesa business tools. Ideal for Word, Excel, Zoom, and light design. Local warranty support available through AMG.COM partner shops. Delivery by motorcycle within pilot towns.",
+    "The HP 15 is a dependable laptop for students and small businesses around Homabay and Mbita. It comes with 8GB RAM and a 256GB SSD for fast boot times, a full-size keyboard for typing notes or reports, and Wi‑Fi for online classes or M‑Pesa business tools. Ideal for Word, Excel, Zoom, and light design. Local warranty support available through AMG Online Store partner shops. Delivery by motorcycle within pilot towns.",
     52000, 12, ["Homabay", "Mbita"],
   ),
   p(
     "prod-2", "cat-laptops", "sup-1",
     "Wireless Mouse & Keyboard Combo", "wireless-mouse-keyboard",
     "Plug-and-play USB combo for desktops and laptops.",
-    "This wireless mouse and keyboard set uses a single USB dongle, so you avoid cable clutter on shop counters or home desks. Soft keys reduce typing noise, and the mouse fits either hand. Compatible with Windows and most Linux setups. Batteries included. Perfect add-on when buying a laptop from AMG.COM or upgrading an older PC.",
+    "This wireless mouse and keyboard set uses a single USB dongle, so you avoid cable clutter on shop counters or home desks. Soft keys reduce typing noise, and the mouse fits either hand. Compatible with Windows and most Linux setups. Batteries included. Perfect add-on when buying a laptop from AMG Online Store or upgrading an older PC.",
     2500, 40, ["Homabay", "Mbita", "Migori"],
   ),
   p(
@@ -280,7 +443,7 @@ export const DEMO_PRODUCTS: Product[] = [
     "prod-21", "cat-sport", null,
     "Football Size 5", "football-size-5",
     "Size 5 match ball for training and school games.",
-    "Official size 5 football for academies, schools, and estate matches. Durable outer for dusty pitches. Pump separately if needed. Encourages youth sports across Homabay, Mbita, and Migori. Bulk pricing for clubs—contact AMG.COM after order.",
+    "Official size 5 football for academies, schools, and estate matches. Durable outer for dusty pitches. Pump separately if needed. Encourages youth sports across Homabay, Mbita, and Migori. Bulk pricing for clubs—contact AMG Online Store after order.",
     1500, 30, ["Homabay", "Mbita", "Migori"],
   ),
   p(
@@ -346,7 +509,68 @@ export const DEMO_PRODUCTS: Product[] = [
     "Refresh walls with 4L white emulsion paint for interior rooms. Good coverage on plastered surfaces. Stir well; apply with roller or brush. Allow drying between coats. Clean tools with water while wet. Homabay and Migori stock.",
     1800, 35, ["Homabay", "Migori"],
   ),
-];
+  p(
+    "prod-31", "cat-hardware", "sup-3",
+    "Steel Nails 1kg (Assorted)", "steel-nails-1kg",
+    "1kg mixed steel nails for timber and roofing work.",
+    "Assorted steel nails covering common sizes for timber framing, formwork, and general repairs. Sold by the kilo. Store dry to avoid rust. A basic stock item for any building-materials order alongside cement and timber.",
+    250, 150, ["Homabay", "Mbita", "Migori"],
+  ),
+  p(
+    "prod-32", "cat-hardware", "sup-3",
+    "River Sand (Ton)", "river-sand-ton",
+    "One ton of river sand for concrete and plastering.",
+    "Clean river sand sold per ton for concrete mixing, plastering, and blockwork. Delivery is arranged separately from motorcycle routes due to weight — AMG confirms a truck drop-off window after order. Available across all three pilot towns.",
+    3500, 40, ["Homabay", "Mbita", "Migori"],
+  ),
+  p(
+    "prod-33", "cat-hardware", "sup-3",
+    "Ballast (Ton)", "ballast-ton",
+    "One ton of crushed stone ballast for foundations.",
+    "Crushed stone ballast sold per ton, used for foundations and concrete works. Heavy item — truck delivery arranged after order confirmation, same as sand and cement bulk orders. Migori and Homabay stock, deliverable to Mbita on request.",
+    4200, 30, ["Homabay", "Migori"],
+  ),
+  p(
+    "prod-34", "cat-hardware", "sup-3",
+    "Timber 2x3 (12ft)", "timber-2x3-12ft",
+    "12ft sawn timber, 2x3 inch, for framing and roofing.",
+    "Sawn 2x3 inch timber, 12 feet long, for roof trusses, formwork, and general construction framing. Check straightness on delivery. Sold per piece — order the quantity your fundi recommends for your roof size.",
+    450, 200, ["Homabay", "Mbita", "Migori"],
+  ),
+  p(
+    "prod-35", "cat-hardware", "sup-3",
+    "PVC Water Pipe 1\" (3m)", "pvc-pipe-1-inch-3m",
+    "3m PVC pressure pipe, 1 inch, for water plumbing.",
+    "1-inch PVC pressure pipe, 3 metres, for household water supply lines. Pair with matching fittings and solvent cement (ask AMG for a fundi contact if needed). Sold per length.",
+    650, 120, ["Homabay", "Migori"],
+  ),
+  p(
+    "prod-36", "cat-hardware", "sup-3",
+    "Electrical Wire 2.5mm (100m Roll)", "electrical-wire-2-5mm-100m",
+    "100m roll of 2.5mm² copper electrical cable.",
+    "2.5mm² single-core copper cable, 100m roll, for household electrical wiring (sockets and lighting circuits). Confirm colour (live/neutral/earth) needed. Have a qualified electrician handle installation.",
+    6800, 25, ["Homabay", "Mbita", "Migori"],
+  ),
+].map((product) =>
+  // No standalone product photos shot for these newer hardware SKUs yet —
+  // reuse the Cement 50kg jobsite photo set rather than ship a broken image.
+  ["prod-31", "prod-32", "prod-33", "prod-34", "prod-35", "prod-36"].includes(product.id)
+    ? {
+        ...product,
+        image_path: "/products/cement-50kg.jpg",
+        gallery: ["/products/cement-50kg-2.jpg", "/products/cement-50kg-3.jpg", "/products/cement-50kg-4.jpg"],
+      }
+    : product,
+);
+
+const TOWN_RIDER: Record<Town, { id: string; name: string }> = {
+  Nairobi: { id: "rider-4", name: "Peter Kamau" },
+  Mombasa: { id: "rider-5", name: "Amina Salim" },
+  Kisumu: { id: "rider-6", name: "Dennis Owino" },
+  Homabay: { id: "rider-1", name: "Brian Otieno" },
+  Mbita: { id: "rider-2", name: "Faith Anyango" },
+  Migori: { id: "rider-3", name: "Kevin Omondi" },
+};
 
 function demoOrder(
   id: string,
@@ -364,12 +588,23 @@ function demoOrder(
     supplier_id: string | null;
     supplier_name_snapshot: string | null;
   }[],
+  deliveryMethod: Order["delivery_method"] = "doorstep",
 ): Order {
   const items = lines.map((line, i) => ({
     id: `${id}-i${i}`,
     order_id: id,
     ...line,
   }));
+  const subtotal_kes = items.reduce((s, i) => s + i.price_kes * i.qty, 0);
+  // Seed history assumes M-Pesa orders paid online upfront (auto discount);
+  // COD orders pay the courier on arrival, so no discount applies.
+  const paid = payment_method === "mpesa" && status !== "cancelled";
+  const discount_kes = paid ? Math.round(subtotal_kes * 0.05) : 0;
+  const dispatched =
+    status === "out_for_delivery" || status === "delivered";
+  const dropoff =
+    deliveryMethod === "dropoff" ? DEMO_DROPOFF_POINTS.find((d) => d.town === town) : null;
+
   return {
     id,
     user_id: "demo-customer",
@@ -379,8 +614,18 @@ function demoOrder(
     address: `${town} delivery point`,
     payment_method,
     mpesa_phone: payment_method === "mpesa" ? phone : null,
+    paid,
+    paid_at: paid ? created_at : null,
+    subtotal_kes,
+    discount_kes,
+    delivery_method: deliveryMethod,
+    dropoff_point_id: dropoff?.id ?? null,
+    dropoff_point_name: dropoff?.name ?? null,
+    rider_id: dispatched ? TOWN_RIDER[town].id : null,
+    rider_name_snapshot: dispatched ? TOWN_RIDER[town].name : null,
+    delivered_at: status === "delivered" ? created_at : null,
     status,
-    total_kes: items.reduce((s, i) => s + i.price_kes * i.qty, 0),
+    total_kes: subtotal_kes - discount_kes,
     created_at,
     buyer_notified_at:
       status === "confirmed" ||
@@ -446,6 +691,7 @@ export const DEMO_ORDERS: Order[] = [
         supplier_name_snapshot: "Migori Hardware Hub",
       },
     ],
+    "dropoff",
   ),
   demoOrder(
     "ord-1003",
@@ -519,6 +765,7 @@ export const DEMO_ORDERS: Order[] = [
         supplier_name_snapshot: null,
       },
     ],
+    "dropoff",
   ),
   demoOrder(
     "ord-1006",

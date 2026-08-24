@@ -1,14 +1,16 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import {
   money,
   ReportBar,
+  ReportExportButton,
   ReportFilters,
   ReportSection,
   ReportStat,
   ReportTable,
   ReportTabs,
+  useReportData,
   useReportRange,
 } from "@/components/admin/reports/ReportUI";
 import { ORDER_STATUS_LABELS } from "@/lib/format";
@@ -16,15 +18,9 @@ import { getSalesReport } from "@/lib/reports-data";
 
 function Body() {
   const range = useReportRange();
-  const [data, setData] = useState<ReturnType<typeof getSalesReport> | null>(
-    null,
-  );
+  const data = useReportData(getSalesReport, range);
 
-  useEffect(() => {
-    setData(getSalesReport(range));
-  }, [range.from, range.to]);
-
-  if (!data) return <p className="mt-8 text-sand/50">Loading…</p>;
+  if (!data) return <p className="mt-8 text-ink-soft">Loading…</p>;
 
   const maxStatus = Math.max(...data.byStatus.map((s) => s.amount), 1);
   const maxTown = Math.max(...data.byTown.map((t) => t.amount), 1);
@@ -64,7 +60,16 @@ function Body() {
         </div>
       </ReportSection>
 
-      <ReportSection title="Top products">
+      <ReportSection
+        title="Top products"
+        action={
+          <ReportExportButton
+            filename="top-products.csv"
+            headers={["Product", "Units sold", "Revenue (KES)"]}
+            rows={data.topProducts.map((p) => [p.name, p.qty, p.revenue])}
+          />
+        }
+      >
         <ReportTable
           headers={["Product", "Units sold", "Revenue"]}
           rows={data.topProducts.map((p) => [
@@ -81,8 +86,8 @@ function Body() {
 export default function SalesReportPage() {
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">Sales report</h1>
-      <p className="mt-2 text-sm text-sand/55">
+      <h1 className="font-display text-3xl text-charcoal">Sales report</h1>
+      <p className="mt-2 text-sm text-ink-soft">
         Orders by status, town performance, and best-selling products.
       </p>
       <Suspense fallback={null}>

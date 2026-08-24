@@ -2,33 +2,46 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Pagination } from "@/components/admin/Pagination";
 import { formatKes } from "@/lib/format";
 import { isDemoMode } from "@/lib/supabase/config";
 import { deleteDemoProduct, getDemoProducts } from "@/lib/store/demo-store";
 import type { Product } from "@/lib/types";
 
+const PRODUCTS_PAGE_SIZE = 25;
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalProducts, setTotalProducts] = useState<number | null>(null);
 
   function load() {
     if (isDemoMode()) {
-      setProducts(getDemoProducts({ activeOnly: false }));
+      void Promise.resolve(getDemoProducts({ activeOnly: false })).then((all) => {
+        setTotalProducts(all.length);
+        setProducts(all.slice(page * PRODUCTS_PAGE_SIZE, page * PRODUCTS_PAGE_SIZE + PRODUCTS_PAGE_SIZE));
+      });
       return;
     }
     void (async () => {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      const { data } = await supabase
+      const from = page * PRODUCTS_PAGE_SIZE;
+      const to = from + PRODUCTS_PAGE_SIZE - 1;
+      const { data, count } = await supabase
         .from("products")
-        .select("*, category:categories(*)")
-        .order("created_at", { ascending: false });
+        .select("*, category:categories(*)", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(from, to);
       setProducts((data as Product[]) ?? []);
+      setTotalProducts(count ?? null);
     })();
   }
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   async function deactivate(id: string) {
     if (!confirm("Deactivate this product?")) return;
@@ -46,7 +59,7 @@ export default function AdminProductsPage() {
   return (
     <div>
       <div className="flex items-center justify-between gap-4">
-        <h1 className="font-display text-3xl text-sand">Products</h1>
+        <h1 className="font-display text-3xl text-charcoal">Products</h1>
         <Link
           href="/admin/products/new"
           className="bg-ember px-4 py-2 text-sm font-semibold text-white"
@@ -56,7 +69,7 @@ export default function AdminProductsPage() {
       </div>
       <div className="mt-8 overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="text-xs uppercase tracking-wide text-sand/45">
+          <thead className="text-xs uppercase tracking-wide text-ink-soft">
             <tr>
               <th className="pb-3 font-medium">Name</th>
               <th className="pb-3 font-medium">Barcode</th>
@@ -66,7 +79,7 @@ export default function AdminProductsPage() {
               <th className="pb-3 font-medium" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-line">
             {products.map((p) => (
               <tr key={p.id}>
                 <td className="py-3">
@@ -74,7 +87,7 @@ export default function AdminProductsPage() {
                     {p.name}
                   </Link>
                 </td>
-                <td className="py-3 font-mono text-xs text-sand/60">
+                <td className="py-3 font-mono text-xs text-ink-soft">
                   {p.barcode || "—"}
                 </td>
                 <td className="py-3">{formatKes(Number(p.price_kes))}</td>
@@ -84,7 +97,7 @@ export default function AdminProductsPage() {
                   <button
                     type="button"
                     onClick={() => void deactivate(p.id)}
-                    className="text-sand/45 hover:text-ember"
+                    className="text-ink-soft hover:text-ember"
                   >
                     Deactivate
                   </button>
@@ -94,6 +107,12 @@ export default function AdminProductsPage() {
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={page}
+        pageSize={PRODUCTS_PAGE_SIZE}
+        count={totalProducts}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

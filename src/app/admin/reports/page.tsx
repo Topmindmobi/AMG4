@@ -1,13 +1,16 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import {
   money,
   ReportBar,
   ReportFilters,
   ReportSection,
+  ReportStackedBar,
   ReportStat,
   ReportTabs,
+  ReportTrendChart,
+  useReportData,
   useReportRange,
 } from "@/components/admin/reports/ReportUI";
 import { ORDER_STATUS_LABELS } from "@/lib/format";
@@ -15,23 +18,16 @@ import { getOverviewReport } from "@/lib/reports-data";
 
 function OverviewBody() {
   const range = useReportRange();
-  const [data, setData] = useState<ReturnType<typeof getOverviewReport> | null>(
-    null,
-  );
-
-  useEffect(() => {
-    setData(getOverviewReport(range));
-  }, [range.from, range.to]);
+  const data = useReportData(getOverviewReport, range);
 
   if (!data) {
-    return <p className="mt-8 text-sand/50">Loading reports…</p>;
+    return <p className="mt-8 text-ink-soft">Loading reports…</p>;
   }
 
   const maxTown = Math.max(
     ...data.sales.byTown.map((t) => t.amount),
     1,
   );
-  const maxPay = Math.max(...data.payments.rows.map((r) => r.amount), 1);
 
   return (
     <>
@@ -66,6 +62,10 @@ function OverviewBody() {
         />
       </div>
 
+      <ReportSection title="Recognized revenue by day">
+        <ReportTrendChart points={data.financial.byDay} />
+      </ReportSection>
+
       <ReportSection title="Sales by town">
         <div className="space-y-3">
           {data.sales.byTown.map((t) => (
@@ -81,17 +81,14 @@ function OverviewBody() {
       </ReportSection>
 
       <ReportSection title="Payment mix">
-        <div className="space-y-3">
-          {data.payments.rows.map((r) => (
-            <ReportBar
-              key={r.method}
-              label={r.label}
-              value={r.amount}
-              max={maxPay}
-              display={`${money(r.amount)} · ${r.share.toFixed(0)}%`}
-            />
-          ))}
-        </div>
+        <ReportStackedBar
+          segments={data.payments.rows.map((r) => ({ label: r.label, value: r.amount }))}
+        />
+        <p className="mt-3 text-xs text-ink-soft">
+          {data.payments.payNow.orders} order(s) paid online (
+          {data.payments.payNow.share.toFixed(0)}%) — {money(data.payments.payNow.discountIssued)} in
+          pay-now discounts issued.
+        </p>
       </ReportSection>
 
       <ReportSection title="Order pipeline">
@@ -99,12 +96,12 @@ function OverviewBody() {
           {Object.entries(data.logistics.pipeline).map(([status, count]) => (
             <div
               key={status}
-              className="border border-white/10 bg-black/20 px-3 py-3"
+              className="border border-line bg-sand px-3 py-3"
             >
-              <p className="text-xs text-sand/45">
+              <p className="text-xs text-ink-soft">
                 {ORDER_STATUS_LABELS[status] || status}
               </p>
-              <p className="mt-1 font-display text-xl text-sand">{count}</p>
+              <p className="mt-1 font-display text-xl text-charcoal">{count}</p>
             </div>
           ))}
         </div>
@@ -116,9 +113,9 @@ function OverviewBody() {
 export default function ReportsOverviewPage() {
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">Reports</h1>
-      <p className="mt-2 text-sm text-sand/55">
-        Financial, sales, product, logistics, and payment analytics for AMG.COM.
+      <h1 className="font-display text-3xl text-charcoal">Reports</h1>
+      <p className="mt-2 text-sm text-ink-soft">
+        Financial, sales, product, logistics, and payment analytics for AMG Online Store.
       </p>
       <Suspense fallback={null}>
         <ReportTabs />

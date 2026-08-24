@@ -1,23 +1,37 @@
-# DigitalOcean App Platform spec for AMG.COM
-# Replace github.repo with your org/repo, then set SECRET values in the DO UI
-# (or via doctl). Do not commit real keys.
+# DigitalOcean App Platform spec for AMG Stores
+# Set SECRET values in the DO UI (or via doctl). Do not commit real keys.
 name: amg-com
 region: fra
 
 services:
   - name: web
     github:
-      repo: Topmindmobi/amg-com
-      branch: main
+      repo: Topmindmobi/AMG4
+      # Deploy this feature branch until it is merged to main.
+      branch: claude/marketplace-feature-expansion
       deploy_on_push: true
     dockerfile_path: Dockerfile
     http_port: 3000
     instance_count: 1
     instance_size_slug: basic-xxs
+    health_check:
+      http_path: /
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 6
     envs:
+      - key: NODE_ENV
+        scope: RUN_TIME
+        value: production
+      - key: NEXT_PUBLIC_SITE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: https://amg-com-2j9zz.ondigitalocean.app
+      # Demo mode runs without Supabase. Set "false" + Supabase secrets for production.
       - key: NEXT_PUBLIC_DEMO_MODE
         scope: RUN_AND_BUILD_TIME
-        value: "false"
+        value: "true"
       - key: NEXT_PUBLIC_SUPABASE_URL
         scope: RUN_AND_BUILD_TIME
         type: SECRET
@@ -36,6 +50,39 @@ services:
       - key: TWILIO_PHONE_NUMBER
         scope: RUN_TIME
         type: SECRET
-      - key: NODE_ENV
+      - key: RESEND_API_KEY
         scope: RUN_TIME
-        value: production
+        type: SECRET
+      - key: EMAIL_FROM
+        scope: RUN_TIME
+        type: SECRET
+      - key: NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: VAPID_PUBLIC_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: VAPID_PRIVATE_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: VAPID_SUBJECT
+        scope: RUN_TIME
+        type: SECRET
+      - key: MPESA_CONSUMER_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: MPESA_CONSUMER_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: MPESA_SHORTCODE
+        scope: RUN_TIME
+        type: SECRET
+      - key: MPESA_PASSKEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: MPESA_CALLBACK_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: MPESA_ENV
+        scope: RUN_TIME
+        value: sandbox

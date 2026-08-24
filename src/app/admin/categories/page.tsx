@@ -11,7 +11,7 @@ export default function AdminCategoriesPage() {
 
   function load() {
     if (isDemoMode()) {
-      setCategories(getDemoCategories());
+      void Promise.resolve(getDemoCategories()).then(setCategories);
       return;
     }
     void (async () => {
@@ -57,17 +57,17 @@ export default function AdminCategoriesPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">Categories</h1>
+      <h1 className="font-display text-3xl text-charcoal">Categories</h1>
       <form onSubmit={onSubmit} className="mt-8 grid max-w-xl gap-3">
         <input
           name="name"
           required
           placeholder="Category name"
-          className="border border-white/15 bg-white/5 px-3 py-2 text-sm"
+          className="border border-line bg-white px-3 py-2 text-sm"
         />
         <select
           name="parent_id"
-          className="border border-white/15 bg-forest-deep px-3 py-2 text-sm"
+          className="amg-select border border-line bg-white px-3 py-2 text-sm text-charcoal"
         >
           <option value="">Top-level category</option>
           {tops.map((c) => (
@@ -80,30 +80,30 @@ export default function AdminCategoriesPage() {
           name="sort_order"
           type="number"
           placeholder="Sort order"
-          className="border border-white/15 bg-white/5 px-3 py-2 text-sm"
+          className="border border-line bg-white px-3 py-2 text-sm"
         />
         <input
           name="description"
           placeholder="Description"
-          className="border border-white/15 bg-white/5 px-3 py-2 text-sm"
+          className="border border-line bg-white px-3 py-2 text-sm"
         />
         <button type="submit" className="bg-ember px-4 py-2 text-sm font-semibold text-white">
           Add category
         </button>
       </form>
 
-      <ul className="mt-10 divide-y divide-white/10 border-y border-white/10">
+      <ul className="mt-10 divide-y divide-line border-y border-line">
         {categories.map((c) => (
           <li key={c.id} className="py-3 text-sm">
             <p className="font-medium">
               {c.name}
               {c.parent_id && (
-                <span className="ml-2 text-xs text-sand/40">
+                <span className="ml-2 text-xs text-ink-soft">
                   child of {categories.find((p) => p.id === c.parent_id)?.name}
                 </span>
               )}
             </p>
-            <p className="text-xs text-sand/45">/{c.slug}</p>
+            <p className="text-xs text-ink-soft">/{c.slug}</p>
           </li>
         ))}
       </ul>

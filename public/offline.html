@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Offline — AMG Online Store</title>
+<style>
+  html,body{height:100%;margin:0}
+  body{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:#fff;color:#1c1c1c;text-align:center;padding:24px;
+  }
+  .mark{width:64px;height:64px;margin-bottom:20px}
+  h1{font-size:20px;margin:0 0 8px}
+  p{font-size:14.5px;color:#5b5b5b;max-width:320px;margin:0 0 20px}
+  button{
+    border:none;border-radius:10px;background:#FF7417;color:#fff;
+    font-size:14.5px;font-weight:600;padding:12px 20px;cursor:pointer;
+  }
+</style>
+</head>
+<body>
+  <svg class="mark" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+    <polygon fill="#FF7417" points="8,10 95,10 48,58 8,58"/>
+    <polygon fill="#C8102E" points="8,68 55,68 8,100"/>
+  </svg>
+  <h1>You're offline</h1>
+  <p>This page hasn't been saved for offline use yet. Pages and products you've already viewed are still available — any order you place now will be queued and sent automatically once you're back online.</p>
+  <button onclick="location.reload()">Try again</button>
+</body>
+</html>

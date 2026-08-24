@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/shop/AddToCartButton";
@@ -30,10 +31,10 @@ export default async function ProductPage({
         <Link href="/shop" className="text-sm font-semibold text-forest hover:text-forest-deep">
           ← Back to shop
         </Link>
-        <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.06em] text-forest">
+        <p className="mt-4 text-[13px] font-bold uppercase tracking-[0.06em] text-forest">
           {product.category?.name}
         </p>
-        <h1 className="mt-2 font-display text-[clamp(28px,4vw,40px)] text-charcoal">
+        <h1 className="mt-2 font-display text-[clamp(30px,4vw,42px)] text-charcoal">
           {product.name}
         </h1>
         <p className="mt-3 text-2xl font-bold text-ember">
@@ -66,7 +67,7 @@ export default async function ProductPage({
       </div>
 
       <section className="lg:col-span-2">
-        <h2 className="font-display text-[25px] text-charcoal">Product details</h2>
+        <h2 className="font-display text-[27px] text-charcoal">Product details</h2>
         <div className="mt-4 max-w-3xl space-y-4 text-base leading-relaxed text-ink-soft whitespace-pre-line">
           {detailed}
         </div>
@@ -75,14 +76,18 @@ export default async function ProductPage({
             <h3 className="font-display text-xl text-charcoal">Photo gallery</h3>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {gallery.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <div
                   key={`${src}-${i}`}
-                  src={src}
-                  alt={`${product.name} gallery ${i + 1}`}
-                  className="aspect-[4/3] w-full rounded-xl border border-line object-cover"
-                  loading="lazy"
-                />
+                  className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-line"
+                >
+                  <Image
+                    src={src}
+                    alt={`${product.name} gallery ${i + 1}`}
+                    fill
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover"
+                  />
+                </div>
               ))}
             </div>
           </div>

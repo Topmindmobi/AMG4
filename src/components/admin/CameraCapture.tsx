@@ -28,12 +28,14 @@ export function CameraCapture({
 
   useEffect(() => {
     if (!open) {
-      stop();
+      void Promise.resolve().then(stop);
       return;
     }
 
     let cancelled = false;
-    setError(null);
+    void Promise.resolve().then(() => {
+      if (!cancelled) setError(null);
+    });
 
     async function start() {
       try {
@@ -102,13 +104,13 @@ export function CameraCapture({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="w-full max-w-lg border border-white/15 bg-forest-deep p-4 text-sand-light shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto border border-line bg-white p-4 text-charcoal shadow-xl">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-xl">Capture photo</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-sm text-sand/60 hover:text-sand"
+            className="text-sm text-ink-soft hover:text-charcoal"
           >
             Close
           </button>
@@ -121,7 +123,7 @@ export function CameraCapture({
             className="h-full w-full object-cover"
           />
           {!ready && !error && (
-            <p className="absolute inset-0 flex items-center justify-center text-sm text-sand/60">
+            <p className="absolute inset-0 flex items-center justify-center text-sm text-ink-soft">
               Starting camera…
             </p>
           )}
@@ -136,7 +138,7 @@ export function CameraCapture({
           >
             Take photo
           </button>
-          <label className="cursor-pointer border border-white/20 px-5 py-2.5 text-sm text-sand/80 hover:bg-white/5">
+          <label className="cursor-pointer border border-line px-5 py-2.5 text-sm text-charcoal/80 hover:bg-white">
             Choose file
             <input
               type="file"

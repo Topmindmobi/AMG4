@@ -1,4 +1,4 @@
--- Seed categories, suppliers, and sample products for AMG.COM
+-- Seed categories, suppliers, and sample products for AMG Online Store
 -- Run after 001_schema.sql in the Supabase SQL editor.
 
 insert into public.categories (id, slug, name, parent_id, sort_order, description) values
@@ -45,7 +45,29 @@ insert into public.products (category_id, supplier_id, name, slug, description, 
   ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'Cement 50kg Bag', 'cement-50kg', 'Portland cement for construction.', 950, 200, array['Homabay','Migori'], '/products/cement-50kg.jpg'),
   ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'Iron Sheet Gauge 28 (3m)', 'iron-sheet-28', 'Corrugated roofing sheet.', 1200, 90, array['Homabay','Mbita','Migori'], '/products/iron-sheet-28.jpg'),
   ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'Emulsion Paint 4L', 'emulsion-paint-4l', 'Interior wall paint, white.', 1800, 35, array['Homabay','Migori'], '/products/emulsion-paint-4l.jpg'),
+  ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'Steel Nails 1kg (Assorted)', 'steel-nails-1kg', 'Mixed steel nails for timber and roofing work.', 250, 150, array['Homabay','Mbita','Migori'], '/products/cement-50kg.jpg'),
+  ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'River Sand (Ton)', 'river-sand-ton', 'One ton of river sand for concrete and plastering.', 3500, 40, array['Homabay','Mbita','Migori'], '/products/cement-50kg.jpg'),
+  ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'Ballast (Ton)', 'ballast-ton', 'One ton of crushed stone ballast for foundations.', 4200, 30, array['Homabay','Migori'], '/products/cement-50kg.jpg'),
+  ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'Timber 2x3 (12ft)', 'timber-2x3-12ft', '12ft sawn timber for framing and roofing.', 450, 200, array['Homabay','Mbita','Migori'], '/products/cement-50kg.jpg'),
+  ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'PVC Water Pipe 1" (3m)', 'pvc-pipe-1-inch-3m', '3m PVC pressure pipe for water plumbing.', 650, 120, array['Homabay','Migori'], '/products/cement-50kg.jpg'),
+  ('11111111-1111-1111-1111-111111111017', '22222222-2222-2222-2222-222222222003', 'Electrical Wire 2.5mm (100m Roll)', 'electrical-wire-2-5mm-100m', '100m roll of 2.5mm² copper electrical cable.', 6800, 25, array['Homabay','Mbita','Migori'], '/products/cement-50kg.jpg'),
   ('11111111-1111-1111-1111-111111111015', null, 'KCPE Revision Bundle', 'kcpe-revision-bundle', 'Core subject revision pack.', 2400, 40, array['Homabay','Mbita','Migori'], '/products/kcpe-revision-bundle.jpg');
+
+insert into public.riders (id, name, phone, town, vehicle) values
+  ('33333333-3333-3333-3333-333333333001', 'Brian Otieno', '0733001100', 'Homabay', 'boda'),
+  ('33333333-3333-3333-3333-333333333002', 'Faith Anyango', '0733002200', 'Mbita', 'van'),
+  ('33333333-3333-3333-3333-333333333003', 'Kevin Omondi', '0733003300', 'Migori', 'truck');
+
+insert into public.dropoff_points (id, town, name, description) values
+  ('44444444-4444-4444-4444-444444444001', 'Homabay', 'AMG Hub — Arujo Road', 'Next to Arujo Road matatu stage, opposite Equity Bank.'),
+  ('44444444-4444-4444-4444-444444444002', 'Homabay', 'Homabay Bus Park Kiosk', 'AMG collection kiosk at the main bus park.'),
+  ('44444444-4444-4444-4444-444444444003', 'Mbita', 'Mbita Pier Market Stall', 'Market stall row near the ferry pier.'),
+  ('44444444-4444-4444-4444-444444444004', 'Mbita', 'Mbita Town Square Kiosk', 'Beside the town square boda stage.'),
+  ('44444444-4444-4444-4444-444444444005', 'Migori', 'Migori Hardware Row', 'Hardware Row, near Migori Hardware Hub.'),
+  ('44444444-4444-4444-4444-444444444006', 'Migori', 'Migori Bus Terminal Kiosk', 'AMG collection kiosk at the bus terminal.');
 
 -- After creating an auth user for admin@amg.com in the dashboard, promote with:
 -- update public.profiles set role = 'admin' where id = '<user-uuid>';
+--
+-- To create a rider login: create the auth user (e.g. brian@amg.com), then:
+-- update public.profiles set role = 'rider', rider_id = '33333333-3333-3333-3333-333333333001' where id = '<user-uuid>';

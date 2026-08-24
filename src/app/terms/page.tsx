@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Terms of Use — AMG Store",
   description:
-    "Terms of Use for the AMG Store marketplace serving Homabay, Mbita, and Migori — accounts, orders, pricing in KES, delivery, and liability.",
+    "Terms of Use for the AMG Store marketplace serving customers nationwide across Kenya — accounts, orders, pricing in KES, delivery, and liability.",
 };
 
 const lastUpdated = "29 July 2026";
@@ -15,20 +15,20 @@ export default function TermsPage() {
       <p className="mb-3 text-xs font-bold uppercase tracking-[0.09em] text-ember">
         Legal
       </p>
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">
         Terms of Use
       </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+      <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
         These Terms of Use (“Terms”) govern your access to and use of the marketplace operated by{" "}
         <strong className="font-semibold text-charcoal">AMG Store</strong> (“we”, “us”, or “our”),
-        including browsing, creating an account, placing orders, and arranging delivery across
-        Homabay, Mbita, and Migori, Kenya. By using the site, you agree to these Terms.
+        including browsing, creating an account, placing orders, and arranging delivery
+        nationwide across Kenya. By using the site, you agree to these Terms.
       </p>
-      <p className="mt-2 text-[13px] text-ink-soft">Last updated: {lastUpdated}</p>
+      <p className="mt-2 text-[15px] text-ink-soft">Last updated: {lastUpdated}</p>
 
-      <div className="mt-10 space-y-10 text-[14.5px] leading-relaxed text-ink-soft">
+      <div className="mt-10 space-y-10 text-[16.5px] leading-relaxed text-ink-soft">
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">1. About the marketplace</h2>
+          <h2 className="font-display text-[24px] text-charcoal">1. About the marketplace</h2>
           <p>
             AMG Store provides an online marketplace that connects customers with pilot shops and
             suppliers. Product listings, stock, and fulfilment may involve third-party shops. Where
@@ -38,7 +38,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">2. Eligibility and accounts</h2>
+          <h2 className="font-display text-[24px] text-charcoal">2. Eligibility and accounts</h2>
           <ul className="list-disc space-y-2 pl-5">
             <li>
               You must be able to enter a binding contract under the laws of Kenya to place orders.
@@ -59,7 +59,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">3. Orders</h2>
+          <h2 className="font-display text-[24px] text-charcoal">3. Orders</h2>
           <p>
             Placing an order constitutes an offer to purchase the listed items. An order is accepted
             when we (or the fulfilling shop) confirm it, subject to stock and delivery availability.
@@ -76,7 +76,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">4. Pricing and currency</h2>
+          <h2 className="font-display text-[24px] text-charcoal">4. Pricing and currency</h2>
           <p>
             Prices are displayed in <span className="font-semibold text-charcoal">Kenyan Shillings (KES)</span>{" "}
             unless otherwise stated. Prices may change without notice for future orders. Delivery
@@ -86,7 +86,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">5. Payment — COD and M-Pesa</h2>
+          <h2 className="font-display text-[24px] text-charcoal">5. Payment — COD and M-Pesa</h2>
           <ul className="list-disc space-y-2 pl-5">
             <li>
               <span className="font-semibold text-charcoal">Cash on delivery (COD)</span> — pay the
@@ -106,14 +106,16 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">6. Delivery towns and timing</h2>
+          <h2 className="font-display text-[24px] text-charcoal">6. Delivery towns and timing</h2>
           <p>
-            We primarily serve <span className="font-semibold text-charcoal">Homabay</span>,{" "}
-            <span className="font-semibold text-charcoal">Mbita</span>, and{" "}
-            <span className="font-semibold text-charcoal">Migori</span>, with motorcycle (boda)
-            delivery to estates, landmarks, and shops where riders can safely reach. Same-day
-            delivery is a goal when stock and rider capacity allow; it is not a guaranteed service
-            level.
+            We deliver <span className="font-semibold text-charcoal">nationwide</span>, including{" "}
+            <span className="font-semibold text-charcoal">Nairobi</span>,{" "}
+            <span className="font-semibold text-charcoal">Mombasa</span>,{" "}
+            <span className="font-semibold text-charcoal">Kisumu</span>, and{" "}
+            <span className="font-semibold text-charcoal">Homa Bay</span>, with motorcycle (boda)
+            or courier delivery to estates, landmarks, and shops where riders can safely reach.
+            Same-day delivery is a goal when stock and rider capacity allow; it is not a
+            guaranteed service level.
           </p>
           <p>
             Delivery times are estimates. Delays may occur due to weather, road conditions, traffic,
@@ -123,7 +125,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">7. Returns, cancellations, and issues</h2>
+          <h2 className="font-display text-[24px] text-charcoal">7. Returns, cancellations, and issues</h2>
           <p>
             If an item arrives damaged, incorrect, or missing, contact us promptly via{" "}
             <Link href="/contact" className="font-semibold text-forest hover:text-forest-deep">
@@ -137,7 +139,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">8. Acceptable use</h2>
+          <h2 className="font-display text-[24px] text-charcoal">8. Acceptable use</h2>
           <p>You agree not to:</p>
           <ul className="list-disc space-y-2 pl-5">
             <li>Use the site for unlawful, fraudulent, or abusive purposes.</li>
@@ -148,7 +150,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">9. Intellectual property</h2>
+          <h2 className="font-display text-[24px] text-charcoal">9. Intellectual property</h2>
           <p>
             The AMG Store name, logos, site design, and original content are owned by AMG Store or
             its licensors. Product images and descriptions may belong to suppliers. You may not copy
@@ -157,7 +159,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">10. Disclaimer and limitation of liability</h2>
+          <h2 className="font-display text-[24px] text-charcoal">10. Disclaimer and limitation of liability</h2>
           <p>
             The marketplace is provided on an “as available” basis. To the fullest extent permitted
             by Kenyan law, AMG Store is not liable for indirect, incidental, or consequential losses
@@ -170,7 +172,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">11. Privacy</h2>
+          <h2 className="font-display text-[24px] text-charcoal">11. Privacy</h2>
           <p>
             How we handle personal information is described in our{" "}
             <Link href="/privacy" className="font-semibold text-forest hover:text-forest-deep">
@@ -181,7 +183,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">12. Changes to these Terms</h2>
+          <h2 className="font-display text-[24px] text-charcoal">12. Changes to these Terms</h2>
           <p>
             We may update these Terms from time to time. The “Last updated” date will change when we
             do. Continued use after changes take effect means you accept the revised Terms, except
@@ -190,7 +192,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">13. Governing law and disputes</h2>
+          <h2 className="font-display text-[24px] text-charcoal">13. Governing law and disputes</h2>
           <p>
             These Terms are governed by the laws of the{" "}
             <span className="font-semibold text-charcoal">Republic of Kenya</span>. Courts in Kenya
@@ -200,7 +202,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[22px] text-charcoal">14. Contact</h2>
+          <h2 className="font-display text-[24px] text-charcoal">14. Contact</h2>
           <p>
             Questions about these Terms? Contact AMG Store via{" "}
             <Link href="/contact" className="font-semibold text-forest hover:text-forest-deep">
@@ -211,12 +213,12 @@ export default function TermsPage() {
         </section>
       </div>
 
-      <p className="mt-10 rounded-[10px] border border-line bg-sand px-4 py-3 text-[12.5px] leading-relaxed text-ink-soft">
+      <p className="mt-10 rounded-[10px] border border-line bg-sand px-4 py-3 text-[14.5px] leading-relaxed text-ink-soft">
         This page is a practical template for AMG Store’s marketplace and is not formal legal advice.
         Seek qualified Kenyan counsel for a binding commercial agreement.
       </p>
 
-      <div className="mt-8 flex flex-wrap gap-3 text-[13.5px] font-semibold">
+      <div className="mt-8 flex flex-wrap gap-3 text-[15.5px] font-semibold">
         <Link href="/privacy" className="text-forest hover:text-forest-deep">
           Privacy Policy
         </Link>

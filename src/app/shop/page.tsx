@@ -20,9 +20,10 @@ export default async function ShopPage({
 
   return (
     <div className="mx-auto max-w-[1120px] px-5 py-10">
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">Shop</h1>
-      <p className="mt-2 text-[14.5px] text-ink-soft">
-        Browse products available for delivery in Homabay, Mbita, and Migori.
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Shop</h1>
+      <p className="mt-2 text-[16.5px] text-ink-soft">
+        Browse products available for delivery nationwide — Nairobi, Mombasa, Kisumu, Homa Bay
+        and beyond.
       </p>
       <div className="mt-8">
         <Suspense fallback={<div className="h-20 animate-pulse rounded-lg bg-sand" />}>

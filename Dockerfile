@@ -1,4 +1,4 @@
-# AMG.COM — production image for DigitalOcean App Platform or Droplets
+# AMG Stores — production image for DigitalOcean App Platform or Droplets
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -13,10 +13,16 @@ COPY . .
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_DEMO_MODE=false
+ARG NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_DEMO_MODE=$NEXT_PUBLIC_DEMO_MODE
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
+# Caps the build's V8 heap so it degrades to more GC pressure instead of
+# ballooning RSS — this droplet has hit OOM before building alongside other
+# live containers with no headroom to spare.
+ENV NODE_OPTIONS=--max-old-space-size=1024
 
 RUN npm run build
 

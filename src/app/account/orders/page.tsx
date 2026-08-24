@@ -4,9 +4,17 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { formatKes, ORDER_STATUS_LABELS } from "@/lib/format";
+import {
+  formatKes,
+  ORDER_STATUS_LABELS,
+  RIDER_DELIVERY_STATUS_LABELS,
+  RIDER_VEHICLE_LABELS,
+} from "@/lib/format";
 import { isDemoMode } from "@/lib/supabase/config";
-import { getDemoOrders } from "@/lib/store/demo-store";
+import {
+  getDemoOrders,
+  normalizeRiderDeliveryStatus,
+} from "@/lib/store/demo-store";
 import type { Order } from "@/lib/types";
 
 export default function AccountOrdersPage() {
@@ -22,8 +30,10 @@ export default function AccountOrdersPage() {
     if (!user) return;
 
     if (isDemoMode()) {
-      setOrders(getDemoOrders(user.id));
-      return;
+      const refresh = () => setOrders(getDemoOrders(user.id));
+      refresh();
+      const poll = setInterval(refresh, 5000);
+      return () => clearInterval(poll);
     }
 
     void (async () => {
@@ -44,7 +54,7 @@ export default function AccountOrdersPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10">
-      <h1 className="font-display text-[clamp(28px,4vw,36px)] text-charcoal">My orders</h1>
+      <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">My orders</h1>
       {orders.length === 0 ? (
         <p className="mt-6 text-ink-soft">
           No orders yet.{" "}
@@ -54,20 +64,38 @@ export default function AccountOrdersPage() {
         </p>
       ) : (
         <ul className="mt-8 divide-y divide-line border-y border-line">
-          {orders.map((order) => (
-            <li key={order.id} className="flex items-center justify-between gap-4 py-4">
-              <div>
-                <Link href={`/order/${order.id}`} className="font-semibold hover:text-forest">
-                  Order {order.id.slice(0, 12)}
-                </Link>
-                <p className="mt-1 text-xs text-ink-soft">
-                  {new Date(order.created_at).toLocaleString()} ·{" "}
-                  {ORDER_STATUS_LABELS[order.status]}
-                </p>
-              </div>
-              <p className="text-sm font-bold text-ember">{formatKes(order.total_kes)}</p>
-            </li>
-          ))}
+          {orders.map((order) => {
+            const riderStage = order.rider_id
+              ? normalizeRiderDeliveryStatus(order)
+              : null;
+            const riderLabel =
+              riderStage === "failed"
+                ? "Fail delivery"
+                : riderStage
+                  ? RIDER_DELIVERY_STATUS_LABELS[riderStage] ?? riderStage
+                  : null;
+            return (
+              <li key={order.id} className="flex items-center justify-between gap-4 py-4">
+                <div>
+                  <Link href={`/order/${order.id}`} className="font-semibold hover:text-forest">
+                    Order {order.id.slice(0, 12)}
+                  </Link>
+                  <p className="mt-1 text-xs text-ink-soft">
+                    {new Date(order.created_at).toLocaleString()} ·{" "}
+                    {ORDER_STATUS_LABELS[order.status]}
+                    {order.rider_name_snapshot
+                      ? ` · Rider: ${order.rider_name_snapshot}`
+                      : ""}
+                    {order.rider_vehicle_snapshot
+                      ? ` (${RIDER_VEHICLE_LABELS[order.rider_vehicle_snapshot] ?? order.rider_vehicle_snapshot})`
+                      : ""}
+                    {riderLabel ? ` · ${riderLabel}` : ""}
+                  </p>
+                </div>
+                <p className="text-sm font-bold text-ember">{formatKes(order.total_kes)}</p>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

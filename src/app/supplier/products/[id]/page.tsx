@@ -25,18 +25,20 @@ export default function SupplierEditProductPage() {
       router.replace("/supplier/products");
       return;
     }
-    setProduct(p);
-    setCategories(getDemoCategories());
-    setSuppliers(getDemoSuppliers());
+    void Promise.resolve().then(() => {
+      setProduct(p);
+      setCategories(getDemoCategories());
+      setSuppliers(getDemoSuppliers());
+    });
   }, [params.id, supplierId, router]);
 
   if (!product || !supplierId) {
-    return <p className="text-sand/60">Loading product…</p>;
+    return <p className="text-ink-soft">Loading product…</p>;
   }
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">Edit product</h1>
+      <h1 className="font-display text-3xl text-charcoal">Edit product</h1>
       <ProductForm
         product={product}
         categories={categories}

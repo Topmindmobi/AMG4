@@ -16,6 +16,40 @@
   --line: #dbe1ea;
   --background: var(--mist);
   --foreground: var(--charcoal);
+
+  /* Design-handoff refresh (admin/supplier/rider dashboards) — additive,
+     the tokens above stay in use everywhere this hasn't landed yet. */
+  --indigo-deep: #141768;
+  --indigo: #1d1c6e;
+  --indigo-light: #332d78;
+  --indigo-border: #3b3789;
+  --canvas: #eef0f4;
+  --card-border: #e2e5ec;
+  --subtle-fill: #f7f8fa;
+  --divider: #eceef3;
+  --chip-fill: #f0f2f6;
+  --ink: #141c2e;
+  --ink-body: #3d465a;
+  --ink-secondary: #5d6678;
+  --ink-muted: #6b7488;
+  --ink-faint: #8a93a5;
+  --accent: #e5581f;
+  --accent-hover: #c94a15;
+  --accent-tint: #fdece3;
+  --success: #1f9d6a;
+  --success-on-dark: #4fd39b;
+  --success-tint: #e2f4ea;
+  --warning: #d9a01f;
+  --warning-tint: #fdf3d7;
+  --warning-ink: #8a6410;
+  --danger: #a52020;
+  --danger-tint: #fbe4e4;
+  --info-bg: #e8ecf5;
+  --info-fg: #2c3550;
+  /* Keep native form controls light — OS dark mode + Tailwind
+     preflight (transparent select bg) otherwise flashes black.
+     Also set early via <meta>/<style> in layout.tsx. */
+  color-scheme: light;
 }
 
 @theme inline {
@@ -35,6 +69,70 @@
   --color-line: var(--line);
   --font-sans: var(--font-work-sans);
   --font-display: var(--font-fraunces);
+
+  --color-indigo-deep: var(--indigo-deep);
+  --color-indigo: var(--indigo);
+  --color-indigo-light: var(--indigo-light);
+  --color-indigo-border: var(--indigo-border);
+  --color-canvas: var(--canvas);
+  --color-card-border: var(--card-border);
+  --color-subtle-fill: var(--subtle-fill);
+  --color-divider: var(--divider);
+  --color-chip-fill: var(--chip-fill);
+  --color-ink: var(--ink);
+  --color-ink-body: var(--ink-body);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-tint: var(--accent-tint);
+  --color-success: var(--success);
+  --color-success-on-dark: var(--success-on-dark);
+  --color-success-tint: var(--success-tint);
+  --color-warning: var(--warning);
+  --color-warning-tint: var(--warning-tint);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+  --font-display-serif: var(--font-source-serif);
+  --font-dm: var(--font-dm-sans);
+  --font-mono: var(--font-dm-mono);
+}
+
+.font-display-serif {
+  font-family: var(--font-source-serif), Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/*
+  Bumped one step up the default Tailwind scale (site-wide "text is too
+  small" pass) — text-xs now renders at the old text-sm size, and so on,
+  with each size keeping the next step's line-height pairing.
+  Plain @theme (not "inline"): these are static values, not references to
+  other runtime CSS variables, so they need the normal override form to
+  actually replace Tailwind's built-in scale.
+*/
+@theme {
+  --text-xs: 0.875rem;
+  --text-xs--line-height: calc(1.25 / 0.875);
+  --text-sm: 1rem;
+  --text-sm--line-height: calc(1.5 / 1);
+  --text-base: 1.125rem;
+  --text-base--line-height: calc(1.75 / 1.125);
+  --text-lg: 1.25rem;
+  --text-lg--line-height: calc(1.75 / 1.25);
+  --text-xl: 1.5rem;
+  --text-xl--line-height: calc(2 / 1.5);
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: calc(2.25 / 1.875);
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: calc(2.5 / 2.25);
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 1;
 }
 
 body {
@@ -42,6 +140,30 @@ body {
   color: var(--foreground);
   font-family: var(--font-work-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+  Tailwind preflight sets select background-color: transparent.
+  With OS dark mode that paints native controls black (closed field +
+  option list). Force every select light — admin and storefront alike.
+  Early color-scheme is also inlined in layout.tsx.
+*/
+html,
+body {
+  color-scheme: light;
+}
+
+select,
+select option,
+.amg-select,
+.amg-select option {
+  background-color: #fff !important;
+  color: var(--charcoal) !important;
+  color-scheme: light;
+}
+
+select {
+  border-color: var(--line);
 }
 
 .font-display {

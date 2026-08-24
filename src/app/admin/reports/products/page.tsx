@@ -1,28 +1,24 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import {
   money,
+  ReportExportButton,
   ReportFilters,
   ReportSection,
   ReportStat,
   ReportTable,
   ReportTabs,
+  useReportData,
   useReportRange,
 } from "@/components/admin/reports/ReportUI";
 import { getProductReport } from "@/lib/reports-data";
 
 function Body() {
   const range = useReportRange();
-  const [data, setData] = useState<ReturnType<typeof getProductReport> | null>(
-    null,
-  );
+  const data = useReportData(getProductReport, range);
 
-  useEffect(() => {
-    setData(getProductReport(range));
-  }, [range.from, range.to]);
-
-  if (!data) return <p className="mt-8 text-sand/50">Loading…</p>;
+  if (!data) return <p className="mt-8 text-ink-soft">Loading…</p>;
 
   return (
     <>
@@ -67,7 +63,16 @@ function Body() {
         />
       </ReportSection>
 
-      <ReportSection title="Product movers">
+      <ReportSection
+        title="Product movers"
+        action={
+          <ReportExportButton
+            filename="product-movers.csv"
+            headers={["Product", "Stock", "Sold", "Revenue (KES)"]}
+            rows={data.movers.map((p) => [p.name, p.stock, p.sold, p.revenue])}
+          />
+        }
+      >
         <ReportTable
           headers={["Product", "Stock", "Sold", "Revenue"]}
           rows={data.movers.map((p) => [
@@ -92,8 +97,8 @@ function Body() {
 export default function ProductsReportPage() {
   return (
     <div>
-      <h1 className="font-display text-3xl text-sand">Product report</h1>
-      <p className="mt-2 text-sm text-sand/55">
+      <h1 className="font-display text-3xl text-charcoal">Product report</h1>
+      <p className="mt-2 text-sm text-ink-soft">
         Inventory value, category mix, supplier contribution, and stock alerts.
       </p>
       <Suspense fallback={null}>

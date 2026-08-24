@@ -8,10 +8,10 @@ export function AmgLogo({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/amg-logo.png"
+      src="/amg-logo.svg"
       alt="AMG"
-      width={216}
-      height={66}
+      width={240}
+      height={90}
       className={className}
       decoding="async"
       fetchPriority={priority ? "high" : "auto"}

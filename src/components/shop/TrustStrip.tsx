@@ -9,7 +9,7 @@ const PILLS = [
     ),
   },
   {
-    label: "Pay with M-Pesa",
+    label: "Pay with M-Pesa — save 5%",
     icon: <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />,
   },
   {
@@ -23,7 +23,7 @@ const PILLS = [
     ),
   },
   {
-    label: "3 towns covered",
+    label: "Nationwide coverage",
     icon: (
       <>
         <path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z" />
@@ -41,7 +41,7 @@ export function TrustStrip() {
           {PILLS.map((pill) => (
             <div
               key={pill.label}
-              className="flex items-center gap-1.5 rounded-full border border-line bg-sand px-3.5 py-2 text-[13px] font-semibold text-forest"
+              className="flex items-center gap-1.5 rounded-full border border-line bg-sand px-3.5 py-2 text-[15px] font-semibold text-forest"
             >
               <svg
                 width="15"

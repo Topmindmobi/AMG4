@@ -1,4 +1,4 @@
-# Starts local Supabase and writes .env.local for AMG.COM
+# Starts local Supabase and writes .env.local for AMG Stores
 # Requires Docker Desktop running.
 
 $ErrorActionPreference = "Stop"

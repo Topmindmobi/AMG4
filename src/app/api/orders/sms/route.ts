@@ -3,6 +3,7 @@ import {
   sendOrderStatusSms,
   type OrderSmsEvent,
 } from "@/lib/sms/twilio";
+import { requireSession } from "@/lib/supabase/route-auth";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,12 @@ function isOrderSmsEvent(value: string): value is OrderSmsEvent {
 
 /**
  * Soft-fail SMS notify for order confirmed / dispatched.
- * Never blocks the admin status update — always returns 200 with result details.
+ * Never blocks the admin status update — always returns 200 with result details,
+ * EXCEPT for auth failures, which return a real 401/403 so this endpoint can't be
+ * used to spam arbitrary numbers on AMG's paid Twilio account. The one real caller
+ * today (src/lib/notifications/notify-client.ts, used only from the admin order
+ * pages) already treats any non-ok HTTP status as a soft failure, so this doesn't
+ * change its behavior for legitimate admin use.
  */
 export async function POST(request: Request) {
   let body: Body;
@@ -43,6 +49,25 @@ export async function POST(request: Request) {
         error: "Required: orderId, phone, event (confirmed|dispatched)",
       },
       { status: 200 },
+    );
+  }
+
+  const session = await requireSession();
+  if (!session) {
+    return NextResponse.json(
+      { ok: false, sent: false, error: "Not signed in" },
+      { status: 401 },
+    );
+  }
+  const { data: orderRow } = await session.server
+    .from("orders")
+    .select("id")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!orderRow) {
+    return NextResponse.json(
+      { ok: false, sent: false, error: "Not authorized for this order" },
+      { status: 403 },
     );
   }
 

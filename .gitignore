@@ -23,6 +23,10 @@
 # misc
 .DS_Store
 *.pem
+.tmp-dropdown-test/
+.tmp-do-*.json
+amg2/
+scripts/*.png
 
 # debug
 npm-debug.log*

@@ -53,7 +53,7 @@ export function ShopFilters({
         <select
           name="town"
           defaultValue={town}
-          className="rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal outline-none focus:border-forest"
+          className="amg-select rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal outline-none focus:border-forest"
         >
           <option value="">All towns</option>
           {TOWNS.map((t) => (
@@ -68,7 +68,7 @@ export function ShopFilters({
         <select
           name="category"
           defaultValue={category}
-          className="rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal outline-none focus:border-forest"
+          className="amg-select rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal outline-none focus:border-forest"
         >
           <option value="">All categories</option>
           {categories.map((c) => (

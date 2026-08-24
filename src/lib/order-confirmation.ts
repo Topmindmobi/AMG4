@@ -1,29 +1,17 @@
-import type { Order, OrderItem, PaymentMethod, Town } from "@/lib/types";
+import type { Order, OrderItem } from "@/lib/types";
 
 const KEY_PREFIX = "amg_order_confirm_";
+const ACCOUNT_KEY_PREFIX = "amg_order_account_";
 
-export type PlacedOrderSnapshot = {
-  id: string;
-  user_id: string | null;
-  customer_name: string;
-  phone: string;
-  town: Town;
-  address: string;
-  payment_method: PaymentMethod;
-  mpesa_phone: string | null;
-  status: "pending";
-  total_kes: number;
-  created_at: string;
-  items: Array<{
-    id: string;
-    order_id: string;
-    product_id: string | null;
-    name_snapshot: string;
-    price_kes: number;
-    qty: number;
-    supplier_id: string | null;
-    supplier_name_snapshot: string | null;
-  }>;
+/** Freshly-placed order, always carrying its line items (unlike Order.items, which is optional). */
+export type PlacedOrderSnapshot = Omit<Order, "items"> & { items: OrderItem[] };
+
+/** One-time notice after guest checkout auto-created (or linked) an account. */
+export type AccountCreatedNotice = {
+  email: string;
+  phone?: string | null;
+  created: boolean;
+  temporaryPassword?: string;
 };
 
 export function stashOrderConfirmation(order: PlacedOrderSnapshot) {
@@ -40,11 +28,27 @@ export function readStashedOrderConfirmation(id: string): Order | null {
   try {
     const raw = sessionStorage.getItem(`${KEY_PREFIX}${id}`);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as PlacedOrderSnapshot;
-    return {
-      ...parsed,
-      items: parsed.items as OrderItem[],
-    };
+    return JSON.parse(raw) as PlacedOrderSnapshot;
+  } catch {
+    return null;
+  }
+}
+
+export function stashAccountCreatedNotice(orderId: string, notice: AccountCreatedNotice) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(`${ACCOUNT_KEY_PREFIX}${orderId}`, JSON.stringify(notice));
+  } catch {
+    // ignore
+  }
+}
+
+export function readAccountCreatedNotice(orderId: string): AccountCreatedNotice | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(`${ACCOUNT_KEY_PREFIX}${orderId}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as AccountCreatedNotice;
   } catch {
     return null;
   }
