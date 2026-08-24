@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/shop/AddToCartButton";
@@ -75,14 +76,18 @@ export default async function ProductPage({
             <h3 className="font-display text-xl text-charcoal">Photo gallery</h3>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {gallery.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <div
                   key={`${src}-${i}`}
-                  src={src}
-                  alt={`${product.name} gallery ${i + 1}`}
-                  className="aspect-[4/3] w-full rounded-xl border border-line object-cover"
-                  loading="lazy"
-                />
+                  className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-line"
+                >
+                  <Image
+                    src={src}
+                    alt={`${product.name} gallery ${i + 1}`}
+                    fill
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover"
+                  />
+                </div>
               ))}
             </div>
           </div>

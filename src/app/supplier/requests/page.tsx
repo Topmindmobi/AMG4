@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { SupplyKanban } from "@/components/supplier/SupplyKanban";
 import { useAuth } from "@/lib/auth-context";
+import { isDemoMode } from "@/lib/supabase/config";
 import {
   confirmDemoSupplyRequest,
   dispatchDemoSupplyRequest,
@@ -22,7 +23,20 @@ export default function SupplierRequestsPage() {
 
   const reload = useCallback(() => {
     if (!supplierId) return;
-    setRequests(getDemoSupplyRequests({ supplierId }));
+    if (isDemoMode()) {
+      setRequests(getDemoSupplyRequests({ supplierId }));
+      return;
+    }
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("supply_requests")
+        .select("*")
+        .eq("supplier_id", supplierId)
+        .order("created_at", { ascending: false });
+      setRequests((data as SupplyRequest[]) ?? []);
+    })();
   }, [supplierId]);
 
   useEffect(() => {
@@ -38,14 +52,34 @@ export default function SupplierRequestsPage() {
     try {
       if (to === "confirmed") {
         if (!extras?.logistics) throw new Error("Logistics plan required");
-        confirmDemoSupplyRequest(requestId, extras.logistics);
+        if (isDemoMode()) {
+          confirmDemoSupplyRequest(requestId, extras.logistics);
+        } else {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const { error } = await supabase.rpc("supplier_confirm_supply_request", {
+            p_request_id: requestId,
+            p_logistics: extras.logistics,
+          });
+          if (error) throw error;
+        }
         setMessage("Confirmed with logistics plan — card moved to Confirmed.");
         reload();
         return;
       }
       if (to === "dispatched") {
         if (!extras?.dispatch) throw new Error("Driver and vehicle details required");
-        dispatchDemoSupplyRequest(requestId, extras.dispatch);
+        if (isDemoMode()) {
+          dispatchDemoSupplyRequest(requestId, extras.dispatch);
+        } else {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          const { error } = await supabase.rpc("supplier_dispatch_supply_request", {
+            p_request_id: requestId,
+            p_dispatch: extras.dispatch,
+          });
+          if (error) throw error;
+        }
         setMessage(
           `Dispatched with ${extras.dispatch.vehicle_type.toUpperCase()} ${extras.dispatch.vehicle_plate}. AMG will inspect on arrival.`,
         );

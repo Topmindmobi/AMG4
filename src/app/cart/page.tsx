@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart";
@@ -34,12 +35,13 @@ export default function CartPage() {
             className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex items-center gap-3">
-              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-line bg-sand">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-line bg-sand">
+                <Image
                   src={item.image_path || `/products/${item.slug}.jpg`}
                   alt={item.name}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="64px"
+                  className="object-cover"
                 />
               </div>
               <div>

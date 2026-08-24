@@ -9,6 +9,25 @@ import { isDemoMode } from "@/lib/supabase/config";
 import { upsertDemoProduct } from "@/lib/store/demo-store";
 import type { Category, Product, Supplier, Town } from "@/lib/types";
 
+/** 5MB — generous enough for a phone-camera product photo, small enough to
+ * keep the free-tier Supabase storage bucket and page load times sane. */
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+/** Matches the image formats this app actually serves back out (product
+ * cards/gallery render whatever the browser natively decodes) — no SVG or
+ * other formats that could carry active content. */
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+function validateImageFile(file: File): string | null {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return `"${file.name}" is not a supported image type. Use JPEG, PNG, WebP, or GIF.`;
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    return `"${file.name}" is ${(file.size / (1024 * 1024)).toFixed(1)}MB — the max is 5MB.`;
+  }
+  return null;
+}
+
 export function ProductForm({
   product,
   categories,
@@ -50,6 +69,12 @@ export function ProductForm({
   }
 
   function onPhotoCaptured(file: File, dataUrl: string) {
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError(null);
     if (cameraTarget === "cover") {
       setCoverFile(file);
       setCoverPreview(dataUrl);
@@ -115,6 +140,8 @@ export function ProductForm({
       const uploadFile = coverFile || (fileInput && fileInput.size > 0 ? fileInput : null);
 
       if (uploadFile) {
+        const uploadFileError = validateImageFile(uploadFile);
+        if (uploadFileError) throw new Error(uploadFileError);
         const path = `${Date.now()}-${uploadFile.name}`;
         const { error: uploadError } = await supabase.storage
           .from("product-images")
@@ -238,6 +265,13 @@ export function ProductForm({
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  const validationError = validateImageFile(file);
+                  if (validationError) {
+                    setError(validationError);
+                    e.target.value = "";
+                    return;
+                  }
+                  setError(null);
                   setCoverFile(file);
                   const reader = new FileReader();
                   reader.onload = () => setCoverPreview(String(reader.result));

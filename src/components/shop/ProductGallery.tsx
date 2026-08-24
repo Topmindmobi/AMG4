@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 export function ProductGallery({
@@ -27,12 +28,13 @@ export function ProductGallery({
   return (
     <div>
       <div className="relative aspect-square overflow-hidden rounded-xl border border-line bg-sand">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           key={current}
           src={current}
           alt={`${alt} — photo ${safeIndex + 1}`}
-          className="h-full w-full object-cover animate-fade-up"
+          fill
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="object-cover animate-fade-up"
           onError={() => setBroken((b) => ({ ...b, [current]: true }))}
         />
         {list.length > 1 && (
@@ -48,18 +50,19 @@ export function ProductGallery({
               key={`${src}-${i}`}
               type="button"
               onClick={() => setActive(i)}
-              className={`aspect-square overflow-hidden rounded-lg border-2 transition ${
+              className={`relative aspect-square overflow-hidden rounded-lg border-2 transition ${
                 i === safeIndex
                   ? "border-forest"
                   : "border-transparent opacity-80 hover:opacity-100"
               }`}
               aria-label={`View photo ${i + 1}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={src}
                 alt=""
-                className="h-full w-full object-cover"
+                fill
+                sizes="120px"
+                className="object-cover"
                 onError={() => setBroken((b) => ({ ...b, [src]: true }))}
               />
             </button>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { formatKes } from "@/lib/format";
 import { productImageUrl, productShortDescription } from "@/lib/product-image";
@@ -14,12 +15,12 @@ export function ProductCard({ product }: { product: Product }) {
     >
       <div className="relative aspect-[4/3] overflow-hidden border-b border-line bg-sand">
         {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={image}
             alt={product.name}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-            loading="lazy"
+            fill
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-line">

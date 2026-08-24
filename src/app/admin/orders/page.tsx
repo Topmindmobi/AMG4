@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Pagination } from "@/components/admin/Pagination";
 import { SupplierCompareDialog } from "@/components/admin/SupplierCompareDialog";
 import { RiderDeliveryTracker } from "@/components/orders/RiderDeliveryTracker";
 import { listRiders } from "@/lib/data/delivery";
@@ -47,8 +48,25 @@ import type {
   SupplyRequest,
 } from "@/lib/types";
 
+/** Mirrors set_order_status()'s forward-only map (022_order_status_transitions.sql)
+ * so the UI can warn before sending a transition the server will only accept
+ * via its narrow p_force override. */
+const ORDER_STATUS_FORWARD_MAP: Record<OrderStatus, OrderStatus[]> = {
+  pending: ["awaiting_supplier", "confirmed", "cancelled"],
+  awaiting_supplier: ["supplier_confirmed", "confirmed", "cancelled"],
+  supplier_confirmed: ["confirmed", "cancelled"],
+  confirmed: ["out_for_delivery", "cancelled"],
+  out_for_delivery: ["delivered", "cancelled"],
+  delivered: [],
+  cancelled: [],
+};
+
+const ORDERS_PAGE_SIZE = 25;
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalOrders, setTotalOrders] = useState<number | null>(null);
   const [supplyByOrder, setSupplyByOrder] = useState<Record<string, SupplyRequest[]>>(
     {},
   );
@@ -68,7 +86,9 @@ export default function AdminOrdersPage() {
   function load() {
     if (isDemoMode()) {
       void Promise.resolve().then(() => {
-        const list = getDemoOrders();
+        const all = getDemoOrders();
+        setTotalOrders(all.length);
+        const list = all.slice(page * ORDERS_PAGE_SIZE, page * ORDERS_PAGE_SIZE + ORDERS_PAGE_SIZE);
         setOrders(list);
         setSuppliers(getDemoSuppliers());
         setProducts(getDemoProducts({ activeOnly: false }));
@@ -84,17 +104,30 @@ export default function AdminOrdersPage() {
     void (async () => {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      const [{ data }, { data: sups }, { data: prods }] = await Promise.all([
+      const from = page * ORDERS_PAGE_SIZE;
+      const to = from + ORDERS_PAGE_SIZE - 1;
+      const [{ data, count }, { data: sups }, { data: prods }, { data: supplyData }] = await Promise.all([
         supabase
           .from("orders")
-          .select("*, items:order_items(*)")
-          .order("created_at", { ascending: false }),
+          .select("*, items:order_items(*)", { count: "exact" })
+          .order("created_at", { ascending: false })
+          .range(from, to),
         supabase.from("suppliers").select("*"),
+        // Full products catalog is a supporting dataset for supplier ranking
+        // (rankSuppliersForOrder needs every product to match against), not
+        // the paginated list itself — left unbounded on purpose.
         supabase.from("products").select("*"),
+        supabase.from("supply_requests").select("*"),
       ]);
       setOrders((data as Order[]) ?? []);
+      setTotalOrders(count ?? null);
       setSuppliers((sups as Supplier[]) ?? []);
       setProducts((prods as Product[]) ?? []);
+      const map: Record<string, SupplyRequest[]> = {};
+      for (const r of (supplyData as SupplyRequest[]) ?? []) {
+        (map[r.order_id] ??= []).push(r);
+      }
+      setSupplyByOrder(map);
     })();
   }
 
@@ -103,7 +136,8 @@ export default function AdminOrdersPage() {
     if (!isDemoMode()) return;
     const poll = setInterval(load, 5000);
     return () => clearInterval(poll);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   useEffect(() => {
     const towns = Array.from(new Set(orders.map((o) => o.town)));
@@ -145,7 +179,58 @@ export default function AdminOrdersPage() {
         load();
         return;
       }
-      throw new Error("Supplier workflow requires demo mode or Supabase RPCs.");
+
+      const card = selection?.scorecards.find((s) => s.supplier.id === selectedSupplierId);
+      if (!card) throw new Error("Supplier not found");
+      const lines = card.matches
+        .filter((m) => m.product && m.availableQty > 0)
+        .map((m) => ({
+          order_item_id: m.orderItem.id,
+          product_id: m.product!.id.includes("__offer__")
+            ? m.product!.id.split("__offer__")[0]
+            : m.product!.id,
+          name: m.product!.name,
+          qty: m.orderItem.qty,
+          price_kes: m.unitPrice,
+        }));
+      if (lines.length === 0) throw new Error("No stock available from this supplier");
+
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error } = await supabase.rpc("admin_assign_supplier_to_order", {
+        p_order_id: compareOrderId,
+        p_supplier_id: selectedSupplierId,
+        p_lines: lines,
+      });
+      if (error) throw error;
+
+      setMessage("Supply request sent to the selected supplier (best-value analysis applied).");
+      setCompareOrderId(null);
+      setSelection(null);
+      load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function certifyFulfilled(sr: SupplyRequest, supplierName: string) {
+    setBusy(`fulfill-${sr.id}`);
+    setMessage(null);
+    try {
+      if (isDemoMode()) {
+        fulfillDemoSupplyRequest(sr.id);
+      } else {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { error } = await supabase.rpc("admin_fulfill_supply_request", {
+          p_request_id: sr.id,
+        });
+        if (error) throw error;
+      }
+      setMessage(`Certified ${supplierName} supply as fulfilled after inspection.`);
+      load();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed");
     } finally {
@@ -241,13 +326,26 @@ export default function AdminOrdersPage() {
       return;
     }
 
+    const current = orders.find((o) => o.id === id)?.status;
+    if (current === status) return;
+    const forward = current ? ORDER_STATUS_FORWARD_MAP[current] ?? [] : [];
+    let force = false;
+    if (current && !forward.includes(status)) {
+      const proceed = window.confirm(
+        `Move this order from "${ORDER_STATUS_LABELS[current]}" to "${ORDER_STATUS_LABELS[status]}"? ` +
+          "This is a backward or unusual transition and will be forced.",
+      );
+      if (!proceed) return;
+      force = true;
+    }
+
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
-    const patch: { status: OrderStatus; buyer_notified_at?: string } = { status };
-    if (status === "confirmed") {
-      patch.buyer_notified_at = new Date().toISOString();
-    }
-    const { error } = await supabase.from("orders").update(patch).eq("id", id);
+    const { error } = await supabase.rpc("set_order_status", {
+      p_order_id: id,
+      p_to: status,
+      p_force: force,
+    });
     if (error) {
       setMessage(error.message);
       return;
@@ -427,22 +525,9 @@ export default function AdminOrdersPage() {
                             <button
                               type="button"
                               disabled={busy === `fulfill-${group.supply_request.id}`}
-                              onClick={() => {
-                                const sr = group.supply_request!;
-                                setBusy(`fulfill-${sr.id}`);
-                                setMessage(null);
-                                try {
-                                  fulfillDemoSupplyRequest(sr.id);
-                                  setMessage(
-                                    `Certified ${group.supplier_name} supply as fulfilled after inspection.`,
-                                  );
-                                  load();
-                                } catch (err) {
-                                  setMessage(err instanceof Error ? err.message : "Failed");
-                                } finally {
-                                  setBusy(null);
-                                }
-                              }}
+                              onClick={() =>
+                                void certifyFulfilled(group.supply_request!, group.supplier_name)
+                              }
                               className="mt-2 bg-forest px-3 py-1.5 text-xs font-semibold text-sand-light disabled:opacity-50"
                             >
                               Certify fulfilled (inspected)
@@ -532,9 +617,15 @@ export default function AdminOrdersPage() {
           );
         })}
       </ul>
-      {orders.length === 0 && (
+      {orders.length === 0 && page === 0 && (
         <p className="mt-8 text-sm text-ink-soft">No orders yet.</p>
       )}
+      <Pagination
+        page={page}
+        pageSize={ORDERS_PAGE_SIZE}
+        count={totalOrders}
+        onPageChange={setPage}
+      />
 
       <SupplierCompareDialog
         open={Boolean(compareOrder && selection)}

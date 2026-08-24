@@ -22,7 +22,7 @@ export default function SupplierProductsPage() {
         <div>
           <h1 className="font-display text-3xl text-charcoal">My products</h1>
           <p className="mt-2 text-sm text-ink-soft">
-            Products you add appear in the AMG Stores shop. Buyers never see your supplier name.
+            Products you add appear in the AMG Online Store shop. Buyers never see your supplier name.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -2,33 +2,46 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Pagination } from "@/components/admin/Pagination";
 import { formatKes } from "@/lib/format";
 import { isDemoMode } from "@/lib/supabase/config";
 import { deleteDemoProduct, getDemoProducts } from "@/lib/store/demo-store";
 import type { Product } from "@/lib/types";
 
+const PRODUCTS_PAGE_SIZE = 25;
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalProducts, setTotalProducts] = useState<number | null>(null);
 
   function load() {
     if (isDemoMode()) {
-      void Promise.resolve(getDemoProducts({ activeOnly: false })).then(setProducts);
+      void Promise.resolve(getDemoProducts({ activeOnly: false })).then((all) => {
+        setTotalProducts(all.length);
+        setProducts(all.slice(page * PRODUCTS_PAGE_SIZE, page * PRODUCTS_PAGE_SIZE + PRODUCTS_PAGE_SIZE));
+      });
       return;
     }
     void (async () => {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      const { data } = await supabase
+      const from = page * PRODUCTS_PAGE_SIZE;
+      const to = from + PRODUCTS_PAGE_SIZE - 1;
+      const { data, count } = await supabase
         .from("products")
-        .select("*, category:categories(*)")
-        .order("created_at", { ascending: false });
+        .select("*, category:categories(*)", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(from, to);
       setProducts((data as Product[]) ?? []);
+      setTotalProducts(count ?? null);
     })();
   }
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   async function deactivate(id: string) {
     if (!confirm("Deactivate this product?")) return;
@@ -94,6 +107,12 @@ export default function AdminProductsPage() {
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={page}
+        pageSize={PRODUCTS_PAGE_SIZE}
+        count={totalProducts}
+        onPageChange={setPage}
+      />
     </div>
   );
 }
