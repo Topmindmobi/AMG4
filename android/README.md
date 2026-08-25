@@ -1,4 +1,4 @@
-# AMG Stores Android app
+# AMG Online Store Android app
 
 A Trusted Web Activity (TWA) — a thin native shell that loads `https://amgstores.ai`
 full-screen via Chrome, with no URL bar. There is no separate UI to maintain: whatever
