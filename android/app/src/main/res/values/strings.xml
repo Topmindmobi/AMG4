@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AMG Stores</string>
+    <string name="app_name">AMG Online Store</string>
 
     <!-- Mirrors public/.well-known/assetlinks.json on amgstores.ai. -->
     <string name="asset_statements">
