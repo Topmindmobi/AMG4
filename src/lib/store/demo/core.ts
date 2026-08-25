@@ -39,6 +39,7 @@ export const KEYS = {
   dropoffPoints: "amg_dropoff_points_v1",
   riderPayouts: "amg_rider_payouts_v1",
   quoteRequests: "amg_quote_requests_v1",
+  callbackRequests: "amg_callback_requests_v1",
   supplierAddresses: "amg_supplier_addresses_v1",
   serviceRatings: "amg_service_ratings_v1",
 };
@@ -74,6 +75,7 @@ export function ensureSeeded() {
   if (!localStorage.getItem(KEYS.dropoffPoints)) write(KEYS.dropoffPoints, DEMO_DROPOFF_POINTS);
   if (!localStorage.getItem(KEYS.riderPayouts)) write(KEYS.riderPayouts, []);
   if (!localStorage.getItem(KEYS.quoteRequests)) write(KEYS.quoteRequests, []);
+  if (!localStorage.getItem(KEYS.callbackRequests)) write(KEYS.callbackRequests, []);
   if (!localStorage.getItem(KEYS.serviceRatings)) write(KEYS.serviceRatings, []);
   if (!localStorage.getItem(KEYS.profiles)) {
     write(KEYS.profiles, [

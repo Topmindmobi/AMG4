@@ -23,6 +23,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/orders", label: "Orders" },
       { href: "/admin/order-status", label: "Order Status" },
       { href: "/admin/quotes", label: "Quotes" },
+      { href: "/admin/callbacks", label: "Order on Call" },
     ],
   },
   {

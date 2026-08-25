@@ -361,6 +361,21 @@ export interface QuoteRequest {
   market_analysis?: QuoteMarketAnalysis | null;
 }
 
+export type CallbackRequestStatus = "pending" | "contacted" | "resolved";
+
+/** "Order on call" — a customer left their number instead of checking out online. */
+export interface CallbackRequest {
+  id: string;
+  user_id: string | null;
+  customer_name: string;
+  phone: string;
+  note: string | null;
+  status: CallbackRequestStatus;
+  created_at: string;
+  contacted_at: string | null;
+  contacted_by: string | null;
+}
+
 export interface PushSubscriptionRecord {
   user_id: string;
   endpoint: string;

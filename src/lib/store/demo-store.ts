@@ -20,6 +20,7 @@
  */
 
 export * from "./demo/auth";
+export * from "./demo/callbacks";
 export * from "./demo/catalog";
 export * from "./demo/notifications";
 export * from "./demo/orders";
