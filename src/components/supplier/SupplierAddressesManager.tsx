@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { mapsUrlFromCoords, parseMapsUrl } from "@/lib/geo";
 import { TOWNS } from "@/lib/format";
+import { isDemoMode } from "@/lib/supabase/config";
 import {
   deleteDemoSupplierAddress,
   getDemoSupplierAddresses,
@@ -59,11 +60,25 @@ export function SupplierAddressesManager({
   const [error, setError] = useState<string | null>(null);
 
   function reload() {
-    setAddresses(getDemoSupplierAddresses(supplierId));
+    if (isDemoMode()) {
+      setAddresses(getDemoSupplierAddresses(supplierId));
+      return;
+    }
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("supplier_addresses")
+        .select("*")
+        .eq("supplier_id", supplierId)
+        .order("created_at");
+      setAddresses((data as SupplierAddress[]) ?? []);
+    })();
   }
 
   useEffect(() => {
     reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierId]);
 
   const pinPreview = useMemo(() => {
@@ -111,7 +126,7 @@ export function SupplierAddressesManager({
     }));
   }
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setMessage(null);
@@ -137,26 +152,103 @@ export function SupplierAddressesManager({
       maps_url = mapsUrlFromCoords(lat, lng);
     }
 
+    const makeDefault = form.is_default || addresses.length === 0;
+
     try {
-      upsertDemoSupplierAddress({
-        id: form.id,
-        supplier_id: supplierId,
-        label: form.label,
-        name: form.name,
-        town: form.town,
-        line1: form.line1,
-        phone: form.phone || null,
-        maps_url,
-        lat,
-        lng,
-        is_default: form.is_default || addresses.length === 0,
-      });
+      if (isDemoMode()) {
+        upsertDemoSupplierAddress({
+          id: form.id,
+          supplier_id: supplierId,
+          label: form.label,
+          name: form.name,
+          town: form.town,
+          line1: form.line1,
+          phone: form.phone || null,
+          maps_url,
+          lat,
+          lng,
+          is_default: makeDefault,
+        });
+      } else {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const row = {
+          supplier_id: supplierId,
+          label: form.label,
+          name: form.name.trim(),
+          town: form.town,
+          line1: form.line1.trim(),
+          phone: form.phone.trim() || null,
+          maps_url,
+          lat,
+          lng,
+          is_default: makeDefault,
+        };
+        // Unset any existing default first — the DB only allows one
+        // is_default=true row per supplier (partial unique index).
+        if (makeDefault) {
+          const { error: unsetErr } = await supabase
+            .from("supplier_addresses")
+            .update({ is_default: false })
+            .eq("supplier_id", supplierId)
+            .eq("is_default", true);
+          if (unsetErr) throw unsetErr;
+        }
+        if (form.id) {
+          const { error: updErr } = await supabase
+            .from("supplier_addresses")
+            .update(row)
+            .eq("id", form.id);
+          if (updErr) throw updErr;
+        } else {
+          const { error: insErr } = await supabase.from("supplier_addresses").insert(row);
+          if (insErr) throw insErr;
+        }
+      }
       reload();
       setMessage(form.id ? "Address updated." : "Address added.");
       resetForm();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save address");
     }
+  }
+
+  async function handleSetDefault(addr: SupplierAddress) {
+    if (isDemoMode()) {
+      setDemoSupplierAddressDefault(addr.id, supplierId);
+    } else {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      await supabase
+        .from("supplier_addresses")
+        .update({ is_default: false })
+        .eq("supplier_id", supplierId)
+        .eq("is_default", true);
+      await supabase.from("supplier_addresses").update({ is_default: true }).eq("id", addr.id);
+    }
+    reload();
+    setMessage(`"${addr.name}" is now the default.`);
+  }
+
+  async function handleDelete(addr: SupplierAddress) {
+    if (!confirm(`Remove "${addr.name}"?`)) return;
+    if (isDemoMode()) {
+      deleteDemoSupplierAddress(addr.id, supplierId);
+    } else {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      await supabase.from("supplier_addresses").delete().eq("id", addr.id).eq("supplier_id", supplierId);
+      const remaining = addresses.filter((a) => a.id !== addr.id);
+      if (remaining.length > 0 && !remaining.some((a) => a.is_default)) {
+        await supabase
+          .from("supplier_addresses")
+          .update({ is_default: true })
+          .eq("id", remaining[0].id);
+      }
+    }
+    reload();
+    setMessage("Address removed.");
+    if (form.id === addr.id) resetForm();
   }
 
   return (
@@ -371,11 +463,7 @@ export function SupplierAddressesManager({
                 {!addr.is_default && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setDemoSupplierAddressDefault(addr.id, supplierId);
-                      reload();
-                      setMessage(`“${addr.name}” is now the default.`);
-                    }}
+                    onClick={() => void handleSetDefault(addr)}
                     className="border border-forest px-3 py-1.5 font-semibold text-forest"
                   >
                     Set default
@@ -390,13 +478,7 @@ export function SupplierAddressesManager({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!confirm(`Remove “${addr.name}”?`)) return;
-                    deleteDemoSupplierAddress(addr.id, supplierId);
-                    reload();
-                    setMessage("Address removed.");
-                    if (form.id === addr.id) resetForm();
-                  }}
+                  onClick={() => void handleDelete(addr)}
                   className="border border-ember/40 px-3 py-1.5 font-semibold text-ember"
                 >
                   Remove
