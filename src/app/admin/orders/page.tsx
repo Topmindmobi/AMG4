@@ -19,6 +19,7 @@ import {
 import { groupOrderBySupplier } from "@/lib/orders";
 import { notifyOrderStatus } from "@/lib/notifications/notify-client";
 import { notifyRiderDispatchPush } from "@/lib/push/subscribe-client";
+import { rankRidersByDistance } from "@/lib/rider-selection";
 import { isDemoMode } from "@/lib/supabase/config";
 import {
   rankSuppliersForOrder,
@@ -419,6 +420,7 @@ export default function AdminOrdersPage() {
             (assigned.length === 0 &&
               (order.status === "pending" || order.status === "awaiting_supplier"));
           const riders = ridersByTown[order.town] || [];
+          const rankedRiders = rankRidersByDistance(riders, order.town);
           const rank = rankings[order.id];
           const openForSourcing =
             order.status === "pending" ||
@@ -609,9 +611,9 @@ export default function AdminOrdersPage() {
                       className="amg-select border border-line bg-white px-2 py-2 text-xs"
                     >
                       <option value="">Choose rider…</option>
-                      {riders.map((r) => (
+                      {rankedRiders.map(({ rider: r, distanceKm }) => (
                         <option key={r.id} value={r.id}>
-                          {r.name} · {RIDER_VEHICLE_LABELS[r.vehicle] ?? r.vehicle}
+                          {r.name} · {RIDER_VEHICLE_LABELS[r.vehicle] ?? r.vehicle} · ~{distanceKm} km
                         </option>
                       ))}
                     </select>

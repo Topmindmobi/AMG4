@@ -20,6 +20,7 @@ import {
   SUPPLY_STATUS_LABELS,
 } from "@/lib/format";
 import { orderRatingSummary } from "@/lib/ratings";
+import { rankRidersByDistance } from "@/lib/rider-selection";
 import type {
   Order,
   OrderStatus,
@@ -468,17 +469,17 @@ export function OrderStatusKanban({
                 <option value="" disabled>
                   Select…
                 </option>
-                {(riders.filter((r) => !r.town || r.town === pickRiderOrder.town)
-                  .length
-                  ? riders.filter(
-                      (r) => !r.town || r.town === pickRiderOrder.town,
-                    )
-                  : riders
-                ).map((r) => (
+                {rankRidersByDistance(
+                  riders.filter((r) => !r.town || r.town === pickRiderOrder.town).length
+                    ? riders.filter((r) => !r.town || r.town === pickRiderOrder.town)
+                    : riders,
+                  pickRiderOrder.town,
+                ).map(({ rider: r, distanceKm }) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
                     {r.town ? ` · ${r.town}` : ""}
                     {r.vehicle ? ` · ${RIDER_VEHICLE_LABELS[r.vehicle] ?? r.vehicle}` : ""}
+                    {` · ~${distanceKm} km`}
                   </option>
                 ))}
               </select>
