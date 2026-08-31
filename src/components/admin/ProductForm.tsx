@@ -6,6 +6,7 @@ import { BarcodeScanner } from "@/components/admin/BarcodeScanner";
 import { CameraCapture } from "@/components/admin/CameraCapture";
 import { slugify, TOWNS } from "@/lib/format";
 import { isDemoMode } from "@/lib/supabase/config";
+import { getErrorMessage } from "@/lib/supabase/errors";
 import { upsertDemoProduct } from "@/lib/store/demo-store";
 import type { Category, Product, Supplier, Town } from "@/lib/types";
 
@@ -201,7 +202,7 @@ export function ProductForm({
       }
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(getErrorMessage(err, "Save failed"));
     } finally {
       setLoading(false);
     }
