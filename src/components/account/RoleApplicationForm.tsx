@@ -1,0 +1,239 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { CameraCapture } from "@/components/admin/CameraCapture";
+import { RIDER_VEHICLE_LABELS, RIDER_VEHICLES, TOWNS } from "@/lib/format";
+import { isDemoMode } from "@/lib/supabase/config";
+import { getErrorMessage } from "@/lib/supabase/errors";
+import { submitDemoRoleApplication } from "@/lib/store/demo-store";
+import type { RoleApplication, RoleApplicationType, Town } from "@/lib/types";
+
+type DocKey = "national_id" | "business_permit" | "driving_license";
+
+const DOC_LABELS: Record<DocKey, string> = {
+  national_id: "National ID",
+  business_permit: "Business permit / KRA PIN",
+  driving_license: "Driving license",
+};
+
+export function RoleApplicationForm({
+  type,
+  userId,
+  email,
+  onSubmitted,
+}: {
+  type: RoleApplicationType;
+  userId: string;
+  email: string;
+  onSubmitted: (application: RoleApplication) => void;
+}) {
+  const requiredDocs: DocKey[] =
+    type === "supplier" ? ["national_id", "business_permit"] : ["national_id", "driving_license"];
+
+  const [docFiles, setDocFiles] = useState<Partial<Record<DocKey, File>>>({});
+  const [docPreviews, setDocPreviews] = useState<Partial<Record<DocKey, string>>>({});
+  const [cameraTarget, setCameraTarget] = useState<DocKey | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function onCapture(file: File, dataUrl: string) {
+    if (!cameraTarget) return;
+    setDocFiles((f) => ({ ...f, [cameraTarget]: file }));
+    setDocPreviews((p) => ({ ...p, [cameraTarget]: dataUrl }));
+    setCameraTarget(null);
+  }
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    const missing = requiredDocs.filter((d) => !docFiles[d]);
+    if (missing.length > 0) {
+      setError(`Please add: ${missing.map((d) => DOC_LABELS[d]).join(", ")}`);
+      return;
+    }
+
+    const contact_phone = String(fd.get("contact_phone") || "").trim();
+    const town = String(fd.get("town") || "") as Town | "";
+    if (!contact_phone || !town) {
+      setError("Phone and town are required.");
+      return;
+    }
+
+    const base = {
+      user_id: userId,
+      type,
+      email,
+      business_name: type === "supplier" ? String(fd.get("business_name") || "").trim() || null : null,
+      vehicle: type === "rider" ? String(fd.get("vehicle") || "boda") : null,
+      contact_phone,
+      town: town as Town,
+      notes: String(fd.get("notes") || "").trim() || null,
+    };
+
+    setLoading(true);
+    try {
+      if (isDemoMode()) {
+        const created = submitDemoRoleApplication({
+          ...base,
+          national_id_path: docPreviews.national_id ?? null,
+          business_permit_path: docPreviews.business_permit ?? null,
+          driving_license_path: docPreviews.driving_license ?? null,
+        });
+        onSubmitted(created);
+        return;
+      }
+
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+
+      async function uploadDoc(key: DocKey): Promise<string | null> {
+        const file = docFiles[key];
+        if (!file) return null;
+        const path = `${userId}/${key}-${Date.now()}.jpg`;
+        const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, file, {
+          upsert: true,
+        });
+        if (upErr) throw upErr;
+        return path;
+      }
+
+      const [national_id_path, business_permit_path, driving_license_path] = await Promise.all([
+        uploadDoc("national_id"),
+        uploadDoc("business_permit"),
+        uploadDoc("driving_license"),
+      ]);
+
+      const { data: inserted, error: insErr } = await supabase
+        .from("role_applications")
+        .insert({
+          ...base,
+          national_id_path,
+          business_permit_path,
+          driving_license_path,
+        })
+        .select()
+        .single();
+      if (insErr) throw insErr;
+      onSubmitted(inserted as RoleApplication);
+    } catch (err) {
+      setError(getErrorMessage(err, "Could not submit application"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mt-8 grid max-w-xl gap-4">
+      {type === "supplier" && (
+        <label className="text-xs uppercase tracking-wide text-ink-soft">
+          Business / shop name
+          <input
+            name="business_name"
+            required
+            placeholder="e.g. Lakeview Electronics"
+            className="mt-1 block w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal"
+          />
+        </label>
+      )}
+      {type === "rider" && (
+        <label className="text-xs uppercase tracking-wide text-ink-soft">
+          Vehicle
+          <select
+            name="vehicle"
+            defaultValue="boda"
+            className="amg-select mt-1 block w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal"
+          >
+            {RIDER_VEHICLES.map((v) => (
+              <option key={v} value={v}>
+                {RIDER_VEHICLE_LABELS[v]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <label className="text-xs uppercase tracking-wide text-ink-soft">
+        Contact phone
+        <input
+          name="contact_phone"
+          required
+          placeholder="07…"
+          className="mt-1 block w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal"
+        />
+      </label>
+      <label className="text-xs uppercase tracking-wide text-ink-soft">
+        Town
+        <select
+          name="town"
+          required
+          defaultValue=""
+          className="amg-select mt-1 block w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal"
+        >
+          <option value="" disabled>
+            Choose a town
+          </option>
+          {TOWNS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-xs uppercase tracking-wide text-ink-soft">
+        Notes (optional)
+        <textarea
+          name="notes"
+          rows={3}
+          placeholder={type === "supplier" ? "What do you sell?" : "Anything admin should know"}
+          className="mt-1 block w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-sm text-charcoal"
+        />
+      </label>
+
+      <div className="border-t border-line pt-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+          Required documents
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {requiredDocs.map((doc) => (
+            <div key={doc} className="rounded-lg border-[1.5px] border-line p-3">
+              <p className="text-sm font-medium text-charcoal">{DOC_LABELS[doc]}</p>
+              {docPreviews[doc] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={docPreviews[doc]}
+                  alt={DOC_LABELS[doc]}
+                  className="mt-2 h-32 w-full rounded-lg object-cover"
+                />
+              ) : (
+                <p className="mt-1 text-xs text-ink-soft">Not added yet</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setCameraTarget(doc)}
+                className="mt-2 text-xs font-semibold text-forest hover:underline"
+              >
+                {docPreviews[doc] ? "Retake" : "Add photo"}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <p className="rounded-lg border-[1.5px] border-ember/40 bg-ember/10 px-3 py-2 text-sm text-charcoal">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="rounded-lg bg-ember px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {loading ? "Submitting…" : "Submit application"}
+      </button>
+
+      <CameraCapture open={cameraTarget !== null} onClose={() => setCameraTarget(null)} onCapture={onCapture} />
+    </form>
+  );
+}

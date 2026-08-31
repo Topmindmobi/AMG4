@@ -106,6 +106,29 @@ export interface DropoffPoint {
   description: string | null;
 }
 
+export type RoleApplicationType = "supplier" | "rider";
+export type RoleApplicationStatus = "pending" | "approved" | "rejected";
+
+export interface RoleApplication {
+  id: string;
+  user_id: string;
+  type: RoleApplicationType;
+  status: RoleApplicationStatus;
+  business_name: string | null;
+  vehicle: string | null;
+  email: string;
+  contact_phone: string;
+  town: Town;
+  notes: string | null;
+  national_id_path: string | null;
+  business_permit_path: string | null;
+  driving_license_path: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+}
+
 export interface Category {
   id: string;
   slug: string;

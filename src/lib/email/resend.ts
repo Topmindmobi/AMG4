@@ -118,3 +118,49 @@ export async function sendAccountWelcomeEmail(input: {
     return { sent: false, skipped: false, error };
   }
 }
+
+/** Send the supplier/rider application decision email. Soft-fail, same as every other send here. */
+export async function sendRoleApplicationDecisionEmail(input: {
+  to: string;
+  type: "supplier" | "rider";
+  decision: "approved" | "rejected";
+  reason?: string | null;
+}): Promise<SendOrderEmailResult> {
+  if (!isEmailConfigured()) {
+    const reason = "Email not configured (RESEND_API_KEY / EMAIL_FROM)";
+    console.warn(`[email] skipped application decision: ${reason}`);
+    return { sent: false, skipped: true, reason };
+  }
+  if (!input.to || !input.to.includes("@")) {
+    return { sent: false, skipped: true, reason: `Invalid email: ${input.to}` };
+  }
+
+  const roleLabel = input.type === "supplier" ? "supplier" : "rider";
+  const subject =
+    input.decision === "approved"
+      ? `Your AMG Online Store ${roleLabel} application was approved`
+      : `Your AMG Online Store ${roleLabel} application update`;
+  const html =
+    input.decision === "approved"
+      ? `<p>Good news — your ${roleLabel} application has been approved.</p><p>Sign in at your AMG Online Store account to get started.</p>`
+      : `<p>Your ${roleLabel} application wasn't approved this time.</p>${
+          input.reason ? `<p>Reason: ${input.reason}</p>` : ""
+        }<p>You're welcome to apply again from your account page.</p>`;
+
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY!.trim());
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM!.trim(),
+      to: input.to,
+      subject,
+      html,
+    });
+    if (error) throw error;
+    console.info(`[email] application ${input.decision} sent -> ${input.to} id=${data?.id}`);
+    return { sent: true, id: data?.id ?? "" };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    console.error(`[email] application decision failed:`, error);
+    return { sent: false, skipped: false, error };
+  }
+}
