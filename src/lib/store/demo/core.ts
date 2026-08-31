@@ -42,6 +42,7 @@ export const KEYS = {
   callbackRequests: "amg_callback_requests_v1",
   supplierAddresses: "amg_supplier_addresses_v1",
   serviceRatings: "amg_service_ratings_v1",
+  roleApplications: "amg_role_applications_v1",
 };
 
 export function read<T>(key: string, fallback: T): T {
@@ -77,6 +78,7 @@ export function ensureSeeded() {
   if (!localStorage.getItem(KEYS.quoteRequests)) write(KEYS.quoteRequests, []);
   if (!localStorage.getItem(KEYS.callbackRequests)) write(KEYS.callbackRequests, []);
   if (!localStorage.getItem(KEYS.serviceRatings)) write(KEYS.serviceRatings, []);
+  if (!localStorage.getItem(KEYS.roleApplications)) write(KEYS.roleApplications, []);
   if (!localStorage.getItem(KEYS.profiles)) {
     write(KEYS.profiles, [
       DEMO_CUSTOMER,

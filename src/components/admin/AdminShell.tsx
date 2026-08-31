@@ -38,6 +38,7 @@ const navGroups: NavGroup[] = [
     links: [
       { href: "/admin/suppliers", label: "Suppliers" },
       { href: "/admin/riders", label: "Riders" },
+      { href: "/admin/applications", label: "Applications" },
     ],
   },
 ];

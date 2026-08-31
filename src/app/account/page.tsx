@@ -74,6 +74,22 @@ export default function AccountPage() {
             Admin console
           </Link>
         )}
+        {user.role === "customer" && (
+          <>
+            <Link
+              href="/account/become-supplier"
+              className="rounded-lg border-[1.5px] border-forest px-5 py-2.5 text-sm font-semibold text-forest"
+            >
+              Become a supplier
+            </Link>
+            <Link
+              href="/account/become-rider"
+              className="rounded-lg border-[1.5px] border-forest px-5 py-2.5 text-sm font-semibold text-forest"
+            >
+              Become a rider
+            </Link>
+          </>
+        )}
       </div>
 
       <div className="mt-12 border-t border-line pt-6">

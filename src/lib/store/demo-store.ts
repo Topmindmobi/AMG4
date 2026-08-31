@@ -26,5 +26,6 @@ export * from "./demo/notifications";
 export * from "./demo/orders";
 export * from "./demo/quotes";
 export * from "./demo/rider-payouts";
+export * from "./demo/role-applications";
 export * from "./demo/service-ratings";
 export * from "./demo/supply-requests";
