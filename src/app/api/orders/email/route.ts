@@ -12,11 +12,17 @@ type Body = {
 };
 
 function isOrderEvent(value: string): value is OrderSmsEvent {
-  return value === "confirmed" || value === "dispatched" || value === "delivered";
+  return (
+    value === "placed" ||
+    value === "confirmed" ||
+    value === "dispatched" ||
+    value === "delivered" ||
+    value === "cancelled"
+  );
 }
 
 /**
- * Soft-fail email notify for order confirmed / dispatched / delivered.
+ * Soft-fail email notify for order placed / confirmed / dispatched / delivered / cancelled.
  * Never blocks the caller — always returns 200 with result details, EXCEPT
  * for auth failures, which return a real 401/403 so this endpoint can't be
  * used to spam arbitrary inboxes on AMG's paid Resend account. The one real
@@ -41,7 +47,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         sent: false,
-        error: "Required: orderId, email, event (confirmed|dispatched|delivered)",
+        error: "Required: orderId, email, event (placed|confirmed|dispatched|delivered|cancelled)",
       },
       { status: 200 },
     );

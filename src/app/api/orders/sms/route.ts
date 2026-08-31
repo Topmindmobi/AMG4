@@ -14,11 +14,17 @@ type Body = {
 };
 
 function isOrderSmsEvent(value: string): value is OrderSmsEvent {
-  return value === "confirmed" || value === "dispatched";
+  return (
+    value === "placed" ||
+    value === "confirmed" ||
+    value === "dispatched" ||
+    value === "delivered" ||
+    value === "cancelled"
+  );
 }
 
 /**
- * Soft-fail SMS notify for order confirmed / dispatched.
+ * Soft-fail SMS notify for order placed / confirmed / dispatched / delivered / cancelled.
  * Never blocks the admin status update — always returns 200 with result details,
  * EXCEPT for auth failures, which return a real 401/403 so this endpoint can't be
  * used to spam arbitrary numbers on AMG's paid Twilio account. The one real caller
@@ -46,7 +52,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         sent: false,
-        error: "Required: orderId, phone, event (confirmed|dispatched)",
+        error: "Required: orderId, phone, event (placed|confirmed|dispatched|delivered|cancelled)",
       },
       { status: 200 },
     );

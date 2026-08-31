@@ -342,35 +342,49 @@ export default function AdminOrdersPage() {
   }
 
   async function setStatus(id: string, status: OrderStatus) {
+    const order = orders.find((o) => o.id === id);
+    const current = order?.status;
+    if (current === status) return;
+
     if (isDemoMode()) {
       updateDemoOrderStatus(id, status);
-      load();
-      return;
+    } else {
+      const forward = current ? ORDER_STATUS_FORWARD_MAP[current] ?? [] : [];
+      let force = false;
+      if (current && !forward.includes(status)) {
+        const proceed = window.confirm(
+          `Move this order from "${ORDER_STATUS_LABELS[current]}" to "${ORDER_STATUS_LABELS[status]}"? ` +
+            "This is a backward or unusual transition and will be forced.",
+        );
+        if (!proceed) return;
+        force = true;
+      }
+
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error } = await supabase.rpc("set_order_status", {
+        p_order_id: id,
+        p_to: status,
+        p_force: force,
+      });
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
     }
 
-    const current = orders.find((o) => o.id === id)?.status;
-    if (current === status) return;
-    const forward = current ? ORDER_STATUS_FORWARD_MAP[current] ?? [] : [];
-    let force = false;
-    if (current && !forward.includes(status)) {
-      const proceed = window.confirm(
-        `Move this order from "${ORDER_STATUS_LABELS[current]}" to "${ORDER_STATUS_LABELS[status]}"? ` +
-          "This is a backward or unusual transition and will be forced.",
-      );
-      if (!proceed) return;
-      force = true;
-    }
-
-    const { createClient } = await import("@/lib/supabase/client");
-    const supabase = createClient();
-    const { error } = await supabase.rpc("set_order_status", {
-      p_order_id: id,
-      p_to: status,
-      p_force: force,
-    });
-    if (error) {
-      setMessage(error.message);
-      return;
+    // This dropdown can reach any status directly (unlike the dedicated
+    // Confirm/Dispatch buttons above, which already notify) — buyers were
+    // never told when an order got marked delivered or cancelled this way.
+    // Intermediate statuses (awaiting_supplier etc.) stay silent — noise the
+    // buyer doesn't need.
+    if (order && (status === "delivered" || status === "cancelled")) {
+      await notifyOrderStatus({
+        orderId: id,
+        phone: order.phone,
+        email: order.email,
+        event: status,
+      });
     }
     load();
   }

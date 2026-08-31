@@ -9,6 +9,10 @@ export function isEmailConfigured(): boolean {
 function buildSubjectAndBody(event: OrderSmsEvent, orderId: string): { subject: string; html: string } {
   const ref = shortOrderRef(orderId);
   const body: Record<OrderSmsEvent, { subject: string; line: string }> = {
+    placed: {
+      subject: `We received your AMG Online Store order ${ref}`,
+      line: "We'll confirm it shortly.",
+    },
     confirmed: {
       subject: `Your AMG Online Store order ${ref} is confirmed`,
       line: "We'll dispatch it soon.",
@@ -20,6 +24,10 @@ function buildSubjectAndBody(event: OrderSmsEvent, orderId: string): { subject: 
     delivered: {
       subject: `Your AMG Online Store order ${ref} has been delivered`,
       line: "Asante for shopping with AMG Online Store!",
+    },
+    cancelled: {
+      subject: `Your AMG Online Store order ${ref} was cancelled`,
+      line: "If this wasn't expected, please contact us.",
     },
   };
   const { subject, line } = body[event];
