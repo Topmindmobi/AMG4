@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { listDropoffPoints } from "@/lib/data/delivery";
 import {
   formatKes,
   SUPPLY_METHOD_LABELS,
@@ -11,10 +12,10 @@ import {
   SUPPLY_VEHICLE_LABELS,
   TOWNS,
 } from "@/lib/format";
+import { isDemoMode } from "@/lib/supabase/config";
 import {
   confirmDemoSupplyRequest,
   dispatchDemoSupplyRequest,
-  getDemoDropoffPoints,
   getDemoSupplyRequest,
 } from "@/lib/store/demo-store";
 import type {
@@ -47,12 +48,25 @@ export default function SupplierRequestDetailPage() {
   const [vehicleDescription, setVehicleDescription] = useState("");
 
   useEffect(() => {
-    const r = getDemoSupplyRequest(params.id);
-    if (r && supplierId && r.supplier_id !== supplierId) {
-      router.replace("/supplier/requests");
-      return;
-    }
-    void Promise.resolve(r).then((req) => {
+    if (!supplierId) return;
+    void (async () => {
+      let req: SupplyRequest | null;
+      if (isDemoMode()) {
+        req = getDemoSupplyRequest(params.id);
+      } else {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("supply_requests")
+          .select("*")
+          .eq("id", params.id)
+          .maybeSingle();
+        req = data as SupplyRequest | null;
+      }
+      if (req && req.supplier_id !== supplierId) {
+        router.replace("/supplier/requests");
+        return;
+      }
       setRequest(req);
       if (req) {
         setTown(req.customer_town);
@@ -60,13 +74,14 @@ export default function SupplierRequestDetailPage() {
         defaultAt.setMinutes(0, 0, 0);
         setDispatchAt(defaultAt.toISOString().slice(0, 16));
       }
-    });
+    })();
   }, [params.id, supplierId, router]);
 
   useEffect(() => {
-    const points = getDemoDropoffPoints(town);
-    setHubs(points);
-    setLocationId((prev) => (points.some((p) => p.id === prev) ? prev : points[0]?.id ?? ""));
+    void listDropoffPoints(town).then((points) => {
+      setHubs(points);
+      setLocationId((prev) => (points.some((p) => p.id === prev) ? prev : points[0]?.id ?? ""));
+    });
   }, [town]);
 
   const selectedHub = useMemo(
@@ -74,21 +89,32 @@ export default function SupplierRequestDetailPage() {
     [hubs, locationId],
   );
 
-  function confirm(e: FormEvent) {
+  async function confirm(e: FormEvent) {
     e.preventDefault();
     if (!request || !selectedHub) return;
     setLoading(true);
     setError(null);
+    const logistics = {
+      method,
+      amg_location_id: selectedHub.id,
+      amg_location_name: selectedHub.name,
+      amg_location_town: selectedHub.town,
+      planned_dispatch_at: new Date(dispatchAt).toISOString(),
+      notes: notes.trim() || null,
+    };
     try {
-      const updated = confirmDemoSupplyRequest(request.id, {
-        method,
-        amg_location_id: selectedHub.id,
-        amg_location_name: selectedHub.name,
-        amg_location_town: selectedHub.town,
-        planned_dispatch_at: new Date(dispatchAt).toISOString(),
-        notes: notes.trim() || null,
-      });
-      setRequest(updated);
+      if (isDemoMode()) {
+        setRequest(confirmDemoSupplyRequest(request.id, logistics));
+      } else {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { error } = await supabase.rpc("supplier_confirm_supply_request", {
+          p_request_id: request.id,
+          p_logistics: logistics,
+        });
+        if (error) throw error;
+        setRequest({ ...request, status: "confirmed", logistics });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not confirm");
     } finally {
@@ -96,21 +122,36 @@ export default function SupplierRequestDetailPage() {
     }
   }
 
-  function markDispatched(e: FormEvent) {
+  async function markDispatched(e: FormEvent) {
     e.preventDefault();
     if (!request) return;
     setLoading(true);
     setError(null);
+    const dispatch = {
+      vehicle_type: vehicleType,
+      driver_name: driverName,
+      driver_phone: driverPhone,
+      vehicle_plate: vehiclePlate,
+      vehicle_description: vehicleDescription.trim() || null,
+    };
     try {
-      setRequest(
-        dispatchDemoSupplyRequest(request.id, {
-          vehicle_type: vehicleType,
-          driver_name: driverName,
-          driver_phone: driverPhone,
-          vehicle_plate: vehiclePlate,
-          vehicle_description: vehicleDescription.trim() || null,
-        }),
-      );
+      if (isDemoMode()) {
+        setRequest(dispatchDemoSupplyRequest(request.id, dispatch));
+      } else {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { error } = await supabase.rpc("supplier_dispatch_supply_request", {
+          p_request_id: request.id,
+          p_dispatch: dispatch,
+        });
+        if (error) throw error;
+        setRequest({
+          ...request,
+          status: "dispatched",
+          dispatch,
+          dispatched_at: new Date().toISOString(),
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not dispatch");
     } finally {
