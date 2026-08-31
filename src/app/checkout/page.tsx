@@ -9,6 +9,7 @@ import { useCart } from "@/lib/cart";
 import { listDropoffPoints } from "@/lib/data/delivery";
 import { formatKes, PAY_NOW_DISCOUNT_RATE, TOWNS } from "@/lib/format";
 import { payNowWithMpesa } from "@/lib/mpesa/pay-now-client";
+import { notifyOrderStatus } from "@/lib/notifications/notify-client";
 import {
   stashAccountCreatedNotice,
   stashOrderConfirmation,
@@ -198,6 +199,12 @@ export default function CheckoutPage() {
       if (isDemoMode()) {
         const order = createDemoOrder(payload);
         if (accountNotice) stashAccountCreatedNotice(order.id, accountNotice);
+        void notifyOrderStatus({
+          orderId: order.id,
+          phone: payload.phone,
+          email: payload.email,
+          event: "placed",
+        });
         clear();
         router.push(`/order/${order.id}`);
         return;
@@ -236,6 +243,15 @@ export default function CheckoutPage() {
         // Authoritative row straight from place_order() — real server-side
         // prices/totals, paid always false at this point.
         stashOrderConfirmation(result.order as unknown as PlacedOrderSnapshot);
+
+        // Fire-and-forget: never delays the redirect below on an SMS/email
+        // round trip, and notifyOrderStatus() already never throws.
+        void notifyOrderStatus({
+          orderId: orderInput.id,
+          phone: orderInput.phone,
+          email: orderInput.email,
+          event: "placed",
+        });
 
         if (payment === "mpesa" && paid && paymentToken) {
           try {

@@ -3,7 +3,7 @@ import twilio from "twilio";
 export { normalizeKenyaPhone } from "@/lib/phone";
 import { normalizeKenyaPhone } from "@/lib/phone";
 
-export type OrderSmsEvent = "confirmed" | "dispatched" | "delivered";
+export type OrderSmsEvent = "placed" | "confirmed" | "dispatched" | "delivered" | "cancelled";
 
 export function isTwilioConfigured(): boolean {
   const sid = process.env.TWILIO_ACCOUNT_SID?.trim();
@@ -24,11 +24,17 @@ export function shortOrderRef(orderId: string): string {
 
 function buildMessage(event: OrderSmsEvent, orderId: string): string {
   const ref = shortOrderRef(orderId);
+  if (event === "placed") {
+    return `AMG Store: We received your order ${ref}. We'll confirm it shortly.`;
+  }
   if (event === "confirmed") {
     return `AMG Store: Your order ${ref} is confirmed. We will dispatch soon.`;
   }
   if (event === "delivered") {
     return `AMG Store: Your order ${ref} has been delivered. Asante for shopping with AMG!`;
+  }
+  if (event === "cancelled") {
+    return `AMG Store: Your order ${ref} has been cancelled. Contact us if this wasn't expected.`;
   }
   return `AMG Store: Your order ${ref} is out for delivery (dispatched).`;
 }
