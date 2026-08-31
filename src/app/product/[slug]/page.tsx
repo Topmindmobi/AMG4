@@ -9,6 +9,7 @@ import {
   productGalleryUrls,
   productShortDescription,
 } from "@/lib/product-image";
+import { looksLikeHtml, plainTextToHtml, sanitizeProductHtml } from "@/lib/rich-text";
 
 export default async function ProductPage({
   params,
@@ -23,6 +24,9 @@ export default async function ProductPage({
   const short = productShortDescription(product);
   const detailed =
     product.detailed_description || product.description || short;
+  const detailedHtml = sanitizeProductHtml(
+    looksLikeHtml(detailed) ? detailed : plainTextToHtml(detailed),
+  );
 
   return (
     <div className="mx-auto grid max-w-[1120px] gap-10 px-5 py-10 lg:grid-cols-2">
@@ -68,9 +72,10 @@ export default async function ProductPage({
 
       <section className="lg:col-span-2">
         <h2 className="font-display text-[27px] text-charcoal">Product details</h2>
-        <div className="mt-4 max-w-3xl space-y-4 text-base leading-relaxed text-ink-soft whitespace-pre-line">
-          {detailed}
-        </div>
+        <div
+          className="mt-4 max-w-3xl space-y-4 text-base leading-relaxed text-ink-soft [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-display [&_h2]:text-xl [&_h3]:font-display [&_h3]:text-lg [&_a]:text-forest [&_a]:underline"
+          dangerouslySetInnerHTML={{ __html: detailedHtml }}
+        />
         {gallery.length > 1 && (
           <div className="mt-10">
             <h3 className="font-display text-xl text-charcoal">Photo gallery</h3>
