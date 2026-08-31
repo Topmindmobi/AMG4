@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useState } from "react";
 import { BarcodeScanner } from "@/components/admin/BarcodeScanner";
 import { CameraCapture } from "@/components/admin/CameraCapture";
 import { slugify, TOWNS } from "@/lib/format";
+import { productImageUrl, resolvePath } from "@/lib/product-image";
 import { isDemoMode } from "@/lib/supabase/config";
 import { getErrorMessage } from "@/lib/supabase/errors";
 import { upsertDemoProduct } from "@/lib/store/demo-store";
@@ -48,13 +49,23 @@ export function ProductForm({
   const [loading, setLoading] = useState(false);
   const [towns, setTowns] = useState<Town[]>(product?.towns ?? ["Homabay"]);
   const [barcode, setBarcode] = useState(product?.barcode ?? "");
+  // product.image_path/gallery are raw Supabase Storage keys (e.g.
+  // "1699999999-photo.jpg"), not URLs — resolve them the same way
+  // ProductCard does, or the <img> src just 404s against the site's own
+  // origin. Freshly captured/uploaded data: URLs bypass this (see
+  // onPhotoCaptured / the file-input handler below) and render as-is.
   const [coverPreview, setCoverPreview] = useState<string | null>(
-    product?.image_path ?? null,
+    product ? productImageUrl(product) : null,
   );
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  // Raw values (storage keys, already-absolute paths, or fresh data: URLs) —
+  // what actually gets saved. Resolved to display URLs only at render time
+  // (see galleryDisplayUrls below), so re-saving an untouched gallery item
+  // doesn't drift the DB column from "storage key" to "resolved URL".
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>(
     product?.gallery ?? [],
   );
+  const galleryDisplayUrls = galleryPreviews.map((g) => (g.startsWith("data:") ? g : (resolvePath(g) ?? g)));
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraTarget, setCameraTarget] = useState<"cover" | "gallery">("cover");
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -105,7 +116,13 @@ export function ProductForm({
       ]),
     );
 
-    let image_path = coverPreview || product?.image_path || null;
+    // coverPreview is a resolved display URL when editing an existing
+    // product (see the state init above) — only use it as the value to
+    // save when a NEW cover was actually captured/chosen this session
+    // (coverFile set), otherwise keep the original raw storage key so the
+    // DB column doesn't drift from "storage key" to "resolved URL" on every
+    // no-photo-change save.
+    let image_path = coverFile ? coverPreview : (product?.image_path ?? null);
 
     const payload = {
       id: product?.id,
@@ -285,9 +302,9 @@ export function ProductForm({
 
         <div>
           <p className="text-xs uppercase tracking-wide text-ink-soft">Gallery photos</p>
-          {galleryPreviews.length > 0 && (
+          {galleryDisplayUrls.length > 0 && (
             <div className="mt-2 grid grid-cols-3 gap-2">
-              {galleryPreviews.map((src, i) => (
+              {galleryDisplayUrls.map((src, i) => (
                 <div key={`${src.slice(0, 32)}-${i}`} className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" className="aspect-square w-full object-cover" />

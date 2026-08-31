@@ -170,6 +170,22 @@ export default function AdminOrderStatusPage() {
         })
         .eq("id", orderId);
       if (error) throw error;
+
+      const { data: riderProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "rider")
+        .eq("rider_id", riderId)
+        .maybeSingle();
+      if (riderProfile?.id) {
+        await notifyRiderDispatchPush({
+          userId: riderProfile.id,
+          orderId,
+          town: order.town,
+          totalKes: Number(order.total_kes),
+          customerName: order.customer_name,
+        });
+      }
     }
     await notifyOrderStatus({
       orderId,
