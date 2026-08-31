@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useState } from "react";
 import { BarcodeScanner } from "@/components/admin/BarcodeScanner";
 import { CameraCapture } from "@/components/admin/CameraCapture";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { slugify, TOWNS } from "@/lib/format";
 import { productImageUrl, resolvePath } from "@/lib/product-image";
 import { isDemoMode } from "@/lib/supabase/config";
@@ -145,6 +146,7 @@ export function ProductForm({
 
     try {
       if (towns.length === 0) throw new Error("Select at least one town");
+      if (!detailed_description.trim()) throw new Error("Add a detailed description");
 
       if (isDemoMode()) {
         const saved = upsertDemoProduct(payload);
@@ -357,13 +359,7 @@ export function ProductForm({
         </label>
         <label className="block text-xs uppercase tracking-wide text-ink-soft">
           Detailed description
-          <textarea
-            name="detailed_description"
-            rows={6}
-            required
-            defaultValue={product?.detailed_description}
-            className="mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
-          />
+          <RichTextEditor name="detailed_description" defaultValue={product?.detailed_description} />
         </label>
         <label className="block text-xs uppercase tracking-wide text-ink-soft">
           Category
