@@ -452,6 +452,9 @@ export function upsertDemoRider(
     vehicle: data.vehicle ?? "boda",
     active: data.active ?? true,
     created_at: new Date().toISOString(),
+    lat: data.lat ?? null,
+    lng: data.lng ?? null,
+    maps_url: data.maps_url ?? null,
   };
   write(KEYS.riders, [rider, ...riders]);
   return rider;

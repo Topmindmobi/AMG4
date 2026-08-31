@@ -76,6 +76,11 @@ export const DEMO_RIDERS: Rider[] = [
     vehicle: "boda",
     active: true,
     created_at: now,
+    // Pinned base (near Homabay town centre) so the demo ranking has at
+    // least one precise-distance rider alongside the town-fallback ones.
+    lat: -0.5301,
+    lng: 34.4612,
+    maps_url: "https://www.google.com/maps?q=-0.5301,34.4612",
   },
   {
     id: "rider-2",

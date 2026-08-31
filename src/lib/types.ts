@@ -94,6 +94,9 @@ export interface Rider {
   vehicle: RiderVehicleType;
   active: boolean;
   created_at: string;
+  lat?: number | null;
+  lng?: number | null;
+  maps_url?: string | null;
 }
 
 export interface DropoffPoint {
