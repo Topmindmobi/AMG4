@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { SupplierAddressesManager } from "@/components/supplier/SupplierAddressesManager";
 import { useAuth } from "@/lib/auth-context";
+import { isDemoMode } from "@/lib/supabase/config";
 import { getDemoSuppliers } from "@/lib/store/demo-store";
-import type { Town } from "@/lib/types";
+import type { Supplier, Town } from "@/lib/types";
 
 export default function SupplierAddressesPage() {
   const { supplierId } = useAuth();
@@ -12,10 +13,23 @@ export default function SupplierAddressesPage() {
 
   useEffect(() => {
     if (!supplierId) return;
-    void Promise.resolve().then(() => {
-      const s = getDemoSuppliers().find((x) => x.id === supplierId);
-      setTown(s?.town ?? null);
-    });
+    if (isDemoMode()) {
+      void Promise.resolve().then(() => {
+        const s = getDemoSuppliers().find((x) => x.id === supplierId);
+        setTown(s?.town ?? null);
+      });
+      return;
+    }
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: s } = await supabase
+        .from("suppliers")
+        .select("*")
+        .eq("id", supplierId)
+        .maybeSingle();
+      setTown((s as Supplier | null)?.town ?? null);
+    })();
   }, [supplierId]);
 
   if (!supplierId) return null;

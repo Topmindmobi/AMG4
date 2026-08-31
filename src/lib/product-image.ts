@@ -1,6 +1,6 @@
 import type { Product } from "@/lib/types";
 
-function resolvePath(path: string | null | undefined): string | null {
+export function resolvePath(path: string | null | undefined): string | null {
   if (!path) return null;
   if (path.startsWith("http") || path.startsWith("/")) return path;
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;

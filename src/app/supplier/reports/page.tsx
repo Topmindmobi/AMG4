@@ -13,12 +13,14 @@ import {
 } from "@/components/admin/reports/ReportUI";
 import { useAuth } from "@/lib/auth-context";
 import { buildSupplierReport } from "@/lib/reports";
+import { isDemoMode } from "@/lib/supabase/config";
 import {
   getDemoCategories,
   getDemoOrders,
   getDemoProductsBySupplier,
   getDemoSupplyRequests,
 } from "@/lib/store/demo-store";
+import type { Category, Order, Product, SupplyRequest } from "@/lib/types";
 
 function SupplierReportsBody({ supplierId }: { supplierId: string }) {
   const range = useReportRange();
@@ -27,18 +29,52 @@ function SupplierReportsBody({ supplierId }: { supplierId: string }) {
   );
 
   useEffect(() => {
-    void Promise.resolve().then(() => {
+    if (isDemoMode()) {
+      void Promise.resolve().then(() => {
+        setData(
+          buildSupplierReport(
+            supplierId,
+            getDemoProductsBySupplier(supplierId),
+            getDemoOrders(),
+            getDemoSupplyRequests({ supplierId }),
+            getDemoCategories(),
+            range,
+          ),
+        );
+      });
+      return;
+    }
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const [{ data: products }, { data: salesJson }, { data: supplyRequests }, { data: categories }] =
+        await Promise.all([
+          supabase.from("products").select("*").eq("supplier_id", supplierId),
+          // Privacy-scoped RPC — returns only order_created_at/status and
+          // this supplier's own line items, never customer PII. See
+          // 028_supplier_sales_data.sql.
+          supabase.rpc("get_supplier_sales_data"),
+          supabase.from("supply_requests").select("*").eq("supplier_id", supplierId),
+          supabase.from("categories").select("*").order("sort_order"),
+        ]);
+      // Reshape the RPC's minimal rows into the same Order[] shape
+      // buildSupplierReport already reads (it only ever touches
+      // created_at/status at the order level, so every other Order field
+      // can simply be absent here).
+      const orders = ((salesJson as { created_at: string; status: string; items: unknown[] }[]) ?? []).map(
+        (o) => ({ created_at: o.created_at, status: o.status, items: o.items }) as unknown as Order,
+      );
       setData(
         buildSupplierReport(
           supplierId,
-          getDemoProductsBySupplier(supplierId),
-          getDemoOrders(),
-          getDemoSupplyRequests({ supplierId }),
-          getDemoCategories(),
+          (products as Product[]) ?? [],
+          orders,
+          (supplyRequests as SupplyRequest[]) ?? [],
+          (categories as Category[]) ?? [],
           range,
         ),
       );
-    });
+    })();
   }, [supplierId, range.from, range.to]);
 
   if (!data) return <p className="mt-8 text-sm text-ink-soft">Loading reports…</p>;

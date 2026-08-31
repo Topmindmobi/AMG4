@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { formatKes } from "@/lib/format";
+import { isDemoMode } from "@/lib/supabase/config";
 import { getDemoProductsBySupplier } from "@/lib/store/demo-store";
 import type { Product } from "@/lib/types";
 
@@ -13,7 +14,20 @@ export default function SupplierProductsPage() {
 
   useEffect(() => {
     if (!supplierId) return;
-    void Promise.resolve(getDemoProductsBySupplier(supplierId)).then(setProducts);
+    if (isDemoMode()) {
+      void Promise.resolve(getDemoProductsBySupplier(supplierId)).then(setProducts);
+      return;
+    }
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("supplier_id", supplierId)
+        .order("created_at", { ascending: false });
+      setProducts((data as Product[]) ?? []);
+    })();
   }, [supplierId]);
 
   return (

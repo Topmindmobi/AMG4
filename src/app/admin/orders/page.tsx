@@ -106,23 +106,29 @@ export default function AdminOrdersPage() {
       const supabase = createClient();
       const from = page * ORDERS_PAGE_SIZE;
       const to = from + ORDERS_PAGE_SIZE - 1;
-      const [{ data, count }, { data: sups }, { data: prods }, { data: supplyData }] = await Promise.all([
-        supabase
-          .from("orders")
-          .select("*, items:order_items(*)", { count: "exact" })
-          .order("created_at", { ascending: false })
-          .range(from, to),
-        supabase.from("suppliers").select("*"),
-        // Full products catalog is a supporting dataset for supplier ranking
-        // (rankSuppliersForOrder needs every product to match against), not
-        // the paginated list itself — left unbounded on purpose.
-        supabase.from("products").select("*"),
-        supabase.from("supply_requests").select("*"),
-      ]);
+      const [{ data, count }, { data: sups }, { data: prods }, { data: supplyData }, { data: addrs }] =
+        await Promise.all([
+          supabase
+            .from("orders")
+            .select("*, items:order_items(*)", { count: "exact" })
+            .order("created_at", { ascending: false })
+            .range(from, to),
+          supabase.from("suppliers").select("*"),
+          // Full products catalog is a supporting dataset for supplier ranking
+          // (rankSuppliersForOrder needs every product to match against), not
+          // the paginated list itself — left unbounded on purpose.
+          supabase.from("products").select("*"),
+          supabase.from("supply_requests").select("*"),
+          // Was never fetched in production — rankSuppliersForOrder silently
+          // fell back to town-level distance for every supplier regardless
+          // of their actual pinned address (see 027_supplier_addresses.sql).
+          supabase.from("supplier_addresses").select("*"),
+        ]);
       setOrders((data as Order[]) ?? []);
       setTotalOrders(count ?? null);
       setSuppliers((sups as Supplier[]) ?? []);
       setProducts((prods as Product[]) ?? []);
+      setAddresses((addrs as SupplierAddress[]) ?? []);
       const map: Record<string, SupplyRequest[]> = {};
       for (const r of (supplyData as SupplyRequest[]) ?? []) {
         (map[r.order_id] ??= []).push(r);
@@ -303,6 +309,22 @@ export default function AdminOrdersPage() {
           })
           .eq("id", order.id);
         if (error) throw error;
+
+        const { data: riderProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("role", "rider")
+          .eq("rider_id", riderId)
+          .maybeSingle();
+        if (riderProfile?.id) {
+          await notifyRiderDispatchPush({
+            userId: riderProfile.id,
+            orderId: order.id,
+            town: order.town,
+            totalKes: Number(order.total_kes),
+            customerName: order.customer_name,
+          });
+        }
       }
       await notifyOrderStatus({
         orderId: order.id,

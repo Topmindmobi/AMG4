@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ProductBulkImport } from "@/components/supplier/ProductBulkImport";
 import { useAuth } from "@/lib/auth-context";
+import { isDemoMode } from "@/lib/supabase/config";
 import { getDemoCategories } from "@/lib/store/demo-store";
 import type { Category } from "@/lib/types";
 
@@ -12,7 +13,16 @@ export default function SupplierProductImportPage() {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    void Promise.resolve().then(() => setCategories(getDemoCategories()));
+    if (isDemoMode()) {
+      void Promise.resolve().then(() => setCategories(getDemoCategories()));
+      return;
+    }
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data } = await supabase.from("categories").select("*").order("sort_order");
+      setCategories((data as Category[]) ?? []);
+    })();
   }, []);
 
   if (!supplierId) return null;
