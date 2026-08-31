@@ -5,6 +5,7 @@ import { RiderDeliveryKanban } from "@/components/rider/RiderDeliveryKanban";
 import { useAuth } from "@/lib/auth-context";
 import { formatKes, RIDER_PAYOUT_KES } from "@/lib/format";
 import { payNowWithMpesa } from "@/lib/mpesa/pay-now-client";
+import { notifyOrderStatus } from "@/lib/notifications/notify-client";
 import {
   ensurePushSubscription,
   notifyMpesaCollectPush,
@@ -90,6 +91,8 @@ export default function RiderDashboardPage() {
     to: RiderDeliveryStatus,
     extras?: { failReason?: string },
   ) {
+    // Captured before load() below can change the `orders` array reference.
+    const order = orders.find((o) => o.id === orderId);
     setBusy(`move-${orderId}`);
     setMessage(null);
     try {
@@ -122,6 +125,19 @@ export default function RiderDashboardPage() {
               ?.amount_kes ?? RIDER_PAYOUT_KES)
           : RIDER_PAYOUT_KES;
         await notifyRiderPayoutPush({ userId: user.id, orderId, amountKes });
+      }
+
+      // Parity with admin/order-status.tsx's onDeliver(), which calls the
+      // same RPC and then notifies the buyer — without this, a buyer only
+      // got a delivered SMS/email when admin closed the order, never when
+      // the rider did it themselves through this page (the normal path).
+      if (to === "delivered" && order) {
+        await notifyOrderStatus({
+          orderId,
+          phone: order.phone,
+          email: order.email,
+          event: "delivered",
+        });
       }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Could not update stage");
