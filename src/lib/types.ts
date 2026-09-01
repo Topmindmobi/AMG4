@@ -187,7 +187,13 @@ export interface Product {
   short_description: string;
   detailed_description: string;
   description?: string;
+  /** Always computed as supplier_price_kes + markup — what the customer pays. Never write directly. */
   price_kes: number;
+  /** What the supplier sets/receives — admin can also override. */
+  supplier_price_kes: number;
+  /** Admin-only. Null = not yet reviewed, product is hidden from customers. */
+  markup_type: "percent" | "flat" | null;
+  markup_value: number | null;
   stock: number;
   image_path: string | null;
   gallery: string[];

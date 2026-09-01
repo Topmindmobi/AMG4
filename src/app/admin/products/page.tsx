@@ -10,16 +10,24 @@ import type { Product } from "@/lib/types";
 
 const PRODUCTS_PAGE_SIZE = 25;
 
+function markupLabel(p: Product): string {
+  if (!p.markup_type) return "Needs review";
+  if (p.markup_type === "percent") return `${p.markup_value ?? 0}%`;
+  return `+${formatKes(p.markup_value ?? 0)}`;
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [page, setPage] = useState(0);
   const [totalProducts, setTotalProducts] = useState<number | null>(null);
+  const [needsReviewOnly, setNeedsReviewOnly] = useState(false);
 
   function load() {
     if (isDemoMode()) {
       void Promise.resolve(getDemoProducts({ activeOnly: false })).then((all) => {
-        setTotalProducts(all.length);
-        setProducts(all.slice(page * PRODUCTS_PAGE_SIZE, page * PRODUCTS_PAGE_SIZE + PRODUCTS_PAGE_SIZE));
+        const filtered = needsReviewOnly ? all.filter((p) => !p.markup_type) : all;
+        setTotalProducts(filtered.length);
+        setProducts(filtered.slice(page * PRODUCTS_PAGE_SIZE, page * PRODUCTS_PAGE_SIZE + PRODUCTS_PAGE_SIZE));
       });
       return;
     }
@@ -28,11 +36,13 @@ export default function AdminProductsPage() {
       const supabase = createClient();
       const from = page * PRODUCTS_PAGE_SIZE;
       const to = from + PRODUCTS_PAGE_SIZE - 1;
-      const { data, count } = await supabase
+      let query = supabase
         .from("products")
         .select("*, category:categories(*)", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(from, to);
+      if (needsReviewOnly) query = query.is("markup_type", null);
+      const { data, count } = await query;
       setProducts((data as Product[]) ?? []);
       setTotalProducts(count ?? null);
     })();
@@ -41,7 +51,7 @@ export default function AdminProductsPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, needsReviewOnly]);
 
   async function deactivate(id: string) {
     if (!confirm("Deactivate this product?")) return;
@@ -67,13 +77,26 @@ export default function AdminProductsPage() {
           Add product
         </Link>
       </div>
-      <div className="mt-8 overflow-x-auto">
+      <button
+        type="button"
+        onClick={() => {
+          setPage(0);
+          setNeedsReviewOnly((v) => !v);
+        }}
+        className={`mt-4 border px-3 py-1.5 text-xs font-medium ${
+          needsReviewOnly ? "border-ember text-ember" : "border-line text-ink-soft hover:text-charcoal"
+        }`}
+      >
+        {needsReviewOnly ? "Showing: needs markup review" : "Show only: needs markup review"}
+      </button>
+      <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="text-xs uppercase tracking-wide text-ink-soft">
             <tr>
               <th className="pb-3 font-medium">Name</th>
               <th className="pb-3 font-medium">Barcode</th>
               <th className="pb-3 font-medium">Price</th>
+              <th className="pb-3 font-medium">Markup</th>
               <th className="pb-3 font-medium">Stock</th>
               <th className="pb-3 font-medium">Active</th>
               <th className="pb-3 font-medium" />
@@ -91,6 +114,9 @@ export default function AdminProductsPage() {
                   {p.barcode || "—"}
                 </td>
                 <td className="py-3">{formatKes(Number(p.price_kes))}</td>
+                <td className={`py-3 ${!p.markup_type ? "font-semibold text-ember" : ""}`}>
+                  {markupLabel(p)}
+                </td>
                 <td className="py-3">{p.stock}</td>
                 <td className="py-3">{p.is_active ? "Yes" : "No"}</td>
                 <td className="py-3 text-right">

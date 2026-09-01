@@ -65,9 +65,10 @@ export default function SupplierProductsPage() {
           <thead className="text-xs uppercase tracking-wide text-ink-soft">
             <tr>
               <th className="pb-3 font-medium">Name</th>
-              <th className="pb-3 font-medium">Price</th>
+              <th className="pb-3 font-medium">Your price</th>
               <th className="pb-3 font-medium">Stock</th>
               <th className="pb-3 font-medium">Active</th>
+              <th className="pb-3 font-medium">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -78,9 +79,16 @@ export default function SupplierProductsPage() {
                     {p.name}
                   </Link>
                 </td>
-                <td className="py-3">{formatKes(Number(p.price_kes))}</td>
+                <td className="py-3">{formatKes(Number(p.supplier_price_kes))}</td>
                 <td className="py-3">{p.stock}</td>
                 <td className="py-3">{p.is_active ? "Yes" : "No"}</td>
+                <td className="py-3">
+                  {p.markup_type ? (
+                    <span className="text-forest">Live</span>
+                  ) : (
+                    <span className="font-semibold text-ember">Pending admin review</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

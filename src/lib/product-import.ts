@@ -355,13 +355,16 @@ export function importRowToProductInput(
   row: ProductImportRow,
   categories: Category[],
   supplierId: string,
-): Partial<Product> & { name: string; category_id: string; price_kes: number } {
+): Partial<Product> & { name: string; category_id: string; supplier_price_kes: number } {
   const category_id = resolveCategoryId(row.category_slug, categories)!;
   return {
     name: row.name,
     category_id,
     supplier_id: supplierId,
-    price_kes: row.price_kes,
+    // CSV column is still "price_kes" (the supplier's own price, from the
+    // template's perspective) — maps to supplier_price_kes here; markup is
+    // admin-only and always starts unreviewed for a bulk-imported product.
+    supplier_price_kes: row.price_kes,
     stock: row.stock,
     short_description: row.short_description,
     detailed_description: row.detailed_description || row.short_description,

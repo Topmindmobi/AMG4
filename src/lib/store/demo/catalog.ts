@@ -12,6 +12,7 @@ import {
   DEMO_SUPPLIERS,
 } from "@/lib/demo-data";
 import { slugify } from "@/lib/format";
+import { computeProductPriceKes } from "@/lib/pricing";
 import type {
   Category,
   Product,
@@ -33,7 +34,7 @@ export function getDemoProducts(filters?: {
   const categories = read<Category[]>(KEYS.categories, DEMO_CATEGORIES);
 
   if (filters?.activeOnly !== false) {
-    products = products.filter((p) => p.is_active);
+    products = products.filter((p) => p.is_active && p.markup_type != null);
   }
 
   if (filters?.categorySlug) {
@@ -252,24 +253,31 @@ export function deleteDemoSupplierAddress(
 }
 
 export function upsertDemoProduct(
-  data: Partial<Product> & { name: string; category_id: string; price_kes: number },
+  data: Partial<Product> & { name: string; category_id: string; supplier_price_kes: number },
 ): Product {
   ensureSeeded();
   const products = read<Product[]>(KEYS.products, DEMO_PRODUCTS);
   if (data.id) {
-    const next = products.map((p) =>
-      p.id === data.id
-        ? {
-            ...p,
-            ...data,
-            slug: data.slug || p.slug,
-          }
-        : p,
-    );
+    const next = products.map((p) => {
+      if (p.id !== data.id) return p;
+      // markup_type/markup_value are omitted entirely from a non-admin
+      // (supplier) submission — {...p, ...data} then naturally preserves
+      // whatever admin already set, mirroring the production trigger's
+      // "non-admin writes can't touch markup" behavior.
+      const merged = { ...p, ...data, slug: data.slug || p.slug };
+      merged.price_kes = computeProductPriceKes(
+        merged.supplier_price_kes,
+        merged.markup_type,
+        merged.markup_value,
+      );
+      return merged;
+    });
     write(KEYS.products, next);
     return next.find((p) => p.id === data.id)!;
   }
   const short = data.short_description || data.description || "";
+  const markup_type = data.markup_type ?? null;
+  const markup_value = data.markup_value ?? null;
   const product: Product = {
     id: `prod-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     category_id: data.category_id,
@@ -279,7 +287,10 @@ export function upsertDemoProduct(
     short_description: short,
     detailed_description: data.detailed_description || short,
     description: short,
-    price_kes: data.price_kes,
+    supplier_price_kes: data.supplier_price_kes,
+    markup_type,
+    markup_value,
+    price_kes: computeProductPriceKes(data.supplier_price_kes, markup_type, markup_value),
     stock: data.stock ?? 0,
     image_path: data.image_path ?? null,
     gallery: data.gallery ?? [],

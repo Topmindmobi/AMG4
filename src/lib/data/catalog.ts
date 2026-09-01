@@ -43,7 +43,7 @@ export async function listProducts(filters?: {
     let products = [...DEMO_PRODUCTS];
     const categories = DEMO_CATEGORIES;
     if (!filters?.includeInactive) {
-      products = products.filter((p) => p.is_active);
+      products = products.filter((p) => p.is_active && p.markup_type != null);
     }
     if (filters?.categorySlug) {
       const cat = categories.find((c) => c.slug === filters.categorySlug);
@@ -78,7 +78,7 @@ export async function listProducts(filters?: {
     .order("created_at", { ascending: false });
 
   if (!filters?.includeInactive) {
-    query = query.eq("is_active", true);
+    query = query.eq("is_active", true).not("markup_type", "is", null);
   }
 
   if (filters?.q) {

@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useCallback, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import { BarcodeScanner } from "@/components/admin/BarcodeScanner";
 import { CameraCapture } from "@/components/admin/CameraCapture";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
-import { slugify, TOWNS } from "@/lib/format";
+import { useAuth } from "@/lib/auth-context";
+import { formatKes, slugify, TOWNS } from "@/lib/format";
+import { computeProductPriceKes } from "@/lib/pricing";
 import { productImageUrl, resolvePath } from "@/lib/product-image";
 import { isDemoMode } from "@/lib/supabase/config";
 import { getErrorMessage } from "@/lib/supabase/errors";
@@ -46,8 +48,24 @@ export function ProductForm({
   redirectBase?: string;
 }) {
   const router = useRouter();
+  const { isAdmin } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [supplierPriceKes, setSupplierPriceKes] = useState(
+    String(product?.supplier_price_kes ?? product?.price_kes ?? 0),
+  );
+  const [markupType, setMarkupType] = useState<"percent" | "flat">(
+    product?.markup_type ?? "percent",
+  );
+  const [markupValue, setMarkupValue] = useState(
+    product?.markup_value != null ? String(product.markup_value) : "",
+  );
+  const isReviewed = Boolean(product?.markup_type);
+  const previewPriceKes = useMemo(() => {
+    const supplierPrice = Number(supplierPriceKes) || 0;
+    const value = markupValue ? Number(markupValue) : 0;
+    return computeProductPriceKes(supplierPrice, markupType, value);
+  }, [supplierPriceKes, markupType, markupValue]);
   const [towns, setTowns] = useState<Town[]>(product?.towns ?? ["Homabay"]);
   const [barcode, setBarcode] = useState(product?.barcode ?? "");
   // product.image_path/gallery are raw Supabase Storage keys (e.g.
@@ -135,7 +153,14 @@ export function ProductForm({
       category_id: String(fd.get("category_id")),
       supplier_id:
         lockedSupplierId || String(fd.get("supplier_id") || "") || null,
-      price_kes: Number(fd.get("price_kes")),
+      supplier_price_kes: Number(supplierPriceKes),
+      // Omitted (not just falsy) for non-admin submissions — a merge/patch
+      // then leaves whatever admin already set untouched. The DB trigger
+      // (products_compute_price) is the real enforcement; this just avoids
+      // a supplier's own submit trying to touch markup at all.
+      ...(isAdmin
+        ? { markup_type: markupType, markup_value: markupValue ? Number(markupValue) : 0 }
+        : {}),
       stock: Number(fd.get("stock")),
       towns,
       is_active: fd.get("is_active") === "on",
@@ -194,7 +219,10 @@ export function ProductForm({
         description: payload.short_description,
         category_id: payload.category_id,
         supplier_id: payload.supplier_id,
-        price_kes: payload.price_kes,
+        supplier_price_kes: payload.supplier_price_kes,
+        ...("markup_type" in payload
+          ? { markup_type: payload.markup_type, markup_value: payload.markup_value }
+          : {}),
         stock: payload.stock,
         towns: payload.towns,
         is_active: payload.is_active,
@@ -396,13 +424,16 @@ export function ProductForm({
           </label>
         )}
         <div className="grid grid-cols-2 gap-4">
-          <Field
-            label="Price (KES)"
-            name="price_kes"
-            type="number"
-            defaultValue={product?.price_kes ?? 0}
-            required
-          />
+          <label className="block text-xs uppercase tracking-wide text-ink-soft">
+            {isAdmin ? "Supplier price (KES)" : "Your price (KES)"}
+            <input
+              type="number"
+              value={supplierPriceKes}
+              onChange={(e) => setSupplierPriceKes(e.target.value)}
+              required
+              className="mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
+            />
+          </label>
           <Field
             label="Stock"
             name="stock"
@@ -411,6 +442,53 @@ export function ProductForm({
             required
           />
         </div>
+
+        {isAdmin ? (
+          <div className="border-t border-line pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+              Markup (controls what customers see)
+            </p>
+            {!isReviewed && (
+              <p className="mt-1 text-sm text-ember">
+                Not yet reviewed — this product is hidden from customers until you set a markup
+                and save.
+              </p>
+            )}
+            <div className="mt-2 grid grid-cols-2 gap-4">
+              <label className="block text-xs uppercase tracking-wide text-ink-soft">
+                Type
+                <select
+                  value={markupType}
+                  onChange={(e) => setMarkupType(e.target.value as "percent" | "flat")}
+                  className="amg-select mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
+                >
+                  <option value="percent">Percent</option>
+                  <option value="flat">Flat (KES)</option>
+                </select>
+              </label>
+              <label className="block text-xs uppercase tracking-wide text-ink-soft">
+                {markupType === "percent" ? "Markup %" : "Markup (KES)"}
+                <input
+                  type="number"
+                  value={markupValue}
+                  onChange={(e) => setMarkupValue(e.target.value)}
+                  placeholder="0"
+                  className="mt-1 w-full border border-line bg-white px-3 py-2 text-sm text-charcoal"
+                />
+              </label>
+            </div>
+            <p className="mt-2 text-sm text-forest">
+              Customer will see: {formatKes(previewPriceKes)}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-ink-soft">
+            {isReviewed
+              ? `Customer price (after AMG markup): ${formatKes(product?.price_kes ?? 0)}`
+              : "Pending admin review — not visible to customers yet."}
+          </p>
+        )}
+
         <fieldset>
           <legend className="text-xs uppercase tracking-wide text-ink-soft">Towns</legend>
           <div className="mt-2 flex flex-wrap gap-3">

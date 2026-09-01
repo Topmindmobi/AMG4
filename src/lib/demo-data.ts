@@ -289,6 +289,12 @@ function p(
     detailed_description,
     description: short_description,
     price_kes,
+    // Seed catalog is already "live" — mirrors the production backfill
+    // (039_product_markup.sql): explicit zero markup, not unreviewed, so
+    // the demo storefront isn't suddenly empty.
+    supplier_price_kes: price_kes,
+    markup_type: "flat",
+    markup_value: 0,
     stock,
     image_path: `/products/${slug}.jpg`,
     gallery: [
