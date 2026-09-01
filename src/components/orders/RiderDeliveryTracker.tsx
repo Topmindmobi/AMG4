@@ -1,8 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { RIDER_DELIVERY_STATUS_LABELS, RIDER_VEHICLE_LABELS } from "@/lib/format";
 import { normalizeRiderDeliveryStatus } from "@/lib/store/demo-store";
 import type { Order, RiderDeliveryStatus } from "@/lib/types";
+
+/** Admin-only next-stage override — the two sub-stages only the rider's own
+ * app could set until now (delivered/paid already have a dedicated "Mark
+ * delivered" action elsewhere; see 016_admin_deliver_override.sql). */
+type AdvanceableStage = "collected" | "in_transit";
+
+const NEXT_STAGE_LABEL: Record<AdvanceableStage, string> = {
+  collected: "Mark collected",
+  in_transit: "Mark in transit",
+};
 
 const STAGE_ORDER = [
   "assigned",
@@ -59,13 +70,18 @@ function stageCopy(
 export function RiderDeliveryTracker({
   order,
   audience = "customer",
+  onAdvance,
 }: {
   order: Order;
   audience?: "customer" | "admin";
+  /** Admin-only: lets admin set collected/in_transit on the rider's behalf
+   * (e.g. a rider phones in an update instead of using their own app). */
+  onAdvance?: (orderId: string, to: AdvanceableStage) => void | Promise<void>;
 }) {
   const stage = normalizeRiderDeliveryStatus(order);
   const events = order.rider_delivery_events ?? [];
   const hasRider = Boolean(order.rider_id || order.rider_name_snapshot);
+  const [busy, setBusy] = useState(false);
 
   if (!hasRider) return null;
 
@@ -73,6 +89,19 @@ export function RiderDeliveryTracker({
   const activeIndex = failed
     ? -1
     : Math.max(0, STAGE_ORDER.indexOf(stage === "paid" ? "paid" : stage));
+
+  const nextStage: AdvanceableStage | null =
+    stage === "assigned" ? "collected" : stage === "collected" ? "in_transit" : null;
+
+  async function handleAdvance(to: AdvanceableStage) {
+    if (!onAdvance) return;
+    setBusy(true);
+    try {
+      await onAdvance(order.id, to);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <section
@@ -106,6 +135,17 @@ export function RiderDeliveryTracker({
       <p className="mt-1 text-sm text-ink-soft">
         {stageCopy(stage, order.rider_name_snapshot, audience)}
       </p>
+
+      {audience === "admin" && onAdvance && nextStage && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void handleAdvance(nextStage)}
+          className="mt-2 border border-forest px-2.5 py-1 text-xs font-semibold text-forest hover:bg-forest/5 disabled:opacity-50"
+        >
+          {NEXT_STAGE_LABEL[nextStage]}
+        </button>
+      )}
 
       {!failed && (
         <ol
