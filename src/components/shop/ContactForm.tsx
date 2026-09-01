@@ -22,8 +22,12 @@ export function ContactForm() {
         </p>
         <p className="mt-2 text-[16.5px] text-ink-soft">
           For urgent orders, call or WhatsApp{" "}
-          <a href="tel:+254700000000" className="font-semibold text-forest hover:text-forest-deep">
-            +254 700 000 000
+          <a href="tel:+254181347443" className="font-semibold text-forest hover:text-forest-deep">
+            +254 181 347 443
+          </a>{" "}
+          or{" "}
+          <a href="tel:+254181347444" className="font-semibold text-forest hover:text-forest-deep">
+            +254 181 347 444
           </a>
           .
         </p>

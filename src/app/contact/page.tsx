@@ -20,10 +20,16 @@ export default function ContactPage() {
         <div className="rounded-[10px] border border-line bg-sand px-4 py-4">
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-ember">Phone / WhatsApp</p>
           <a
-            href="tel:+254700000000"
+            href="tel:+254181347443"
             className="mt-1.5 block text-[17px] font-semibold text-forest hover:text-forest-deep"
           >
-            +254 700 000 000
+            +254 181 347 443
+          </a>
+          <a
+            href="tel:+254181347444"
+            className="mt-1 block text-[17px] font-semibold text-forest hover:text-forest-deep"
+          >
+            +254 181 347 444
           </a>
           <p className="mt-1 text-[14.5px] text-ink-soft">Mon–Sat, 8am–6pm EAT</p>
         </div>
