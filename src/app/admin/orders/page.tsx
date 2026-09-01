@@ -17,7 +17,11 @@ import {
   supplyRequestAgreed,
 } from "@/lib/format";
 import { groupOrderBySupplier } from "@/lib/orders";
-import { notifyOrderStatus } from "@/lib/notifications/notify-client";
+import {
+  describeNotifyResult,
+  describeStatusMove,
+  notifyOrderStatus,
+} from "@/lib/notifications/notify-client";
 import { notifyRiderDispatchPush } from "@/lib/push/subscribe-client";
 import { rankRidersByDistance } from "@/lib/rider-selection";
 import { isDemoMode } from "@/lib/supabase/config";
@@ -250,6 +254,7 @@ export default function AdminOrdersPage() {
     setBusy(`confirm-${order.id}`);
     setMessage(null);
     try {
+      const fromLabel = ORDER_STATUS_LABELS[order.status];
       if (isDemoMode()) {
         confirmOrderToBuyer(order.id);
       } else {
@@ -261,13 +266,16 @@ export default function AdminOrdersPage() {
           .eq("id", order.id);
         if (error) throw error;
       }
-      await notifyOrderStatus({
+      const result = await notifyOrderStatus({
         orderId: order.id,
         phone: order.phone,
         email: order.email,
         event: "confirmed",
       });
-      setMessage("Buyer notified — order confirmed.");
+      const notified = describeNotifyResult(result);
+      setMessage(
+        `${describeStatusMove(fromLabel, ORDER_STATUS_LABELS.confirmed)}${notified ? ` ${notified}.` : ""}`,
+      );
       load();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed");
@@ -285,6 +293,7 @@ export default function AdminOrdersPage() {
     setBusy(`dispatch-${order.id}`);
     setMessage(null);
     try {
+      const fromLabel = ORDER_STATUS_LABELS[order.status];
       if (isDemoMode()) {
         dispatchDemoOrder(order.id, riderId);
         const riderUserId = getDemoUserIdForRider(riderId);
@@ -328,13 +337,16 @@ export default function AdminOrdersPage() {
           });
         }
       }
-      await notifyOrderStatus({
+      const result = await notifyOrderStatus({
         orderId: order.id,
         phone: order.phone,
         email: order.email,
         event: "dispatched",
       });
-      setMessage("Order dispatched — rider notified (in-app + push).");
+      const notified = describeNotifyResult(result);
+      setMessage(
+        `${describeStatusMove(fromLabel, ORDER_STATUS_LABELS.out_for_delivery)}${notified ? ` ${notified}.` : ""} Rider notified (in-app + push).`,
+      );
       load();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed");
@@ -398,14 +410,23 @@ export default function AdminOrdersPage() {
     // Confirm/Dispatch buttons above, which already notify) — buyers were
     // never told when an order got marked delivered or cancelled this way.
     // Intermediate statuses (awaiting_supplier etc.) stay silent — noise the
-    // buyer doesn't need.
+    // buyer doesn't need — but every transition now at least shows admin
+    // what actually happened, unlike before when this dropdown set no
+    // message at all.
+    const fromLabel = current ? ORDER_STATUS_LABELS[current] : status;
     if (order && (status === "delivered" || status === "cancelled")) {
-      await notifyOrderStatus({
+      const result = await notifyOrderStatus({
         orderId: id,
         phone: order.phone,
         email: order.email,
         event: status,
       });
+      const notified = describeNotifyResult(result);
+      setMessage(
+        `${describeStatusMove(fromLabel, ORDER_STATUS_LABELS[status])}${notified ? ` ${notified}.` : ""}`,
+      );
+    } else {
+      setMessage(describeStatusMove(fromLabel, ORDER_STATUS_LABELS[status]));
     }
     load();
   }

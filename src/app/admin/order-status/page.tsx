@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { OrderStatusKanban } from "@/components/admin/OrderStatusKanban";
 import { useAuth } from "@/lib/auth-context";
-import { notifyOrderStatus } from "@/lib/notifications/notify-client";
+import { ORDER_KANBAN_COLUMNS } from "@/lib/format";
+import {
+  describeNotifyResult,
+  describeStatusMove,
+  notifyOrderStatus,
+} from "@/lib/notifications/notify-client";
 import { notifyRiderDispatchPush } from "@/lib/push/subscribe-client";
 import { isDemoMode } from "@/lib/supabase/config";
 import {
@@ -31,6 +36,10 @@ import type {
   Supplier,
   SupplyRequest,
 } from "@/lib/types";
+
+function kanbanTitle(status: string): string {
+  return ORDER_KANBAN_COLUMNS.find((c) => c.id === status)?.title ?? status;
+}
 
 export default function AdminOrderStatusPage() {
   const { user } = useAuth();
@@ -88,6 +97,7 @@ export default function AdminOrderStatusPage() {
   }, [load]);
 
   async function onRequestSupplier(orderId: string, supplierId: string) {
+    const fromLabel = kanbanTitle(orders.find((o) => o.id === orderId)?.status ?? "");
     if (isDemoMode()) {
       fulfillOrderWithSupplier(orderId, supplierId);
     } else {
@@ -99,11 +109,12 @@ export default function AdminOrderStatusPage() {
       });
       if (error) throw error;
     }
-    setMessage("Supplier request sent.");
+    setMessage(describeStatusMove(fromLabel, kanbanTitle("awaiting_supplier")));
     load();
   }
 
   async function onRecordSupplierResponse(orderId: string) {
+    const fromLabel = kanbanTitle(orders.find((o) => o.id === orderId)?.status ?? "");
     if (isDemoMode()) {
       adminRecordSupplierResponse(orderId);
     } else {
@@ -114,13 +125,14 @@ export default function AdminOrderStatusPage() {
       });
       if (error) throw error;
     }
-    setMessage("Supplier response recorded.");
+    setMessage(describeStatusMove(fromLabel, kanbanTitle("supplier_confirmed")));
     load();
   }
 
   async function onConfirmBuyer(orderId: string) {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
+    const fromLabel = kanbanTitle(order.status);
     if (isDemoMode()) {
       confirmOrderToBuyer(orderId);
     } else {
@@ -132,19 +144,23 @@ export default function AdminOrderStatusPage() {
         .eq("id", orderId);
       if (error) throw error;
     }
-    await notifyOrderStatus({
+    const result = await notifyOrderStatus({
       orderId,
       event: "confirmed",
       phone: order.phone,
       email: order.email ?? null,
     });
-    setMessage("Buyer notified — order confirmed.");
+    const notified = describeNotifyResult(result);
+    setMessage(
+      `${describeStatusMove(fromLabel, kanbanTitle("confirmed"))}${notified ? ` ${notified}.` : ""}`,
+    );
     load();
   }
 
   async function onDispatch(orderId: string, riderId: string) {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
+    const fromLabel = kanbanTitle(order.status);
     if (isDemoMode()) {
       dispatchDemoOrder(orderId, riderId);
       const riderUserId = getDemoUserIdForRider(riderId);
@@ -188,19 +204,23 @@ export default function AdminOrderStatusPage() {
         });
       }
     }
-    await notifyOrderStatus({
+    const result = await notifyOrderStatus({
       orderId,
       event: "dispatched",
       phone: order.phone,
       email: order.email ?? null,
     });
-    setMessage("Order out for delivery — rider notified.");
+    const notified = describeNotifyResult(result);
+    setMessage(
+      `${describeStatusMove(fromLabel, kanbanTitle("out_for_delivery"))}${notified ? ` ${notified}.` : ""} Rider notified (in-app + push).`,
+    );
     load();
   }
 
   async function onDeliver(orderId: string) {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
+    const fromLabel = kanbanTitle(order.status);
     if (isDemoMode()) {
       // Admin override: register payment if rider hasn't yet, then deliver
       const current = getDemoOrders().find((o) => o.id === orderId);
@@ -231,13 +251,16 @@ export default function AdminOrderStatusPage() {
       });
       if (paidStageError) throw paidStageError;
     }
-    await notifyOrderStatus({
+    const result = await notifyOrderStatus({
       orderId,
       event: "delivered",
       phone: order.phone,
       email: order.email ?? null,
     });
-    setMessage("Order marked delivered — please rate quality.");
+    const notified = describeNotifyResult(result);
+    setMessage(
+      `${describeStatusMove(fromLabel, kanbanTitle("delivered"))}${notified ? ` ${notified}.` : ""} Please rate quality.`,
+    );
     load();
   }
 
