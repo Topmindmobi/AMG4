@@ -88,6 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             supplier_id: null,
             rider_id: null,
             created_at: new Date().toISOString(),
+            address: null,
+            city: null,
+            country: null,
+            lat: null,
+            lng: null,
+            maps_url: null,
+            profile_prompt_shown_at: null,
           },
           email: data.user.email ?? "",
         });

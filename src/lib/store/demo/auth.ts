@@ -194,9 +194,23 @@ function findDemoProfileByPhone(phone: string): Profile | null {
   return profiles.find((p) => phonesMatch(p.phone, phone)) ?? null;
 }
 
+type EditableProfileFields = Pick<
+  Profile,
+  | "full_name"
+  | "phone"
+  | "town"
+  | "address"
+  | "city"
+  | "country"
+  | "lat"
+  | "lng"
+  | "maps_url"
+  | "profile_prompt_shown_at"
+>;
+
 function patchDemoProfile(
   profileId: string,
-  patch: Partial<Pick<Profile, "full_name" | "phone" | "town">>,
+  patch: Partial<EditableProfileFields>,
 ): Profile | null {
   const profiles = read<Profile[]>(KEYS.profiles, []);
   const idx = profiles.findIndex((p) => p.id === profileId);
@@ -206,6 +220,36 @@ function patchDemoProfile(
   copy[idx] = next;
   write(KEYS.profiles, copy);
   return next;
+}
+
+/** Keep an active demo session's cached user in sync after a profile edit. */
+function syncSessionProfile(next: Profile | null) {
+  if (!next) return;
+  const session = read<DemoSession | null>(KEYS.session, null);
+  if (session && session.user.id === next.id) {
+    write(KEYS.session, { ...session, user: next });
+  }
+}
+
+/** User editing their own phone/town/address/city/country/pin from /account/profile. */
+export function updateDemoProfile(
+  profileId: string,
+  patch: Partial<
+    Pick<Profile, "phone" | "town" | "address" | "city" | "country" | "lat" | "lng" | "maps_url">
+  >,
+): Profile | null {
+  const next = patchDemoProfile(profileId, patch);
+  syncSessionProfile(next);
+  return next;
+}
+
+/** Stamp "we've shown this user the complete-your-profile prompt" — idempotent, never re-fires. */
+export function markDemoProfilePromptShown(profileId: string): void {
+  const profiles = read<Profile[]>(KEYS.profiles, []);
+  const existing = profiles.find((p) => p.id === profileId);
+  if (!existing || existing.profile_prompt_shown_at) return;
+  const next = patchDemoProfile(profileId, { profile_prompt_shown_at: new Date().toISOString() });
+  syncSessionProfile(next);
 }
 
 function resolveGuestTown(town?: string | null): Town | null {

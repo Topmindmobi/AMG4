@@ -55,6 +55,14 @@ export default function AccountPage() {
           <dd>{user.phone || "Not set"}</dd>
         </div>
         <div>
+          <dt className="text-ink-soft">Address</dt>
+          <dd>
+            {user.address || "Not set"}
+            {user.city ? `, ${user.city}` : ""}
+            {user.country ? `, ${user.country}` : ""}
+          </dd>
+        </div>
+        <div>
           <dt className="text-ink-soft">Role</dt>
           <dd className="capitalize">{user.role}</dd>
         </div>
@@ -65,6 +73,12 @@ export default function AccountPage() {
           className="rounded-lg bg-ember px-5 py-2.5 text-sm font-semibold text-white hover:bg-ember-deep"
         >
           My orders
+        </Link>
+        <Link
+          href="/account/profile"
+          className="rounded-lg border-[1.5px] border-forest px-5 py-2.5 text-sm font-semibold text-forest"
+        >
+          Edit profile
         </Link>
         {isAdmin && (
           <Link

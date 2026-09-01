@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { DM_Mono, DM_Sans, Fraunces, Source_Serif_4, Work_Sans } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider } from "@/lib/cart";
+import { ProfileCompletionBanner } from "@/components/account/ProfileCompletionBanner";
+import { ProfileCompletionGate } from "@/components/account/ProfileCompletionGate";
 import { PwaManager } from "@/components/pwa/PwaManager";
 import { SiteFooter } from "@/components/shop/SiteFooter";
 import { SiteHeader } from "@/components/shop/SiteHeader";
@@ -85,7 +87,9 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col antialiased">
         <AuthProvider>
           <CartProvider>
+            <ProfileCompletionGate />
             <SiteHeader />
+            <ProfileCompletionBanner />
             <main className="flex-1">{children}</main>
             <SiteFooter />
             <PwaManager />
