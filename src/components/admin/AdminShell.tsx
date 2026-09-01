@@ -22,6 +22,7 @@ const navGroups: NavGroup[] = [
     links: [
       { href: "/admin/orders", label: "Orders" },
       { href: "/admin/order-status", label: "Order Status" },
+      { href: "/admin/returns", label: "Returns" },
       { href: "/admin/quotes", label: "Quotes" },
       { href: "/admin/callbacks", label: "Order on Call" },
     ],

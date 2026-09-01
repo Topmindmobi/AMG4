@@ -51,6 +51,7 @@ export default function AdminOrderStatusPage() {
   const [riders, setRiders] = useState<Rider[]>([]);
   const [ratings, setRatings] = useState<ServiceRating[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(() => {
     if (isDemoMode()) {
@@ -317,13 +318,24 @@ export default function AdminOrderStatusPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-charcoal">Order Status</h1>
-      <p className="mt-2 max-w-2xl text-sm text-ink-soft">
-        Drag orders across the pipeline: Orders → Supplier Request → Supplier
-        Response → Orders confirmed → Out on delivery → Delivered. After delivery,
-        rate speed, turnaround, quality of service, and quality of goods for
-        deliveries, supplier responses, supplier deliveries, goods, and riders.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-charcoal">Order Status</h1>
+          <p className="mt-2 max-w-2xl text-sm text-ink-soft">
+            Drag orders across the pipeline: Orders → Supplier Request → Supplier
+            Response → Orders confirmed → Out on delivery → Delivered. After delivery,
+            rate speed, turnaround, quality of service, and quality of goods for
+            deliveries, supplier responses, supplier deliveries, goods, and riders.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowArchived((v) => !v)}
+          className="border border-line px-3 py-2 text-xs font-semibold text-ink-soft hover:bg-sand"
+        >
+          {showArchived ? "Hide archived" : "Show archived"}
+        </button>
+      </div>
       {message && (
         <p className="mt-4 border border-forest/30 bg-forest/5 px-3 py-2 text-sm text-charcoal">
           {message}
@@ -331,7 +343,7 @@ export default function AdminOrderStatusPage() {
       )}
       <div className="mt-8">
         <OrderStatusKanban
-          orders={orders}
+          orders={orders.filter((o) => showArchived || !o.archived_at)}
           supplyByOrder={supplyByOrder}
           suppliers={suppliers}
           riders={riders}

@@ -373,6 +373,7 @@ export function setDemoRiderDeliveryStatus(
       ...patch,
       status: "delivered",
       delivered_at: order.delivered_at || now,
+      archived_at: order.archived_at || now,
     };
   } else if (to === "failed") {
     patch = {
@@ -384,6 +385,7 @@ export function setDemoRiderDeliveryStatus(
       ...patch,
       status: "out_for_delivery",
       delivered_at: null,
+      archived_at: null,
     };
   }
 

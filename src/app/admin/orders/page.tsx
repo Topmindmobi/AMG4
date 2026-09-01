@@ -83,6 +83,7 @@ export default function AdminOrdersPage() {
   const [riderChoice, setRiderChoice] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const [compareOrderId, setCompareOrderId] = useState<string | null>(null);
   const [selection, setSelection] = useState<SupplierSelectionResult | null>(null);
@@ -92,7 +93,7 @@ export default function AdminOrdersPage() {
   function load() {
     if (isDemoMode()) {
       void Promise.resolve().then(() => {
-        const all = getDemoOrders();
+        const all = getDemoOrders().filter((o) => showArchived || !o.archived_at);
         setTotalOrders(all.length);
         const list = all.slice(page * ORDERS_PAGE_SIZE, page * ORDERS_PAGE_SIZE + ORDERS_PAGE_SIZE);
         setOrders(list);
@@ -112,13 +113,16 @@ export default function AdminOrdersPage() {
       const supabase = createClient();
       const from = page * ORDERS_PAGE_SIZE;
       const to = from + ORDERS_PAGE_SIZE - 1;
+      let ordersQuery = supabase
+        .from("orders")
+        .select("*, items:order_items(*)", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (!showArchived) ordersQuery = ordersQuery.is("archived_at", null);
+
       const [{ data, count }, { data: sups }, { data: prods }, { data: supplyData }, { data: addrs }] =
         await Promise.all([
-          supabase
-            .from("orders")
-            .select("*, items:order_items(*)", { count: "exact" })
-            .order("created_at", { ascending: false })
-            .range(from, to),
+          ordersQuery,
           supabase.from("suppliers").select("*"),
           // Full products catalog is a supporting dataset for supplier ranking
           // (rankSuppliersForOrder needs every product to match against), not
@@ -149,7 +153,7 @@ export default function AdminOrdersPage() {
     const poll = setInterval(load, 5000);
     return () => clearInterval(poll);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, showArchived]);
 
   useEffect(() => {
     const towns = Array.from(new Set(orders.map((o) => o.town)));
@@ -435,12 +439,26 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-charcoal">Orders</h1>
-      <p className="mt-2 text-sm text-ink-soft">
-        Rank suppliers by value for money → compare availability, landed cost (goods +
-        transport from supplier address) &amp; distance → order from the
-        recommended supplier → confirm to buyer → dispatch.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-charcoal">Orders</h1>
+          <p className="mt-2 max-w-2xl text-sm text-ink-soft">
+            Rank suppliers by value for money → compare availability, landed cost (goods +
+            transport from supplier address) &amp; distance → order from the
+            recommended supplier → confirm to buyer → dispatch.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setPage(0);
+            setShowArchived((v) => !v);
+          }}
+          className="border border-line px-3 py-2 text-xs font-semibold text-ink-soft hover:bg-sand"
+        >
+          {showArchived ? "Hide archived" : "Show archived"}
+        </button>
+      </div>
       {message && (
         <p className="mt-4 border border-ember/40 bg-ember/10 px-3 py-2 text-sm text-charcoal">
           {message}

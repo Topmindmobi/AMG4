@@ -29,6 +29,10 @@ function buildSubjectAndBody(event: OrderSmsEvent, orderId: string): { subject: 
       subject: `Your AMG Online Store order ${ref} was cancelled`,
       line: "If this wasn't expected, please contact us.",
     },
+    review_reminder: {
+      subject: `How was your AMG Online Store order ${ref}?`,
+      line: "We'd love a quick rating — it only takes a moment from your order page.",
+    },
   };
   const { subject, line } = body[event];
   return {

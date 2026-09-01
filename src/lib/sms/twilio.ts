@@ -3,7 +3,13 @@ import twilio from "twilio";
 export { normalizeKenyaPhone } from "@/lib/phone";
 import { normalizeKenyaPhone } from "@/lib/phone";
 
-export type OrderSmsEvent = "placed" | "confirmed" | "dispatched" | "delivered" | "cancelled";
+export type OrderSmsEvent =
+  | "placed"
+  | "confirmed"
+  | "dispatched"
+  | "delivered"
+  | "cancelled"
+  | "review_reminder";
 
 export function isTwilioConfigured(): boolean {
   const sid = process.env.TWILIO_ACCOUNT_SID?.trim();
@@ -35,6 +41,9 @@ function buildMessage(event: OrderSmsEvent, orderId: string): string {
   }
   if (event === "cancelled") {
     return `AMG Store: Your order ${ref} has been cancelled. Contact us if this wasn't expected.`;
+  }
+  if (event === "review_reminder") {
+    return `AMG Store: How was order ${ref}? Reply or visit your order page to leave a quick review.`;
   }
   return `AMG Store: Your order ${ref} is out for delivery (dispatched).`;
 }

@@ -129,3 +129,21 @@ export const RATING_DIMENSION_LABELS: Record<string, string> = {
   quality_of_service: "Quality of service",
   quality_of_goods: "Quality of goods",
 };
+
+export const RETURN_STATUS_LABELS: Record<string, string> = {
+  requested: "Requested",
+  approved: "Approved — awaiting refund",
+  rejected: "Rejected",
+  refunded: "Refunded",
+};
+
+export const RETURN_REASON_LABELS: Record<string, string> = {
+  damaged: "Item arrived damaged",
+  wrong_item: "Wrong item received",
+  not_as_described: "Not as described",
+  changed_mind: "Changed my mind",
+  other: "Other",
+};
+
+/** Ordered steps for the buyer-facing return status tracker. */
+export const RETURN_TRACKING_STEPS = ["requested", "approved", "refunded"] as const;

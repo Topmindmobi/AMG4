@@ -131,7 +131,14 @@ export function createDemoOrder(input: {
 export function updateDemoOrderStatus(id: string, status: Order["status"]): Order | null {
   ensureSeeded();
   const orders = read<Order[]>(KEYS.orders, DEMO_ORDERS);
-  const next = orders.map((o) => (o.id === id ? { ...o, status } : o));
+  const next = orders.map((o) => {
+    if (o.id !== id) return o;
+    if (status === "delivered" && o.status !== "delivered") {
+      const now = new Date().toISOString();
+      return { ...o, status, delivered_at: o.delivered_at ?? now, archived_at: o.archived_at ?? now };
+    }
+    return { ...o, status };
+  });
   write(KEYS.orders, next);
   return next.find((o) => o.id === id) ?? null;
 }

@@ -4,16 +4,29 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RiderDeliveryTracker } from "@/components/orders/RiderDeliveryTracker";
+import { StarRating } from "@/components/shared/StarRating";
 import { useAuth } from "@/lib/auth-context";
-import { DELIVERY_METHOD_LABELS, formatKes } from "@/lib/format";
+import {
+  DELIVERY_METHOD_LABELS,
+  formatKes,
+  RETURN_STATUS_LABELS,
+  RETURN_TRACKING_STEPS,
+} from "@/lib/format";
 import {
   readAccountCreatedNotice,
   readStashedOrderConfirmation,
   type AccountCreatedNotice,
 } from "@/lib/order-confirmation";
 import { isDemoMode } from "@/lib/supabase/config";
-import { getDemoOrder } from "@/lib/store/demo-store";
-import type { Order, OrderStatus } from "@/lib/types";
+import {
+  getDemoOrder,
+  getDemoOrderRating,
+  getDemoProductRatings,
+  getDemoReturnRequestForOrder,
+  isDemoReturnWindowOpen,
+  submitDemoOrderRating,
+} from "@/lib/store/demo-store";
+import type { Order, OrderRating, OrderStatus, ProductRating, ReturnRequest } from "@/lib/types";
 
 const TRACKING_STEPS: { statuses: OrderStatus[]; label: string }[] = [
   { statuses: ["pending", "awaiting_supplier", "supplier_confirmed"], label: "Order placed" },
@@ -35,6 +48,17 @@ export default function OrderConfirmationPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [accountNotice, setAccountNotice] = useState<AccountCreatedNotice | null>(null);
+
+  const [orderRating, setOrderRating] = useState<OrderRating | null>(null);
+  const [productRatings, setProductRatings] = useState<ProductRating[]>([]);
+  const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(null);
+  const [returnWindowOpen, setReturnWindowOpen] = useState(false);
+  const [overallRating, setOverallRating] = useState(0);
+  const [deliveryRating, setDeliveryRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [itemRatings, setItemRatings] = useState<Record<string, number>>({});
+  const [ratingBusy, setRatingBusy] = useState(false);
+  const [ratingMessage, setRatingMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const id = params.id;
@@ -81,6 +105,104 @@ export default function OrderConfirmationPage() {
     };
   }, [params.id]);
 
+  useEffect(() => {
+    if (!order || order.status !== "delivered") return;
+    const orderId = order.id;
+    const deliveredAt = order.delivered_at;
+
+    async function loadPostDeliveryState() {
+      if (isDemoMode()) {
+        const rating = getDemoOrderRating(orderId);
+        setOrderRating(rating);
+        setProductRatings(getDemoProductRatings(orderId));
+        setReturnRequest(getDemoReturnRequestForOrder(orderId));
+        setReturnWindowOpen(isDemoReturnWindowOpen(orderId));
+        if (rating) {
+          setOverallRating(rating.overall_rating);
+          setDeliveryRating(rating.delivery_rating);
+          setReviewText(rating.review_text ?? "");
+        }
+        return;
+      }
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const [{ data: ratingData }, { data: productData }, { data: returnData }] = await Promise.all([
+        supabase.from("order_ratings").select("*").eq("order_id", orderId).maybeSingle(),
+        supabase.from("product_ratings").select("*").eq("order_id", orderId),
+        supabase
+          .from("return_requests")
+          .select("*, items:return_request_items(*)")
+          .eq("order_id", orderId)
+          .order("requested_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      const rating = (ratingData as OrderRating | null) ?? null;
+      setOrderRating(rating);
+      setProductRatings((productData as ProductRating[]) ?? []);
+      setReturnRequest((returnData as ReturnRequest | null) ?? null);
+      setReturnWindowOpen(
+        Boolean(deliveredAt) && Date.now() <= new Date(deliveredAt!).getTime() + 7 * 24 * 3600_000,
+      );
+      if (rating) {
+        setOverallRating(rating.overall_rating);
+        setDeliveryRating(rating.delivery_rating);
+        setReviewText(rating.review_text ?? "");
+      }
+    }
+
+    void loadPostDeliveryState();
+  }, [order?.id, order?.status, order?.delivered_at]);
+
+  async function submitRating() {
+    if (!order || !user) return;
+    setRatingBusy(true);
+    setRatingMessage(null);
+    try {
+      const productPayload = (order.items ?? [])
+        .filter((item) => itemRatings[item.id] > 0)
+        .map((item) => ({ orderItemId: item.id, rating: itemRatings[item.id] }));
+
+      if (isDemoMode()) {
+        const rating = submitDemoOrderRating({
+          orderId: order.id,
+          userId: user.id,
+          overallRating,
+          deliveryRating,
+          reviewText,
+          productRatings: productPayload,
+        });
+        setOrderRating(rating);
+        setProductRatings(getDemoProductRatings(order.id));
+      } else {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data, error } = await supabase.rpc("submit_order_rating", {
+          p_order_id: order.id,
+          p_overall_rating: overallRating,
+          p_delivery_rating: deliveryRating,
+          p_review_text: reviewText,
+          p_product_ratings: productPayload.map((p) => ({
+            order_item_id: p.orderItemId,
+            rating: p.rating,
+          })),
+        });
+        if (error) throw error;
+        setOrderRating(data as OrderRating);
+        const { data: productData } = await supabase
+          .from("product_ratings")
+          .select("*")
+          .eq("order_id", order.id);
+        setProductRatings((productData as ProductRating[]) ?? []);
+      }
+      setRatingMessage("Thanks — your review has been saved.");
+    } catch (err) {
+      setRatingMessage(err instanceof Error ? err.message : "Could not save your rating");
+    } finally {
+      setRatingBusy(false);
+    }
+  }
+
   if (loading || authLoading) {
     return <div className="mx-auto max-w-xl px-5 py-16 text-ink-soft">Loading order…</div>;
   }
@@ -123,6 +245,8 @@ export default function OrderConfirmationPage() {
   }
 
   const stepIndex = currentStepIndex(order.status);
+  const canActAsOwner =
+    Boolean(user) && !isAdmin && Boolean(order.user_id) && order.user_id === user!.id;
 
   return (
     <div className="mx-auto max-w-xl px-5 py-10">
@@ -285,6 +409,127 @@ export default function OrderConfirmationPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {canActAsOwner && order.status === "delivered" && (
+        <div className="mt-8 border-t border-line pt-6">
+          <h2 className="font-display text-xl text-charcoal">Rate your order</h2>
+          {ratingMessage && <p className="mt-2 text-sm text-forest-deep">{ratingMessage}</p>}
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-charcoal">Overall experience</p>
+              <StarRating value={overallRating} onChange={setOverallRating} label="Overall rating" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-charcoal">Delivery</p>
+              <StarRating value={deliveryRating} onChange={setDeliveryRating} label="Delivery rating" />
+            </div>
+            {order.items && order.items.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-charcoal">Products</p>
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-ink-soft">{item.name_snapshot}</span>
+                    <StarRating
+                      value={
+                        itemRatings[item.id] ??
+                        productRatings.find((r) => r.order_item_id === item.id)?.rating ??
+                        0
+                      }
+                      onChange={(n) => setItemRatings((prev) => ({ ...prev, [item.id]: n }))}
+                      size={18}
+                      label={`Rate ${item.name_snapshot}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-semibold text-charcoal" htmlFor="review-text">
+                Notes (optional)
+              </label>
+              <textarea
+                id="review-text"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                rows={3}
+                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm"
+                placeholder="Tell us about your experience"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={ratingBusy || overallRating === 0 || deliveryRating === 0}
+              onClick={() => void submitRating()}
+              className="rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-deep disabled:opacity-50"
+            >
+              {orderRating ? "Update review" : "Submit review"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {canActAsOwner && order.status === "delivered" && (
+        <div className="mt-8 border-t border-line pt-6">
+          <h2 className="font-display text-xl text-charcoal">Returns</h2>
+          {returnRequest ? (
+            <div className="mt-4">
+              <ol className="grid grid-cols-3 gap-1">
+                {RETURN_TRACKING_STEPS.map((step, i) => {
+                  const rejected = returnRequest.status === "rejected";
+                  const activeIndex = rejected
+                    ? -1
+                    : RETURN_TRACKING_STEPS.findIndex((s) => s === returnRequest.status);
+                  const done = !rejected && i <= activeIndex;
+                  return (
+                    <li key={step} className="flex flex-col items-center text-center">
+                      <div className="flex w-full items-center">
+                        <div
+                          className={`h-0.5 flex-1 ${i === 0 ? "opacity-0" : done ? "bg-forest" : "bg-line"}`}
+                        />
+                        <div
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                            done ? "bg-forest text-white" : "bg-line text-ink-soft"
+                          }`}
+                        >
+                          {done ? "✓" : i + 1}
+                        </div>
+                        <div
+                          className={`h-0.5 flex-1 ${i === RETURN_TRACKING_STEPS.length - 1 ? "opacity-0" : i < activeIndex ? "bg-forest" : "bg-line"}`}
+                        />
+                      </div>
+                      <p className={`mt-2 text-[13px] font-semibold ${done ? "text-forest-deep" : "text-ink-soft"}`}>
+                        {RETURN_STATUS_LABELS[step]}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ol>
+              {returnRequest.status === "rejected" && (
+                <p className="mt-3 rounded-lg border border-ember/30 bg-ember/10 px-3 py-2 text-sm text-ember">
+                  Return request rejected
+                  {returnRequest.admin_notes ? `: ${returnRequest.admin_notes}` : "."}
+                </p>
+              )}
+            </div>
+          ) : returnWindowOpen ? (
+            <>
+              <p className="mt-2 text-sm text-ink-soft">
+                Not quite right? You can request a return within 7 days of delivery.
+              </p>
+              <Link
+                href={`/order/${order.id}/return`}
+                className="mt-3 inline-block rounded-lg border border-ember px-4 py-2 text-sm font-semibold text-ember hover:bg-ember/10"
+              >
+                Request a return
+              </Link>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-ink-soft">
+              The 7-day return window for this order has closed.
+            </p>
+          )}
+        </div>
       )}
 
       <div className="mt-8 flex flex-wrap gap-4">

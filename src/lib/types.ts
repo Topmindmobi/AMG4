@@ -225,6 +225,11 @@ export interface Order {
   /** Append-only log of rider stages (visible to customer + admin). */
   rider_delivery_events?: RiderDeliveryEvent[] | null;
   delivered_at?: string | null;
+  /** Set the moment status becomes 'delivered' — admin pipeline hygiene only, doesn't affect the buyer's own view. */
+  archived_at?: string | null;
+  /** How many "leave a review" nudges have gone out (capped at 2, every 3 days). */
+  review_reminder_count?: number;
+  review_reminder_last_sent_at?: string | null;
   status: OrderStatus;
   total_kes: number;
   created_at: string;
@@ -441,4 +446,64 @@ export interface ServiceRating {
   notes: string | null;
   created_at: string;
   created_by: string | null;
+}
+
+/**
+ * Buyer's own review of a delivered order — overall experience + delivery,
+ * one row per order. Distinct from ServiceRating above (that's AMG's
+ * internal admin-only rating of supplier/rider quality).
+ */
+export interface OrderRating {
+  id: string;
+  order_id: string;
+  user_id: string;
+  overall_rating: number;
+  delivery_rating: number;
+  review_text: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Buyer's rating of one product/line item within a delivered order. */
+export interface ProductRating {
+  id: string;
+  order_id: string;
+  order_item_id: string;
+  product_id: string | null;
+  user_id: string;
+  rating: number;
+  review_text: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ReturnRequestStatus = "requested" | "approved" | "rejected" | "refunded";
+
+export type ReturnReason =
+  | "damaged"
+  | "wrong_item"
+  | "not_as_described"
+  | "changed_mind"
+  | "other";
+
+export interface ReturnRequestItem {
+  id: string;
+  return_request_id: string;
+  order_item_id: string;
+  qty: number;
+}
+
+export interface ReturnRequest {
+  id: string;
+  order_id: string;
+  user_id: string;
+  status: ReturnRequestStatus;
+  reason: ReturnReason;
+  reason_notes: string | null;
+  requested_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  refund_amount_kes: number | null;
+  admin_notes: string | null;
+  items?: ReturnRequestItem[];
 }
