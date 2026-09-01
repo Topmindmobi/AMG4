@@ -17,6 +17,15 @@ export function AddToCartButton({ product }: { product: Product }) {
   const router = useRouter();
   const [promptOpen, setPromptOpen] = useState(false);
 
+  if (user?.role === "supplier" || user?.role === "rider") {
+    return (
+      <p className="rounded-lg border border-line bg-sand px-4 py-3 text-sm text-ink-soft">
+        Supplier and rider accounts can&apos;t place orders. Register a separate customer
+        account to shop.
+      </p>
+    );
+  }
+
   return (
     <>
       <button

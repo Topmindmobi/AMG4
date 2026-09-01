@@ -27,7 +27,7 @@ type PayState = "idle" | "processing" | "paid" | "failed";
 
 export default function CheckoutPage() {
   const { items, total, clear } = useCart();
-  const { user, email, loading: authLoading } = useAuth();
+  const { user, email, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
   const [guestCheckout, setGuestCheckout] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +66,21 @@ export default function CheckoutPage() {
   const paid = payment === "mpesa" && payState === "paid";
   const discount = paid ? Math.round(total * PAY_NOW_DISCOUNT_RATE) : 0;
   const payable = total - discount;
+
+  if (user?.role === "supplier" || user?.role === "rider") {
+    return (
+      <div className="mx-auto max-w-xl px-5 py-16 text-center">
+        <h1 className="font-display text-[clamp(30px,4vw,38px)] text-charcoal">Checkout</h1>
+        <p className="mt-3 text-ink-soft">
+          Supplier and rider accounts can&apos;t place orders. Register a separate customer
+          account to shop.
+        </p>
+        <Link href="/account" className="mt-6 inline-block font-semibold text-forest underline">
+          Back to account
+        </Link>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -118,11 +133,18 @@ export default function CheckoutPage() {
     const fd = new FormData(e.currentTarget);
     const dropoff = dropoffPoints.find((p) => p.id === dropoffPointId) ?? null;
     const guestEmail = String(fd.get("email") || "").trim() || null;
-    let userId = user?.id ?? null;
+    // Admin is never the buyer — treat exactly like guest checkout so the
+    // order gets created/linked to whatever customer account the entered
+    // email/phone resolves to, not admin's own account.
+    let userId = isAdmin ? null : (user?.id ?? null);
     let accountNotice: AccountCreatedNotice | null = null;
 
     if (!userId && !guestEmail) {
-      setError("Email is required for guest checkout so we can create your temporary login.");
+      setError(
+        isAdmin
+          ? "Customer email is required so we can create their login for order tracking."
+          : "Email is required for guest checkout so we can create your temporary login.",
+      );
       return;
     }
 
@@ -365,23 +387,45 @@ export default function CheckoutPage() {
         </div>
       )}
 
+      {isAdmin && (
+        <div className="mt-5 rounded-lg border border-ember/30 bg-ember/5 px-4 py-3 text-sm text-charcoal">
+          <p className="font-semibold text-ember">Placing an order for a customer</p>
+          <p className="mt-1 text-ink-soft">
+            You&apos;re ordering on behalf of a customer — enter their details below, not your
+            own. We&apos;ll create or link their account so they can track this order.
+          </p>
+        </div>
+      )}
+
       <form
         onSubmit={onSubmit}
         className={`mt-8 space-y-5 ${needsAuthChoice || authLoading ? "pointer-events-none opacity-40" : ""}`}
         aria-hidden={needsAuthChoice || authLoading}
       >
-        <Field label="Full name" name="customer_name" defaultValue={user?.full_name ?? ""} required />
-        <Field label="Phone" name="phone" defaultValue={user?.phone ?? ""} required />
+        <Field
+          label={isAdmin ? "Customer's full name" : "Full name"}
+          name="customer_name"
+          defaultValue={isAdmin ? "" : (user?.full_name ?? "")}
+          required
+        />
+        <Field
+          label={isAdmin ? "Customer's phone" : "Phone"}
+          name="phone"
+          defaultValue={isAdmin ? "" : (user?.phone ?? "")}
+          required
+        />
         <Field
           label={
-            user
-              ? "Email"
-              : "Email (required — temporary login for order monitoring)"
+            isAdmin
+              ? "Customer's email (required — creates their login for order tracking)"
+              : user
+                ? "Email"
+                : "Email (required — temporary login for order monitoring)"
           }
           name="email"
           type="email"
-          defaultValue={email ?? ""}
-          required={!user}
+          defaultValue={isAdmin ? "" : (email ?? "")}
+          required={!user || isAdmin}
         />
         <label className="block text-xs font-semibold uppercase tracking-wide text-ink-soft">
           Delivery town
