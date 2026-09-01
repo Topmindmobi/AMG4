@@ -1,50 +1,71 @@
 "use client";
 
 /**
- * Renders nothing — mounted once globally. Redirects a signed-in user to
- * /account/profile exactly once (ever) if their profile is incomplete,
- * satisfying the "soft prompt: redirect once, skippable" requirement. The
- * persistent nag after that is ProfileCompletionBanner, which is driven by
- * completeness alone and ignores profile_prompt_shown_at.
+ * Renders nothing — mounted once globally. Hard-redirects a signed-in,
+ * non-admin user to /account/choose-role whenever they have neither a
+ * role_applications row (i.e. never chose rider/seller) nor a complete
+ * base profile (i.e. never completed the buyer path either) — the very
+ * first thing a new signup sees. No skip: this fires on every navigation
+ * until one of those two conditions is met. Already-onboarded accounts
+ * (complete profile, or any role_applications row, or already
+ * supplier/rider/admin) are exempt and never see this.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { isProfileComplete } from "@/lib/profile";
 import { isDemoMode } from "@/lib/supabase/config";
-import { markDemoProfilePromptShown } from "@/lib/store/demo-store";
+import { getDemoRoleApplications } from "@/lib/store/demo-store";
 
-const SKIP_PREFIXES = ["/auth", "/admin", "/supplier", "/rider"];
+const SKIP_PREFIXES = [
+  "/auth",
+  "/admin",
+  "/supplier",
+  "/rider",
+  "/account/choose-role",
+  "/account/profile",
+  "/account/become-supplier",
+  "/account/become-rider",
+];
 
 export function ProfileCompletionGate() {
   const { user, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const [hasApplication, setHasApplication] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setHasApplication(null);
+      return;
+    }
+    if (isDemoMode()) {
+      setHasApplication(getDemoRoleApplications(user.id).length > 0);
+      return;
+    }
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("role_applications")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+      setHasApplication((data?.length ?? 0) > 0);
+    })();
+  }, [user]);
 
   useEffect(() => {
     if (loading || !user) return;
     if (user.role === "admin") return;
-    if (pathname === "/account/profile") return;
     if (SKIP_PREFIXES.some((p) => pathname.startsWith(p))) return;
-    if (user.profile_prompt_shown_at) return;
-    if (isProfileComplete(user)) return;
+    if (hasApplication === null) return; // still resolving — avoid a false redirect
+    if (hasApplication) return; // already chose rider/seller, in the pipeline
+    if (isProfileComplete(user)) return; // already completed the buyer path
 
-    if (isDemoMode()) {
-      markDemoProfilePromptShown(user.id);
-    } else {
-      void (async () => {
-        const { createClient } = await import("@/lib/supabase/client");
-        const supabase = createClient();
-        await supabase
-          .from("profiles")
-          .update({ profile_prompt_shown_at: new Date().toISOString() })
-          .eq("id", user.id)
-          .is("profile_prompt_shown_at", null);
-      })();
-    }
-    router.replace(`/account/profile?prompt=complete-profile&next=${encodeURIComponent(pathname)}`);
-  }, [loading, user, pathname, router]);
+    router.replace(`/account/choose-role?next=${encodeURIComponent(pathname)}`);
+  }, [loading, user, pathname, hasApplication, router]);
 
   return null;
 }

@@ -9,6 +9,7 @@ import { isProfileComplete } from "@/lib/profile";
 import { isDemoMode } from "@/lib/supabase/config";
 import { getErrorMessage } from "@/lib/supabase/errors";
 import { submitDemoRoleApplication, updateDemoProfile } from "@/lib/store/demo-store";
+import { useCurrentLocation } from "@/lib/useCurrentLocation";
 import type { RoleApplication, RoleApplicationType, Town } from "@/lib/types";
 
 type DocKey = "national_id" | "business_permit" | "driving_license";
@@ -42,6 +43,12 @@ export function RoleApplicationForm({
   const [mapsUrl, setMapsUrl] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
+
+  const location = useCurrentLocation((foundLat, foundLng) => {
+    setLat(String(foundLat));
+    setLng(String(foundLng));
+    setMapsUrl("");
+  });
 
   const pinPreview = useMemo(() => {
     const fromUrl = mapsUrl ? parseMapsUrl(mapsUrl) : null;
@@ -283,9 +290,20 @@ export function RoleApplicationForm({
       </label>
 
       <div className="border-t border-line pt-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-          Map pin (required — AMG uses this for pickup/delivery logistics)
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+            Map pin (required — AMG uses this for pickup/delivery logistics)
+          </p>
+          <button
+            type="button"
+            disabled={location.busy}
+            onClick={location.request}
+            className="shrink-0 text-xs font-semibold text-forest hover:underline disabled:opacity-50"
+          >
+            {location.busy ? "Locating…" : "Use my current location"}
+          </button>
+        </div>
+        {location.error && <p className="mt-1 text-xs text-ember">{location.error}</p>}
         <label className="mt-3 block text-xs uppercase tracking-wide text-ink-soft">
           Google Maps link
           <input

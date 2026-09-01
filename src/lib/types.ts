@@ -90,8 +90,6 @@ export interface Profile {
   lat?: number | null;
   lng?: number | null;
   maps_url?: string | null;
-  /** Set once we've redirected this user to complete their profile — never redirect again after this. */
-  profile_prompt_shown_at?: string | null;
 }
 
 export interface Rider {

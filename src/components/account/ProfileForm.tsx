@@ -6,10 +6,11 @@ import { useAuth } from "@/lib/auth-context";
 import { TOWNS } from "@/lib/format";
 import { mapsUrlFromCoords, parseMapsUrl } from "@/lib/geo";
 import { isDemoMode } from "@/lib/supabase/config";
-import { markDemoProfilePromptShown, updateDemoProfile } from "@/lib/store/demo-store";
+import { updateDemoProfile } from "@/lib/store/demo-store";
+import { useCurrentLocation } from "@/lib/useCurrentLocation";
 import type { Town } from "@/lib/types";
 
-export function ProfileForm({ showSkip, next }: { showSkip: boolean; next: string }) {
+export function ProfileForm({ next }: { next: string }) {
   const { user, refresh } = useAuth();
   const router = useRouter();
 
@@ -24,6 +25,12 @@ export function ProfileForm({ showSkip, next }: { showSkip: boolean; next: strin
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  const location = useCurrentLocation((foundLat, foundLng) => {
+    setLat(String(foundLat));
+    setLng(String(foundLng));
+    setMapsUrl("");
+  });
 
   const pinPreview = useMemo(() => {
     const fromUrl = mapsUrl ? parseMapsUrl(mapsUrl) : null;
@@ -106,28 +113,6 @@ export function ProfileForm({ showSkip, next }: { showSkip: boolean; next: strin
     }
   }
 
-  async function onSkip() {
-    if (!user) return;
-    setBusy(true);
-    try {
-      if (isDemoMode()) {
-        markDemoProfilePromptShown(user.id);
-      } else {
-        const { createClient } = await import("@/lib/supabase/client");
-        const supabase = createClient();
-        await supabase
-          .from("profiles")
-          .update({ profile_prompt_shown_at: new Date().toISOString() })
-          .eq("id", user.id)
-          .is("profile_prompt_shown_at", null);
-      }
-      refresh();
-      router.push(next);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (!user) return null;
 
   return (
@@ -191,9 +176,20 @@ export function ProfileForm({ showSkip, next }: { showSkip: boolean; next: strin
       </label>
 
       <div className="sm:col-span-2 border-t border-line pt-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-          Map pin (optional)
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+            Map pin (optional)
+          </p>
+          <button
+            type="button"
+            disabled={location.busy}
+            onClick={location.request}
+            className="text-xs font-semibold text-forest hover:underline disabled:opacity-50"
+          >
+            {location.busy ? "Locating…" : "Use my current location"}
+          </button>
+        </div>
+        {location.error && <p className="mt-1 text-xs text-ember">{location.error}</p>}
         <label className="mt-3 block text-xs uppercase tracking-wide text-ink-soft">
           Google Maps link
           <input
@@ -257,16 +253,6 @@ export function ProfileForm({ showSkip, next }: { showSkip: boolean; next: strin
         >
           Save profile
         </button>
-        {showSkip && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void onSkip()}
-            className="border border-line px-5 py-2.5 text-sm font-semibold text-ink-soft disabled:opacity-50"
-          >
-            Skip for now
-          </button>
-        )}
       </div>
     </form>
   );

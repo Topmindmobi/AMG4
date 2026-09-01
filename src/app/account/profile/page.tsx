@@ -30,11 +30,10 @@ function ProfilePageInner() {
       </h1>
       {prompted && (
         <p className="mt-3 rounded-lg border-[1.5px] border-line bg-sand px-4 py-3 text-sm text-charcoal">
-          Add your delivery details so AMG can reach you. You can skip this for now and finish it
-          later from your account page.
+          Add your delivery details so AMG can reach you — phone, address, and location.
         </p>
       )}
-      <ProfileForm showSkip={prompted} next={next} />
+      <ProfileForm next={next} />
     </div>
   );
 }

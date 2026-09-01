@@ -72,7 +72,8 @@ export function RoleApplicationPage({ type }: { type: RoleApplicationType }) {
         </p>
       ) : application && application.status === "pending" ? (
         <p className="mt-8 rounded-lg border-[1.5px] border-line bg-sand px-4 py-3 text-sm text-charcoal">
-          Your application is under review. We'll email you once it's decided.
+          Your registration is under verification. We'll get back to you within 1–2 business
+          working days.
         </p>
       ) : application && application.status === "approved" ? (
         <p className="mt-8 rounded-lg border-[1.5px] border-forest/30 bg-forest/5 px-4 py-3 text-sm text-charcoal">

@@ -196,16 +196,7 @@ function findDemoProfileByPhone(phone: string): Profile | null {
 
 type EditableProfileFields = Pick<
   Profile,
-  | "full_name"
-  | "phone"
-  | "town"
-  | "address"
-  | "city"
-  | "country"
-  | "lat"
-  | "lng"
-  | "maps_url"
-  | "profile_prompt_shown_at"
+  "full_name" | "phone" | "town" | "address" | "city" | "country" | "lat" | "lng" | "maps_url"
 >;
 
 function patchDemoProfile(
@@ -241,15 +232,6 @@ export function updateDemoProfile(
   const next = patchDemoProfile(profileId, patch);
   syncSessionProfile(next);
   return next;
-}
-
-/** Stamp "we've shown this user the complete-your-profile prompt" — idempotent, never re-fires. */
-export function markDemoProfilePromptShown(profileId: string): void {
-  const profiles = read<Profile[]>(KEYS.profiles, []);
-  const existing = profiles.find((p) => p.id === profileId);
-  if (!existing || existing.profile_prompt_shown_at) return;
-  const next = patchDemoProfile(profileId, { profile_prompt_shown_at: new Date().toISOString() });
-  syncSessionProfile(next);
 }
 
 function resolveGuestTown(town?: string | null): Town | null {
