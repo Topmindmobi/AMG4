@@ -58,7 +58,14 @@ export function ProfileCompletionGate() {
 
   useEffect(() => {
     if (loading || !user) return;
-    if (user.role === "admin") return;
+    // Already has an operational role — matches ChooseRolePage's own
+    // "alreadyResolved" guard exactly. Without this, an account that's
+    // already supplier/rider (e.g. a legacy/seeded one that never went
+    // through role_applications) but has an incomplete base profile would
+    // ping-pong forever: this gate sends it to /account/choose-role, that
+    // page's own guard immediately bounces it back since role is already
+    // resolved, and this gate fires again on the next render.
+    if (user.role === "admin" || user.role === "supplier" || user.role === "rider") return;
     if (SKIP_PREFIXES.some((p) => pathname.startsWith(p))) return;
     if (hasApplication === null) return; // still resolving — avoid a false redirect
     if (hasApplication) return; // already chose rider/seller, in the pipeline
