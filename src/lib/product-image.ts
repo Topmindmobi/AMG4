@@ -10,10 +10,14 @@ export function resolvePath(path: string | null | undefined): string | null {
   return `/${path}`;
 }
 
-/** Main / cover image */
+/** Main / cover image. Demo/seed products always set image_path explicitly
+ * (e.g. "/products/cement-50kg.jpg") — there's no live convention where a
+ * product without image_path still has a matching static file, so guessing
+ * one here only produced a guaranteed-broken <img> src for any real product
+ * saved without a cover photo. Return null instead so callers fall back to
+ * their own "no photo" placeholder. */
 export function productImageUrl(product: Pick<Product, "slug" | "image_path">): string | null {
-  if (product.image_path) return resolvePath(product.image_path);
-  return `/products/${product.slug}.jpg`;
+  return resolvePath(product.image_path);
 }
 
 /** Cover + gallery images for the product page */
