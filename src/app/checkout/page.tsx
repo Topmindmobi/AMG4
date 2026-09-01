@@ -41,6 +41,11 @@ export default function CheckoutPage() {
   const [payState, setPayState] = useState<PayState>("idle");
   const [payMessage, setPayMessage] = useState<string | null>(null);
   const [paymentToken, setPaymentToken] = useState<string | null>(null);
+  // Generated once per checkout attempt so the M-Pesa AccountReference (paid
+  // before the order exists — see payNow() below) matches the order the
+  // customer actually ends up with, using the same order.id.slice(0, 12)
+  // "order number" shown elsewhere (account/orders, rider pay-now).
+  const [orderId] = useState(() => crypto.randomUUID());
 
   const needsAuthChoice = !authLoading && !user && !guestCheckout;
 
@@ -101,7 +106,7 @@ export default function CheckoutPage() {
     const result = await payNowWithMpesa({
       phone: mpesaPhone,
       amountKes: total,
-      accountRef: "AMGCOM",
+      accountRef: orderId.slice(0, 12),
     });
     if (result.paid) {
       setPayState("paid");
@@ -240,9 +245,9 @@ export default function CheckoutPage() {
       // component no longer sends price_kes, a total, or a paid boolean for
       // the order to be created with (paid is always inserted false; see
       // the confirm-order-payment call below for how a completed M-Pesa
-      // pay-now actually gets recorded).
-      const orderId = crypto.randomUUID();
-
+      // pay-now actually gets recorded). orderId itself was generated up
+      // front (see the useState above) so it's the same id already quoted
+      // as the M-Pesa AccountReference in payNow().
       const orderInput: PlaceOrderInput = {
         id: orderId,
         user_id: payload.user_id,
