@@ -45,9 +45,9 @@ export default async function HomePage() {
         <Link href="/shop" className="block">
           <Image
             src="/hero/amg-hero-banner.jpg"
-            alt="AMG Stores — Buy your dreams, it's in your hand. Fast delivery, pay on delivery, trusted store."
+            alt="AMG Stores — Buy your dreams, it's in your hand. Affordable, fast, convenient. Call +254 181 347 443 or WhatsApp +254 181 347 444."
             width={1600}
-            height={816}
+            height={814}
             priority
             className="h-auto w-full"
             sizes="100vw"
