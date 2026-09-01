@@ -37,6 +37,7 @@ import {
   getDemoSuppliers,
   getDemoSupplyRequests,
   getDemoUserIdForRider,
+  setDemoRiderDeliveryStatus,
   updateDemoOrderStatus,
 } from "@/lib/store/demo-store";
 import type {
@@ -342,6 +343,25 @@ export default function AdminOrdersPage() {
     }
   }
 
+  /** Lets admin set collected/in_transit on the rider's behalf (e.g. rider
+   * phones in an update instead of using their own app). No payment
+   * side-effect and no buyer notification, matching the rider's own app for
+   * these two stages. */
+  async function onAdvanceRiderStage(orderId: string, to: "collected" | "in_transit") {
+    if (isDemoMode()) {
+      setDemoRiderDeliveryStatus(orderId, to);
+    } else {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error } = await supabase.rpc("set_rider_delivery_status", {
+        p_order_id: orderId,
+        p_to: to,
+      });
+      if (error) throw error;
+    }
+    load();
+  }
+
   async function setStatus(id: string, status: OrderStatus) {
     const order = orders.find((o) => o.id === id);
     const current = order?.status;
@@ -466,7 +486,7 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              <RiderDeliveryTracker order={order} audience="admin" />
+              <RiderDeliveryTracker order={order} audience="admin" onAdvance={onAdvanceRiderStage} />
 
               {/* Ranked suppliers — best value first */}
               {rank && rank.scorecards.length > 0 && (

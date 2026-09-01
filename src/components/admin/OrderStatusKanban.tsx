@@ -60,6 +60,7 @@ export function OrderStatusKanban({
   onConfirmBuyer,
   onDispatch,
   onDeliver,
+  onAdvanceRiderStage,
   onSaveRatings,
 }: {
   orders: Order[];
@@ -72,6 +73,9 @@ export function OrderStatusKanban({
   onConfirmBuyer: (orderId: string) => void | Promise<void>;
   onDispatch: (orderId: string, riderId: string) => void | Promise<void>;
   onDeliver: (orderId: string) => void | Promise<void>;
+  /** Admin override for the two rider-only sub-stages (collected/in_transit)
+   * — see RiderDeliveryTracker.tsx. */
+  onAdvanceRiderStage?: (orderId: string, to: "collected" | "in_transit") => void | Promise<void>;
   onSaveRatings: (
     orderId: string,
     subjects: {
@@ -320,7 +324,11 @@ export function OrderStatusKanban({
                             </p>
                           )}
                           {(order.rider_id || order.rider_name_snapshot) && (
-                            <RiderDeliveryTracker order={order} audience="admin" />
+                            <RiderDeliveryTracker
+                              order={order}
+                              audience="admin"
+                              onAdvance={onAdvanceRiderStage}
+                            />
                           )}
                           {summary.count > 0 && (
                             <p className="mt-1 text-[13px] text-forest">
