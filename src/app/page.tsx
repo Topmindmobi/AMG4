@@ -1,7 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AmgLogo } from "@/components/brand/AmgLogo";
-import { HeroRouteMap } from "@/components/shop/HeroRouteMap";
 import { PayNowPromo } from "@/components/shop/PayNowPromo";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { TrustStrip } from "@/components/shop/TrustStrip";
@@ -43,41 +41,18 @@ export default async function HomePage() {
 
   return (
     <div>
-      <section className="hero-mesh relative overflow-hidden px-5 pb-10 pt-12">
-        <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-9">
-          <div className="animate-fade-up min-w-[280px] flex-1">
-            <div className="mb-6 inline-flex h-[30px] w-fit items-center justify-center rounded-md bg-white px-2 shadow-[0_1px_2px_rgba(14,26,99,0.12)]">
-              <AmgLogo priority className="h-[22px] w-auto" />
-            </div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.09em] text-[#F0A585]">
-              Nairobi · Mombasa · Kisumu · Homa Bay
-            </p>
-            <h1 className="max-w-[17ch] font-display text-[clamp(32px,5vw,48px)] font-semibold leading-[1.1] text-white">
-              Shop with us at AMG Online Store
-            </h1>
-            <p className="mt-[18px] mb-7 text-xl font-bold tracking-wide text-white">
-              Affordable <span className="text-[#F0A585]">–</span> Convenient{" "}
-              <span className="text-[#F0A585]">–</span> Fast
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/shop"
-                className="inline-flex items-center rounded-lg bg-ember px-[22px] py-[13px] text-[17px] font-semibold text-white transition hover:bg-ember-deep"
-              >
-                Shop now
-              </Link>
-              <Link
-                href="/shop"
-                className="inline-flex items-center rounded-lg border-[1.5px] border-white/50 px-[22px] py-[13px] text-[17px] font-semibold text-white transition hover:bg-white/10"
-              >
-                Delivering near you
-              </Link>
-            </div>
-          </div>
-          <div className="animate-fade-up-delay min-w-[300px] flex-1">
-            <HeroRouteMap />
-          </div>
-        </div>
+      <section className="relative overflow-hidden">
+        <Link href="/shop" className="block">
+          <Image
+            src="/hero/amg-hero-banner.jpg"
+            alt="AMG Stores — Buy your dreams, it's in your hand. Fast delivery, pay on delivery, trusted store."
+            width={1600}
+            height={816}
+            priority
+            className="h-auto w-full"
+            sizes="100vw"
+          />
+        </Link>
       </section>
 
       <section className="px-5 py-[46px]">
