@@ -3,44 +3,9 @@ import Link from "next/link";
 
 const HIGHLIGHTS = ["Affordable", "Fast", "Convenient"] as const;
 
-const HOME_HERO_CSS = `
-.hero-mesh .home-hero-inner {
-  display: grid;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 1.5rem 1.25rem;
-}
-.hero-mesh .home-hero-photo {
-  display: none;
-}
-@media (min-width: 640px) {
-  .hero-mesh .home-hero-inner { padding: 1.75rem 2rem; }
-}
-@media (min-width: 1024px) {
-  .hero-mesh .home-hero-inner {
-    grid-template-columns: minmax(0, 1fr) 18.5rem;
-    gap: 2.25rem;
-    padding: 1.75rem 2.25rem;
-  }
-  .hero-mesh .home-hero-photo {
-    display: block;
-    position: relative;
-    height: 13rem;
-    overflow: hidden;
-    border-radius: 0.75rem;
-  }
-  .hero-mesh .home-hero-photo img {
-    object-fit: cover;
-    object-position: 40% 36%;
-    transform: scale(1.75);
-  }
-}
-`;
-
 export function HomeHero() {
   return (
     <section className="px-5 pb-2 pt-5 sm:pt-6">
-      <style href="home-hero">{HOME_HERO_CSS}</style>
       <div className="mx-auto max-w-[1120px]">
         <div className="hero-mesh overflow-hidden rounded-2xl">
           <div className="home-hero-inner">
