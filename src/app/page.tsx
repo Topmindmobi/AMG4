@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { HomeHero } from "@/components/shop/HomeHero";
 import { PayNowPromo } from "@/components/shop/PayNowPromo";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { TrustStrip } from "@/components/shop/TrustStrip";
@@ -41,19 +42,7 @@ export default async function HomePage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden">
-        <Link href="/shop" className="block">
-          <Image
-            src="/hero/amg-hero-banner.jpg"
-            alt="AMG Stores — Buy your dreams, it's in your hand. Affordable, fast, convenient. Call +254 181 347 443 or WhatsApp +254 181 347 444."
-            width={1600}
-            height={814}
-            priority
-            className="h-auto w-full"
-            sizes="100vw"
-          />
-        </Link>
-      </section>
+      <HomeHero />
 
       <section className="px-5 py-[46px]">
         <div className="mx-auto max-w-[1120px]">
