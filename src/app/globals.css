@@ -255,8 +255,12 @@ select {
 
   .hero-mesh .home-hero-photo img {
     object-fit: cover;
-    object-position: 40% 36%;
-    transform: scale(1.75);
+    /* Cropped tight on the shopper + laptop, away from the banner's own
+       baked-in "BUY YOUR DREAMS" text — the source photo is a flat
+       marketing graphic, not a clean product shot, so most crop windows
+       clip a stray letter. This one doesn't. */
+    object-position: 6% 46%;
+    transform: scale(1.6);
   }
 }
 
