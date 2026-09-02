@@ -221,49 +221,6 @@ select {
     linear-gradient(155deg, var(--forest) 0%, var(--forest-deep) 100%);
 }
 
-.hero-mesh .home-hero-inner {
-  display: grid;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 1.5rem 1.25rem;
-}
-
-.hero-mesh .home-hero-photo {
-  display: none;
-}
-
-@media (min-width: 640px) {
-  .hero-mesh .home-hero-inner {
-    padding: 1.75rem 2rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .hero-mesh .home-hero-inner {
-    grid-template-columns: minmax(0, 1fr) 18.5rem;
-    gap: 2.25rem;
-    padding: 1.75rem 2.25rem;
-  }
-
-  .hero-mesh .home-hero-photo {
-    display: block;
-    position: relative;
-    height: 13rem;
-    overflow: hidden;
-    border-radius: 0.75rem;
-  }
-
-  .hero-mesh .home-hero-photo img {
-    object-fit: cover;
-    /* Cropped tight on the shopper + laptop, away from the banner's own
-       baked-in "BUY YOUR DREAMS" text — the source photo is a flat
-       marketing graphic, not a clean product shot, so most crop windows
-       clip a stray letter. This one doesn't. */
-    object-position: 6% 46%;
-    transform: scale(1.6);
-  }
-}
-
 .boda-ride {
   offset-path: path("M20,90 C 90,10 150,170 220,90 S 340,10 400,90");
   animation: ride 6s linear infinite;
