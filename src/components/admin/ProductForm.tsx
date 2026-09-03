@@ -114,6 +114,24 @@ export function ProductForm({
     setGalleryPreviews((prev) => [...prev, dataUrl]);
   }
 
+  function onGalleryFilesSelected(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    let firstError: string | null = null;
+    for (const file of Array.from(files)) {
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        firstError = firstError ?? validationError;
+        continue;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setGalleryPreviews((prev) => [...prev, String(reader.result)]);
+      };
+      reader.readAsDataURL(file);
+    }
+    setError(firstError);
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -350,16 +368,31 @@ export function ProductForm({
               ))}
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              setCameraTarget("gallery");
-              setCameraOpen(true);
-            }}
-            className="mt-2 border border-line px-4 py-2 text-sm text-charcoal/80 hover:bg-white"
-          >
-            Capture gallery photo
-          </button>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCameraTarget("gallery");
+                setCameraOpen(true);
+              }}
+              className="border border-line px-4 py-2 text-sm text-charcoal/80 hover:bg-white"
+            >
+              Capture gallery photo
+            </button>
+            <label className="cursor-pointer border border-line px-4 py-2 text-sm text-charcoal/80 hover:bg-white">
+              Upload files
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  onGalleryFilesSelected(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
           <label className="mt-3 block text-xs uppercase tracking-wide text-ink-soft">
             Or paste gallery paths (one per line)
             <textarea
