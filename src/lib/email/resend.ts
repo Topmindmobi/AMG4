@@ -14,9 +14,18 @@ function escapeHtml(value: string): string {
 }
 
 const BRAND_ORANGE = "#f0672e";
+const FONT_STACK = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
 function ctaButtonHtml(url: string, label: string): string {
-  return `<p style="margin:20px 0;"><a href="${url}" style="display:inline-block;background:${BRAND_ORANGE};color:#ffffff;padding:11px 22px;border-radius:6px;text-decoration:none;font-weight:600;font-size:15px;">${escapeHtml(label)}</a></p>`;
+  return `<p style="margin:22px 0;"><a href="${url}" style="display:inline-block;background:${BRAND_ORANGE};color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:15px;">${escapeHtml(label)}</a></p>`;
+}
+
+/** Logo, centered, linking back to the homepage — the brand header every email starts with. */
+function logoHeaderHtml(siteUrl: string): string {
+  return `
+<div style="text-align:center;padding:8px 0 20px;">
+  <a href="${siteUrl}"><img src="${siteUrl}/email/amg-logo.png" alt="AMG Stores" width="150" style="display:inline-block;height:auto;border:0;" /></a>
+</div>`;
 }
 
 /** Same footer on every outgoing email — head office address + site link. */
@@ -31,70 +40,88 @@ function footerHtml(): string {
 </p>`;
 }
 
-/** Wraps a greeting + body + optional CTA button + the standard footer. Every send function below goes through this so the letterhead stays consistent. */
+/**
+ * Wraps every send in the same shell: logo header, greeting, body, optional
+ * CTA button, then the standard footer — so the letterhead and structure
+ * stay identical across every email this module sends.
+ */
 function renderEmail(input: {
+  siteUrl: string;
   name: string;
   bodyHtml: string;
   cta?: { url: string; label: string };
 }): string {
   const greetName = input.name.trim() || "there";
-  return `<p>Hi ${escapeHtml(greetName)},</p>
+  return `<div style="max-width:560px;margin:0 auto;font-family:${FONT_STACK};color:#232323;font-size:15px;line-height:1.6;">
+${logoHeaderHtml(input.siteUrl)}
+<p>Hi ${escapeHtml(greetName)},</p>
 ${input.bodyHtml}
 ${input.cta ? ctaButtonHtml(input.cta.url, input.cta.label) : ""}
-${footerHtml()}`;
+${footerHtml()}
+</div>`;
 }
 
+/**
+ * Every event's copy follows the same shape the user asked for: thank the
+ * customer, tell them what just happened, then tell them what happens next.
+ */
 function buildSubjectAndBody(input: {
   event: OrderSmsEvent;
   orderId: string;
   name: string;
   orderUrl: string;
+  contactUrl: string;
+  siteUrl: string;
 }): { subject: string; html: string } {
   const ref = shortOrderRef(input.orderId);
-  const copy: Record<OrderSmsEvent, { subject: string; line: string; ctaLabel: string; ctaUrl: string }> = {
+  const copy: Record<
+    OrderSmsEvent,
+    { subject: string; bodyHtml: string; ctaLabel: string; ctaUrl: string }
+  > = {
     placed: {
       subject: `We received your AMG Online Store order ${ref}`,
-      line: "We'll confirm it shortly.",
+      bodyHtml: `<p>Thank you for shopping with AMG Online Store! We've received your order <strong>${ref}</strong> and our team is reviewing it now.</p><p><strong>What's next:</strong> we'll confirm your order shortly, get it ready, and keep you updated by email at every step until it's delivered.</p>`,
       ctaLabel: "Track your order",
       ctaUrl: input.orderUrl,
     },
     confirmed: {
       subject: `Your AMG Online Store order ${ref} is confirmed`,
-      line: "We'll dispatch it soon.",
+      bodyHtml: `<p>Good news — your order <strong>${ref}</strong> has been confirmed!</p><p><strong>What's next:</strong> we're preparing it for dispatch. As soon as it's handed to our rider, we'll email you again.</p>`,
       ctaLabel: "Track your order",
       ctaUrl: input.orderUrl,
     },
     dispatched: {
       subject: `Your AMG Online Store order ${ref} is out for delivery`,
-      line: "Our rider is on the way.",
+      bodyHtml: `<p>Your order <strong>${ref}</strong> is on its way!</p><p><strong>What's next:</strong> our rider is heading to your delivery address now — please keep your phone nearby in case they need to reach you.</p>`,
       ctaLabel: "Track your order",
       ctaUrl: input.orderUrl,
     },
     delivered: {
       subject: `Your AMG Online Store order ${ref} has been delivered`,
-      line: "Asante for shopping with AMG Online Store!",
-      ctaLabel: "View your order",
-      ctaUrl: input.orderUrl,
+      bodyHtml: `<p>Thank you for shopping with AMG Online Store! Your order <strong>${ref}</strong> has been delivered — asante for choosing us.</p><p><strong>What's next:</strong> we hope everything arrived in great condition. If you have a moment, we'd love to hear how it went.</p>`,
+      ctaLabel: "Rate your order",
+      ctaUrl: `${input.orderUrl}#rate-your-order`,
     },
     cancelled: {
       subject: `Your AMG Online Store order ${ref} was cancelled`,
-      line: "If this wasn't expected, please contact us.",
-      ctaLabel: "View your order",
-      ctaUrl: input.orderUrl,
+      bodyHtml: `<p>Your order <strong>${ref}</strong> has been cancelled.</p><p><strong>What's next:</strong> if this wasn't expected or you have questions, please get in touch — we're happy to help. If you'd still like these items, you're welcome to place a new order any time.</p>`,
+      ctaLabel: "Contact us",
+      ctaUrl: input.contactUrl,
     },
     review_reminder: {
       subject: `How was your AMG Online Store order ${ref}?`,
-      line: "We'd love a quick rating — it only takes a moment.",
+      bodyHtml: `<p>Thank you again for shopping with AMG Online Store!</p><p>We hope you're enjoying your order <strong>${ref}</strong>. Your feedback helps us improve and helps other shoppers make great choices — it only takes a minute.</p>`,
       ctaLabel: "Leave a review",
       ctaUrl: `${input.orderUrl}#rate-your-order`,
     },
   };
-  const { subject, line, ctaLabel, ctaUrl } = copy[input.event];
+  const { subject, bodyHtml, ctaLabel, ctaUrl } = copy[input.event];
   return {
     subject,
     html: renderEmail({
+      siteUrl: input.siteUrl,
       name: input.name,
-      bodyHtml: `<p>Order <strong>${ref}</strong>: ${line}</p>`,
+      bodyHtml,
       cta: { url: ctaUrl, label: ctaLabel },
     }),
   };
@@ -131,6 +158,8 @@ export async function sendOrderStatusEmail(input: {
       orderId: input.orderId,
       name: input.name ?? "",
       orderUrl: `${input.siteUrl}/order/${input.orderId}`,
+      contactUrl: `${input.siteUrl}/contact`,
+      siteUrl: input.siteUrl,
     });
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM!.trim(),
@@ -171,14 +200,16 @@ export async function sendAccountWelcomeEmail(input: {
       to: input.to,
       subject: "Your AMG Online Store account",
       html: renderEmail({
+        siteUrl: input.siteUrl,
         name: input.fullName ?? "",
-        bodyHtml: `<p>We created an AMG Online Store account for you so you can track orders and reorder easily.</p>
-<p>Sign in with:</p>
+        bodyHtml: `<p>Thank you for shopping with AMG Online Store!</p>
+<p>To make it easy to track this order and shop with us again, we've created an account for you.</p>
+<p><strong>What's next:</strong> sign in any time using the details below, and feel free to change your password once you're in.</p>
 <ul>
   <li>Email: <strong>${escapeHtml(input.to)}</strong></li>
   <li>Temporary password: <strong>${escapeHtml(input.temporaryPassword)}</strong></li>
 </ul>
-<p>You can change your password after signing in. If you already had an account, you can ignore this message and sign in as usual.</p>`,
+<p>If you already had an account, you can ignore this message and sign in as usual.</p>`,
         cta: { url: `${input.siteUrl}/auth/login`, label: "Sign in to your account" },
       }),
     });
@@ -211,16 +242,22 @@ export async function sendRoleApplicationDecisionEmail(input: {
   }
 
   const roleLabel = input.type === "supplier" ? "supplier" : "rider";
+  const dashboardPath = input.type === "supplier" ? "/supplier" : "/rider";
+  const reapplyPath = input.type === "supplier" ? "/account/become-supplier" : "/account/become-rider";
   const subject =
     input.decision === "approved"
       ? `Your AMG Online Store ${roleLabel} application was approved`
       : `Your AMG Online Store ${roleLabel} application update`;
   const bodyHtml =
     input.decision === "approved"
-      ? `<p>Good news — your ${roleLabel} application has been approved.</p>`
-      : `<p>Your ${roleLabel} application wasn't approved this time.</p>${
-          input.reason ? `<p>Reason: ${escapeHtml(input.reason)}</p>` : ""
-        }<p>You're welcome to apply again from your account page.</p>`;
+      ? `<p>Thank you for applying to become an AMG Online Store ${roleLabel}!</p><p>We're excited to let you know your application has been approved.</p><p><strong>What's next:</strong> sign in to your account to access your ${roleLabel} dashboard and get started.</p>`
+      : `<p>Thank you for your interest in becoming an AMG Online Store ${roleLabel}.</p><p>After review, we're unable to approve your application at this time.${
+          input.reason ? ` Reason: ${escapeHtml(input.reason)}.` : ""
+        }</p><p><strong>What's next:</strong> you're welcome to apply again whenever you're ready.</p>`;
+  const cta =
+    input.decision === "approved"
+      ? { url: `${input.siteUrl}${dashboardPath}`, label: `Go to your ${roleLabel} dashboard` }
+      : { url: `${input.siteUrl}${reapplyPath}`, label: "Apply again" };
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY!.trim());
@@ -229,9 +266,10 @@ export async function sendRoleApplicationDecisionEmail(input: {
       to: input.to,
       subject,
       html: renderEmail({
+        siteUrl: input.siteUrl,
         name: input.name ?? "",
         bodyHtml,
-        cta: { url: `${input.siteUrl}/auth/login`, label: "Sign in to your account" },
+        cta,
       }),
     });
     if (error) throw error;
