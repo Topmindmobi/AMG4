@@ -341,12 +341,7 @@ export function setDemoProductActive(
 }
 
 export function deleteDemoProduct(id: string) {
-  ensureSeeded();
-  const products = read<Product[]>(KEYS.products, DEMO_PRODUCTS);
-  write(
-    KEYS.products,
-    products.map((p) => (p.id === id ? { ...p, is_active: false } : p)),
-  );
+  setDemoProductActive(id, false);
 }
 
 export function upsertDemoSupplier(

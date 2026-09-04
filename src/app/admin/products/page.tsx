@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Pagination } from "@/components/admin/Pagination";
 import { formatKes } from "@/lib/format";
 import { isDemoMode } from "@/lib/supabase/config";
-import { deleteDemoProduct, getDemoProducts } from "@/lib/store/demo-store";
+import { getDemoProducts, setDemoProductActive } from "@/lib/store/demo-store";
 import type { Product } from "@/lib/types";
 
 const PRODUCTS_PAGE_SIZE = 25;
@@ -53,16 +53,17 @@ export default function AdminProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, needsReviewOnly]);
 
-  async function deactivate(id: string) {
-    if (!confirm("Deactivate this product?")) return;
+  async function toggleActive(id: string, currentlyActive: boolean) {
+    const nextActive = !currentlyActive;
+    if (!confirm(nextActive ? "Activate this product?" : "Deactivate this product?")) return;
     if (isDemoMode()) {
-      deleteDemoProduct(id);
+      setDemoProductActive(id, nextActive);
       load();
       return;
     }
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
-    await supabase.from("products").update({ is_active: false }).eq("id", id);
+    await supabase.from("products").update({ is_active: nextActive }).eq("id", id);
     load();
   }
 
@@ -98,7 +99,7 @@ export default function AdminProductsPage() {
               <th className="pb-3 font-medium">Price</th>
               <th className="pb-3 font-medium">Markup</th>
               <th className="pb-3 font-medium">Stock</th>
-              <th className="pb-3 font-medium">Active</th>
+              <th className="pb-3 font-medium">Status</th>
               <th className="pb-3 font-medium" />
             </tr>
           </thead>
@@ -118,14 +119,24 @@ export default function AdminProductsPage() {
                   {markupLabel(p)}
                 </td>
                 <td className="py-3">{p.stock}</td>
-                <td className="py-3">{p.is_active ? "Yes" : "No"}</td>
+                <td className="py-3">
+                  <span
+                    className={`inline-block px-2 py-0.5 text-xs font-semibold ${
+                      p.is_active
+                        ? "bg-forest/10 text-forest"
+                        : "bg-crimson/10 text-crimson"
+                    }`}
+                  >
+                    {p.is_active ? "Active" : "Deactivated"}
+                  </span>
+                </td>
                 <td className="py-3 text-right">
                   <button
                     type="button"
-                    onClick={() => void deactivate(p.id)}
+                    onClick={() => void toggleActive(p.id, p.is_active)}
                     className="text-ink-soft hover:text-ember"
                   >
-                    Deactivate
+                    {p.is_active ? "Deactivate" : "Activate"}
                   </button>
                 </td>
               </tr>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useCallback, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { BarcodeScanner } from "@/components/admin/BarcodeScanner";
 import { CameraCapture } from "@/components/admin/CameraCapture";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
@@ -38,19 +38,23 @@ export function ProductForm({
   categories,
   suppliers,
   lockedSupplierId,
-  redirectBase = "/admin/products",
 }: {
   product?: Product;
   categories: Category[];
   suppliers: Supplier[];
   /** When set (supplier portal), force this supplier and hide the selector */
   lockedSupplierId?: string;
-  redirectBase?: string;
 }) {
   const router = useRouter();
   const { isAdmin } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Bumped after a new-product save to remount <form>, clearing every
+  // uncontrolled field (Name, Short description, the RichTextEditor, the
+  // gallery-paths textarea, Active) back to blank — the pieces that live in
+  // this component's own state (below) are reset explicitly alongside it.
+  const [formKey, setFormKey] = useState(0);
   const [supplierPriceKes, setSupplierPriceKes] = useState(
     String(product?.supplier_price_kes ?? product?.price_kes ?? 0),
   );
@@ -99,6 +103,26 @@ export function ProductForm({
     );
   }
 
+  useEffect(() => {
+    if (!savedMessage) return;
+    const t = setTimeout(() => setSavedMessage(null), 5000);
+    return () => clearTimeout(t);
+  }, [savedMessage]);
+
+  /** After a NEW product is saved, clear everything so the next one can be
+   * entered right away instead of navigating away from the form. */
+  function resetFormForNextProduct() {
+    setSupplierPriceKes("0");
+    setMarkupType("percent");
+    setMarkupValue("");
+    setTowns(["Homabay"]);
+    setBarcode("");
+    setCoverPreview(null);
+    setCoverFile(null);
+    setGalleryPreviews([]);
+    setFormKey((k) => k + 1);
+  }
+
   function onPhotoCaptured(file: File, dataUrl: string) {
     const validationError = validateImageFile(file);
     if (validationError) {
@@ -136,6 +160,7 @@ export function ProductForm({
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSavedMessage(null);
     const fd = new FormData(e.currentTarget);
     const name = String(fd.get("name"));
     const short_description = String(fd.get("short_description") || "");
@@ -161,10 +186,21 @@ export function ProductForm({
     // no-photo-change save.
     let image_path = coverFile ? coverPreview : (product?.image_path ?? null);
 
+    // Auto-generated, not user-editable — a bare slugify(name) collided
+    // whenever two products shared a name (e.g. the same brand in different
+    // specs/sizes), since slug has a database-level unique constraint. A
+    // short random suffix on every NEW product makes that collision
+    // essentially impossible without needing an extra existence check.
+    // Editing an existing product keeps its slug unchanged so links to it
+    // never break.
+    const slug = product?.id
+      ? product.slug
+      : `${slugify(name) || "product"}-${crypto.randomUUID().slice(0, 6)}`;
+
     const payload = {
       id: product?.id,
       name,
-      slug: String(fd.get("slug") || slugify(name)),
+      slug,
       short_description,
       detailed_description,
       description: short_description,
@@ -192,8 +228,16 @@ export function ProductForm({
       if (!detailed_description.trim()) throw new Error("Add a detailed description");
 
       if (isDemoMode()) {
-        const saved = upsertDemoProduct(payload);
-        router.push(`${redirectBase}/${saved.id}`);
+        upsertDemoProduct(payload);
+        if (product?.id) {
+          setSavedMessage("Product saved.");
+        } else {
+          setSavedMessage(
+            isAdmin ? "Product saved." : "Product saved — awaiting admin review.",
+          );
+          resetFormForNextProduct();
+        }
+        router.refresh();
         return;
       }
 
@@ -255,15 +299,14 @@ export function ProductForm({
           .update(row)
           .eq("id", product.id);
         if (updateError) throw updateError;
-        router.push(`${redirectBase}/${product.id}`);
+        setSavedMessage("Product saved.");
       } else {
-        const { data, error: insertError } = await supabase
-          .from("products")
-          .insert(row)
-          .select("id")
-          .single();
+        const { error: insertError } = await supabase.from("products").insert(row);
         if (insertError) throw insertError;
-        router.push(`${redirectBase}/${data.id}`);
+        setSavedMessage(
+          isAdmin ? "Product saved." : "Product saved — awaiting admin review.",
+        );
+        resetFormForNextProduct();
       }
       router.refresh();
     } catch (err) {
@@ -275,9 +318,8 @@ export function ProductForm({
 
   return (
     <>
-      <form onSubmit={onSubmit} className="mt-8 max-w-xl space-y-4">
+      <form key={formKey} onSubmit={onSubmit} className="mt-8 max-w-xl space-y-4">
         <Field label="Name" name="name" defaultValue={product?.name} required />
-        <Field label="Slug" name="slug" defaultValue={product?.slug} />
 
         <div>
           <label className="block text-xs uppercase tracking-wide text-ink-soft">
@@ -540,6 +582,7 @@ export function ProductForm({
           <input name="is_active" type="checkbox" defaultChecked={product?.is_active ?? true} />
           Active
         </label>
+        {savedMessage && <p className="text-sm font-semibold text-forest">{savedMessage}</p>}
         {error && <p className="text-sm text-ember">{error}</p>}
         <button
           type="submit"

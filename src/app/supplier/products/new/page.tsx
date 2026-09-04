@@ -41,7 +41,6 @@ export default function SupplierNewProductPage() {
         categories={categories}
         suppliers={suppliers}
         lockedSupplierId={supplierId}
-        redirectBase="/supplier/products"
       />
     </div>
   );
