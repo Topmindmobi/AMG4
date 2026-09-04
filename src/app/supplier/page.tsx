@@ -2,19 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ImpendingTaskBanner } from "@/components/dashboard/ImpendingTaskBanner";
 import { useAuth } from "@/lib/auth-context";
+import { listNotifications } from "@/lib/data/notifications";
 import { formatKes, SUPPLY_STATUS_LABELS } from "@/lib/format";
 import { isDemoMode } from "@/lib/supabase/config";
 import {
   getDemoProductsBySupplier,
   getDemoSupplyRequests,
 } from "@/lib/store/demo-store";
-import type { Product, SupplyRequest } from "@/lib/types";
+import type { AppNotification, Product, SupplyRequest } from "@/lib/types";
 
 export default function SupplierDashboardPage() {
-  const { supplierId } = useAuth();
+  const { user, supplierId } = useAuth();
   const [requests, setRequests] = useState<SupplyRequest[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   useEffect(() => {
     if (!supplierId) return;
@@ -25,22 +28,53 @@ export default function SupplierDashboardPage() {
       return;
     }
 
-    // Supply-request pipeline stays demo-only for now — that workflow (and its
-    // RLS-backed table) isn't wired up in production yet. The product count
-    // is a plain read, so it's safe to back with real data.
+    // supply_requests was made production-ready in migration 020 — this
+    // used to skip fetching it entirely (stale comment claimed it was still
+    // demo-only), which meant "New orders" on this dashboard always showed
+    // 0 for real suppliers even though /supplier/requests itself already
+    // queried this same table correctly.
     void (async () => {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      const { data } = await supabase
-        .from("products")
-        .select("*")
-        .eq("supplier_id", supplierId)
-        .order("created_at", { ascending: false });
-      setProducts((data as Product[]) ?? []);
+      const [{ data: reqData }, { data: prodData }] = await Promise.all([
+        supabase
+          .from("supply_requests")
+          .select("*")
+          .eq("supplier_id", supplierId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("products")
+          .select("*")
+          .eq("supplier_id", supplierId)
+          .order("created_at", { ascending: false }),
+      ]);
+      setRequests((reqData as SupplyRequest[]) ?? []);
+      setProducts((prodData as Product[]) ?? []);
     })();
   }, [supplierId]);
 
+  useEffect(() => {
+    if (!user) return;
+    void listNotifications(user.id).then(setNotifications);
+  }, [user]);
+
   const pending = requests.filter((r) => r.status === "pending").length;
+  const unreadNote = notifications.find((n) => !n.read) ?? null;
+  const impendingTask =
+    pending > 0
+      ? {
+          title: `${pending} new order${pending === 1 ? "" : "s"} awaiting your confirmation`,
+          href: "/supplier/requests",
+          linkLabel: "Open kanban",
+        }
+      : unreadNote
+        ? {
+            title: unreadNote.title,
+            description: unreadNote.body,
+            href: unreadNote.link ?? "/supplier",
+            linkLabel: "View",
+          }
+        : null;
 
   return (
     <div>
@@ -48,6 +82,13 @@ export default function SupplierDashboardPage() {
       <p className="mt-2 text-sm text-ink-soft">
         Manage your catalogue and move supply orders through the logistics pipeline.
       </p>
+
+      {impendingTask && (
+        <div className="mt-6">
+          <ImpendingTaskBanner {...impendingTask} />
+        </div>
+      )}
+
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="New orders" value={String(pending)} />
         <Stat

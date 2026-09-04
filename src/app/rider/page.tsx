@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ImpendingTaskBanner } from "@/components/dashboard/ImpendingTaskBanner";
 import { RiderDeliveryKanban } from "@/components/rider/RiderDeliveryKanban";
 import { useAuth } from "@/lib/auth-context";
+import { listNotifications } from "@/lib/data/notifications";
 import { formatKes, RIDER_PAYOUT_KES } from "@/lib/format";
 import { payNowWithMpesa } from "@/lib/mpesa/pay-now-client";
 import { notifyOrderStatus } from "@/lib/notifications/notify-client";
@@ -20,7 +22,7 @@ import {
   notifyDemoDoorMpesaPrompt,
   setDemoRiderDeliveryStatus,
 } from "@/lib/store/demo-store";
-import type { Order, RiderDeliveryStatus, RiderPayout } from "@/lib/types";
+import type { AppNotification, Order, RiderDeliveryStatus, RiderPayout } from "@/lib/types";
 
 export default function RiderDashboardPage() {
   const { user, riderId } = useAuth();
@@ -29,6 +31,7 @@ export default function RiderDashboardPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   function load() {
     if (!riderId) return;
@@ -73,6 +76,11 @@ export default function RiderDashboardPage() {
         setPushStatus(result.reason);
       }
     });
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    void listNotifications(user.id).then(setNotifications);
   }, [user]);
 
   async function enablePush() {
@@ -245,6 +253,22 @@ export default function RiderDashboardPage() {
       ["in_transit", "delivered"].includes(normalizeRiderDeliveryStatus(o)),
   ).length;
   const totalEarned = payouts.reduce((s, p) => s + Number(p.amount_kes), 0);
+  const unreadNote = notifications.find((n) => !n.read) ?? null;
+  const impendingTask =
+    assigned > 0
+      ? {
+          title: `${assigned} new assignment${assigned === 1 ? "" : "s"} waiting for pickup`,
+          href: "#kanban",
+          linkLabel: "See below",
+        }
+      : unreadNote
+        ? {
+            title: unreadNote.title,
+            description: unreadNote.body,
+            href: unreadNote.link ?? "/rider",
+            linkLabel: "View",
+          }
+        : null;
 
   return (
     <div>
@@ -272,6 +296,12 @@ export default function RiderDashboardPage() {
         </p>
       )}
 
+      {impendingTask && (
+        <div className="mt-4">
+          <ImpendingTaskBanner {...impendingTask} dark />
+        </div>
+      )}
+
       <div className="mt-4 grid gap-3 sm:grid-cols-4">
         <Stat label="New assignments" value={String(assigned)} />
         <Stat label="In transit" value={String(inTransit)} />
@@ -279,7 +309,7 @@ export default function RiderDashboardPage() {
         <Stat label="Total earned" value={formatKes(totalEarned)} />
       </div>
 
-      <div className="mt-8">
+      <div id="kanban" className="mt-8">
         <RiderDeliveryKanban
           orders={orders}
           busy={busy}
