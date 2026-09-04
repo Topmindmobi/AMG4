@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Pagination } from "@/components/admin/Pagination";
-import { ProductThumb } from "@/components/admin/ProductThumb";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { SupplierCompareDialog } from "@/components/admin/SupplierCompareDialog";
 import { RiderDeliveryTracker } from "@/components/orders/RiderDeliveryTracker";
 import { listRiders } from "@/lib/data/delivery";

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ImpendingTaskBanner } from "@/components/dashboard/ImpendingTaskBanner";
-import { ProductThumb } from "@/components/admin/ProductThumb";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { useAuth } from "@/lib/auth-context";
 import { listNotifications } from "@/lib/data/notifications";
 import { formatKes, ORDER_STATUS_LABELS } from "@/lib/format";

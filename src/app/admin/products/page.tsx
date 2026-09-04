@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Pagination } from "@/components/admin/Pagination";
-import { ProductThumb } from "@/components/admin/ProductThumb";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { formatKes } from "@/lib/format";
 import { isDemoMode } from "@/lib/supabase/config";
 import { getDemoProducts, setDemoProductActive } from "@/lib/store/demo-store";
@@ -110,11 +110,14 @@ export default function AdminProductsPage() {
               <tr key={p.id}>
                 <td className="py-3">
                   <Link href={`/admin/products/${p.id}`}>
-                    <ProductThumb product={p} size={36} />
+                    <ProductThumb product={p} size={72} zoomOnHover />
                   </Link>
                 </td>
                 <td className="py-3">
-                  <Link href={`/admin/products/${p.id}`} className="hover:text-ember">
+                  <Link
+                    href={`/admin/products/${p.id}`}
+                    className="line-clamp-2 max-w-[220px] hover:text-ember"
+                  >
                     {p.name}
                   </Link>
                 </td>

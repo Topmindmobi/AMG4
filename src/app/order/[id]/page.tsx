@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RiderDeliveryTracker } from "@/components/orders/RiderDeliveryTracker";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { StarRating } from "@/components/shared/StarRating";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -22,11 +23,19 @@ import {
   getDemoOrder,
   getDemoOrderRating,
   getDemoProductRatings,
+  getDemoProducts,
   getDemoReturnRequestForOrder,
   isDemoReturnWindowOpen,
   submitDemoOrderRating,
 } from "@/lib/store/demo-store";
-import type { Order, OrderRating, OrderStatus, ProductRating, ReturnRequest } from "@/lib/types";
+import type {
+  Order,
+  OrderRating,
+  OrderStatus,
+  Product,
+  ProductRating,
+  ReturnRequest,
+} from "@/lib/types";
 
 const TRACKING_STEPS: { statuses: OrderStatus[]; label: string }[] = [
   { statuses: ["pending", "awaiting_supplier", "supplier_confirmed"], label: "Order placed" },
@@ -48,6 +57,7 @@ export default function OrderConfirmationPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [accountNotice, setAccountNotice] = useState<AccountCreatedNotice | null>(null);
+  const [productsById, setProductsById] = useState<Map<string, Product>>(new Map());
 
   const [orderRating, setOrderRating] = useState<OrderRating | null>(null);
   const [productRatings, setProductRatings] = useState<ProductRating[]>([]);
@@ -104,6 +114,31 @@ export default function OrderConfirmationPage() {
       clearInterval(poll);
     };
   }, [params.id]);
+
+  useEffect(() => {
+    // Items don't change once an order exists, so this only needs to run
+    // once per order id — not on every poll tick above.
+    const productIds = Array.from(
+      new Set((order?.items ?? []).map((i) => i.product_id).filter((id): id is string => Boolean(id))),
+    );
+    if (productIds.length === 0) return;
+
+    if (isDemoMode()) {
+      setProductsById(new Map(getDemoProducts({ activeOnly: false }).map((p) => [p.id, p])));
+      return;
+    }
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      // RLS only lets a buyer read active+reviewed products — a product
+      // since deactivated just falls back to ProductThumb's placeholder.
+      const { data } = await supabase
+        .from("products")
+        .select("id, slug, image_path")
+        .in("id", productIds);
+      setProductsById(new Map(((data as Product[]) ?? []).map((p) => [p.id, p])));
+    })();
+  }, [order?.id]);
 
   useEffect(() => {
     if (!order || order.status !== "delivered") return;
@@ -399,13 +434,19 @@ export default function OrderConfirmationPage() {
       </dl>
 
       {order.items && order.items.length > 0 && (
-        <ul className="mt-6 space-y-2 text-sm">
+        <ul className="mt-6 space-y-3 text-sm">
           {order.items.map((item) => (
-            <li key={item.id} className="flex justify-between">
-              <span>
-                {item.name_snapshot} × {item.qty}
+            <li key={item.id} className="flex items-center justify-between gap-3">
+              <span className="flex min-w-0 items-center gap-3">
+                <ProductThumb
+                  product={item.product_id ? productsById.get(item.product_id) : null}
+                  size={44}
+                />
+                <span className="truncate">
+                  {item.name_snapshot} × {item.qty}
+                </span>
               </span>
-              <span>{formatKes(item.price_kes * item.qty)}</span>
+              <span className="shrink-0">{formatKes(item.price_kes * item.qty)}</span>
             </li>
           ))}
         </ul>
@@ -429,7 +470,13 @@ export default function OrderConfirmationPage() {
                 <p className="text-sm font-semibold text-charcoal">Products</p>
                 {order.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-ink-soft">{item.name_snapshot}</span>
+                    <span className="flex min-w-0 items-center gap-2 text-sm text-ink-soft">
+                      <ProductThumb
+                        product={item.product_id ? productsById.get(item.product_id) : null}
+                        size={32}
+                      />
+                      <span className="truncate">{item.name_snapshot}</span>
+                    </span>
                     <StarRating
                       value={
                         itemRatings[item.id] ??

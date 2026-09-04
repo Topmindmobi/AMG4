@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { OrderRatingForm } from "@/components/admin/OrderRatingForm";
-import { ProductThumb } from "@/components/admin/ProductThumb";
+import { ProductThumb } from "@/components/shared/ProductThumb";
 import { RiderDeliveryTracker } from "@/components/orders/RiderDeliveryTracker";
 import {
   formatKes,
