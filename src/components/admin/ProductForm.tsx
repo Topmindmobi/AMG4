@@ -161,69 +161,72 @@ export function ProductForm({
     setLoading(true);
     setError(null);
     setSavedMessage(null);
-    const fd = new FormData(e.currentTarget);
-    const name = String(fd.get("name"));
-    const short_description = String(fd.get("short_description") || "");
-    const detailed_description = String(fd.get("detailed_description") || "");
-    const galleryText = String(fd.get("gallery") || "");
-    const textGallery = galleryText
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    // Prefer captured previews (data URLs / paths); merge with typed paths
-    const gallery = Array.from(
-      new Set([
-        ...galleryPreviews.filter((g) => !g.startsWith("data:") || g.length < 2_000_000),
-        ...textGallery,
-      ]),
-    );
-
-    // coverPreview is a resolved display URL when editing an existing
-    // product (see the state init above) — only use it as the value to
-    // save when a NEW cover was actually captured/chosen this session
-    // (coverFile set), otherwise keep the original raw storage key so the
-    // DB column doesn't drift from "storage key" to "resolved URL" on every
-    // no-photo-change save.
-    let image_path = coverFile ? coverPreview : (product?.image_path ?? null);
-
-    // Auto-generated, not user-editable — a bare slugify(name) collided
-    // whenever two products shared a name (e.g. the same brand in different
-    // specs/sizes), since slug has a database-level unique constraint. A
-    // short random suffix on every NEW product makes that collision
-    // essentially impossible without needing an extra existence check.
-    // Editing an existing product keeps its slug unchanged so links to it
-    // never break.
-    const slug = product?.id
-      ? product.slug
-      : `${slugify(name) || "product"}-${crypto.randomUUID().slice(0, 6)}`;
-
-    const payload = {
-      id: product?.id,
-      name,
-      slug,
-      short_description,
-      detailed_description,
-      description: short_description,
-      category_id: String(fd.get("category_id")),
-      supplier_id:
-        lockedSupplierId || String(fd.get("supplier_id") || "") || null,
-      supplier_price_kes: Number(supplierPriceKes),
-      // Omitted (not just falsy) for non-admin submissions — a merge/patch
-      // then leaves whatever admin already set untouched. The DB trigger
-      // (products_compute_price) is the real enforcement; this just avoids
-      // a supplier's own submit trying to touch markup at all.
-      ...(isAdmin
-        ? { markup_type: markupType, markup_value: markupValue ? Number(markupValue) : 0 }
-        : {}),
-      stock: Number(fd.get("stock")),
-      towns,
-      is_active: fd.get("is_active") === "on",
-      image_path,
-      gallery,
-      barcode: barcode.trim() || null,
-    };
-
     try {
+      const fd = new FormData(e.currentTarget);
+      const name = String(fd.get("name"));
+      const short_description = String(fd.get("short_description") || "");
+      const detailed_description = String(fd.get("detailed_description") || "");
+      const galleryText = String(fd.get("gallery") || "");
+      const textGallery = galleryText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      // Prefer captured previews (data URLs / paths); merge with typed paths
+      const gallery = Array.from(
+        new Set([
+          ...galleryPreviews.filter((g) => !g.startsWith("data:") || g.length < 2_000_000),
+          ...textGallery,
+        ]),
+      );
+
+      // coverPreview is a resolved display URL when editing an existing
+      // product (see the state init above) — only use it as the value to
+      // save when a NEW cover was actually captured/chosen this session
+      // (coverFile set), otherwise keep the original raw storage key so the
+      // DB column doesn't drift from "storage key" to "resolved URL" on every
+      // no-photo-change save.
+      let image_path = coverFile ? coverPreview : (product?.image_path ?? null);
+
+      // Auto-generated, not user-editable — a bare slugify(name) collided
+      // whenever two products shared a name (e.g. the same brand in different
+      // specs/sizes), since slug has a database-level unique constraint. A
+      // short random suffix on every NEW product makes that collision
+      // essentially impossible without needing an extra existence check.
+      // Editing an existing product keeps its slug unchanged so links to it
+      // never break. Inside the try block so a missing crypto.randomUUID
+      // (unlikely, but seen in some older WebViews) surfaces as a normal
+      // "Save failed" message instead of an uncaught exception that leaves
+      // the button stuck on "Saving…" forever.
+      const slug = product?.id
+        ? product.slug
+        : `${slugify(name) || "product"}-${crypto.randomUUID().slice(0, 6)}`;
+
+      const payload = {
+        id: product?.id,
+        name,
+        slug,
+        short_description,
+        detailed_description,
+        description: short_description,
+        category_id: String(fd.get("category_id")),
+        supplier_id:
+          lockedSupplierId || String(fd.get("supplier_id") || "") || null,
+        supplier_price_kes: Number(supplierPriceKes),
+        // Omitted (not just falsy) for non-admin submissions — a merge/patch
+        // then leaves whatever admin already set untouched. The DB trigger
+        // (products_compute_price) is the real enforcement; this just avoids
+        // a supplier's own submit trying to touch markup at all.
+        ...(isAdmin
+          ? { markup_type: markupType, markup_value: markupValue ? Number(markupValue) : 0 }
+          : {}),
+        stock: Number(fd.get("stock")),
+        towns,
+        is_active: fd.get("is_active") === "on",
+        image_path,
+        gallery,
+        barcode: barcode.trim() || null,
+      };
+
       if (towns.length === 0) throw new Error("Select at least one town");
       if (!detailed_description.trim()) throw new Error("Add a detailed description");
 

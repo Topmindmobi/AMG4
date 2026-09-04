@@ -28,8 +28,15 @@ function LoginForm() {
     const fd = new FormData(e.currentTarget);
     try {
       await login(String(fd.get("email")), String(fd.get("password")));
+      // "/account" is the generic fallback most callers land here with when
+      // they have no specific place to send the user (e.g. /account's own
+      // "not signed in" redirect appends ?next=/account) — treat it as "no
+      // preference" and fall through to the role-based redirect below
+      // instead. A genuine deep link (e.g. "sign in to leave a review") is
+      // still respected as-is. Mirrors /auth/callback/route.ts's same fix
+      // for the Google sign-in path.
       const forced = search.get("next");
-      if (forced) {
+      if (forced && forced !== "/account") {
         router.push(forced);
         return;
       }
