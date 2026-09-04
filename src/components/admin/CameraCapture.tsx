@@ -2,6 +2,51 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const MAX_DIM = 1600;
+
+/** Gallery-picked photos can be several MB at full camera resolution — far
+ * bigger than what "Take photo" produces (canvas-drawn at ~1280x720). On a
+ * weak mobile connection that size difference is enough to make the upload
+ * fetch() drop mid-request ("Failed to fetch"), so downscale/re-encode
+ * picked files the same way captured ones already are. */
+function downscaleImage(file: File, maxDim = MAX_DIM, quality = 0.85): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          resolve(
+            new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }),
+          );
+        },
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+    img.src = objectUrl;
+  });
+}
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -145,14 +190,16 @@ export function CameraCapture({
               accept="image/*"
               className="hidden"
               onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => {
-                  onCapture(file, String(reader.result));
-                  onClose();
-                };
-                reader.readAsDataURL(file);
+                const picked = e.target.files?.[0];
+                if (!picked) return;
+                void downscaleImage(picked).then((file) => {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    onCapture(file, String(reader.result));
+                    onClose();
+                  };
+                  reader.readAsDataURL(file);
+                });
               }}
             />
           </label>
