@@ -25,7 +25,13 @@ async function notifyApplicant(app: RoleApplication, decision: "approved" | "rej
     const res = await fetch("/api/applications/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to: app.email, type: app.type, decision, reason: reason ?? null }),
+      body: JSON.stringify({
+        to: app.email,
+        type: app.type,
+        decision,
+        reason: reason ?? null,
+        userId: app.user_id,
+      }),
     });
     if (!res.ok) {
       console.error("[applications] notify HTTP", res.status);

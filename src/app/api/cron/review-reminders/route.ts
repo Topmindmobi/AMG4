@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendOrderStatusEmail } from "@/lib/email/resend";
+import { getRequestOrigin } from "@/lib/request-origin";
 import { sendOrderStatusSms } from "@/lib/sms/twilio";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Order } from "@/lib/types";
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
 
   const orders = (data as Order[]) ?? [];
   const results: { orderId: string; smsSent: boolean; emailSent: boolean }[] = [];
+  const siteUrl = getRequestOrigin(request);
 
   for (const order of orders) {
     const [smsResult, emailResult] = await Promise.all([
@@ -39,7 +41,13 @@ export async function POST(request: Request) {
         ? sendOrderStatusSms({ orderId: order.id, phone: order.phone, event: "review_reminder" })
         : Promise.resolve(null),
       order.email
-        ? sendOrderStatusEmail({ orderId: order.id, to: order.email, event: "review_reminder" })
+        ? sendOrderStatusEmail({
+            orderId: order.id,
+            to: order.email,
+            event: "review_reminder",
+            name: order.customer_name,
+            siteUrl,
+          })
         : Promise.resolve(null),
     ]);
 

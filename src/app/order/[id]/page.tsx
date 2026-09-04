@@ -412,7 +412,7 @@ export default function OrderConfirmationPage() {
       )}
 
       {canActAsOwner && order.status === "delivered" && (
-        <div className="mt-8 border-t border-line pt-6">
+        <div id="rate-your-order" className="mt-8 border-t border-line pt-6">
           <h2 className="font-display text-xl text-charcoal">Rate your order</h2>
           {ratingMessage && <p className="mt-2 text-sm text-forest-deep">{ratingMessage}</p>}
           <div className="mt-4 space-y-4">

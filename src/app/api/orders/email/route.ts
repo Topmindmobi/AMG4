@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendOrderStatusEmail } from "@/lib/email/resend";
+import { getRequestOrigin } from "@/lib/request-origin";
 import type { OrderSmsEvent } from "@/lib/sms/twilio";
 import { requireSession } from "@/lib/supabase/route-auth";
 
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
   }
   const { data: orderRow } = await session.server
     .from("orders")
-    .select("id")
+    .select("id, customer_name")
     .eq("id", orderId)
     .maybeSingle();
   if (!orderRow) {
@@ -69,6 +70,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await sendOrderStatusEmail({ to: email, orderId, event });
+  const result = await sendOrderStatusEmail({
+    to: email,
+    orderId,
+    event,
+    name: orderRow.customer_name,
+    siteUrl: getRequestOrigin(request),
+  });
   return NextResponse.json({ ok: true, ...result }, { status: 200 });
 }

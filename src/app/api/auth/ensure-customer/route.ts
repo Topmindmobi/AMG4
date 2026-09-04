@@ -5,6 +5,7 @@ import type {
 } from "@/lib/auth/ensure-customer-account";
 import { generateTemporaryPassword } from "@/lib/auth/password";
 import { sendAccountWelcomeEmail } from "@/lib/email/resend";
+import { getRequestOrigin } from "@/lib/request-origin";
 import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/supabase/config";
 
@@ -131,6 +132,7 @@ export async function POST(request: Request) {
       to: email,
       temporaryPassword,
       fullName,
+      siteUrl: getRequestOrigin(request),
     });
     if (!mail.sent) {
       console.info(

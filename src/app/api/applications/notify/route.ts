@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendRoleApplicationDecisionEmail } from "@/lib/email/resend";
+import { getRequestOrigin } from "@/lib/request-origin";
 import { requireAdminSession } from "@/lib/supabase/route-auth";
 
 export const runtime = "nodejs";
@@ -9,6 +10,7 @@ type Body = {
   type?: string;
   decision?: string;
   reason?: string | null;
+  userId?: string;
 };
 
 /**
@@ -42,11 +44,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, sent: false, error: "Admin only" }, { status: 401 });
   }
 
+  let name: string | null = null;
+  const userId = body.userId?.trim();
+  if (userId) {
+    const { data: profile } = await session.server
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .maybeSingle();
+    name = profile?.full_name ?? null;
+  }
+
   const result = await sendRoleApplicationDecisionEmail({
     to,
     type,
     decision,
     reason: body.reason ?? null,
+    name,
+    siteUrl: getRequestOrigin(request),
   });
   return NextResponse.json({ ok: true, ...result }, { status: 200 });
 }
