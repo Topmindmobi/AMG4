@@ -18,6 +18,7 @@ import {
   dispatchDemoOrder,
   fulfillOrderWithSupplier,
   getDemoOrders,
+  getDemoProducts,
   getDemoRiders,
   getDemoServiceRatings,
   getDemoSuppliers,
@@ -29,6 +30,7 @@ import {
 } from "@/lib/store/demo-store";
 import type {
   Order,
+  Product,
   RatingScores,
   RatingSubject,
   Rider,
@@ -50,6 +52,7 @@ export default function AdminOrderStatusPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [riders, setRiders] = useState<Rider[]>([]);
   const [ratings, setRatings] = useState<ServiceRating[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
@@ -60,6 +63,7 @@ export default function AdminOrderStatusPage() {
       setSuppliers(getDemoSuppliers());
       setRiders(getDemoRiders());
       setRatings(getDemoServiceRatings());
+      setProducts(getDemoProducts({ activeOnly: false }));
       const map: Record<string, SupplyRequest[]> = {};
       for (const o of list) {
         map[o.id] = getDemoSupplyRequests({ orderId: o.id });
@@ -70,8 +74,13 @@ export default function AdminOrderStatusPage() {
     void (async () => {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      const [{ data: ordersData }, { data: suppliersData }, { data: ridersData }, { data: supplyData }] =
-        await Promise.all([
+      const [
+        { data: ordersData },
+        { data: suppliersData },
+        { data: ridersData },
+        { data: supplyData },
+        { data: productsData },
+      ] = await Promise.all([
           supabase
             .from("orders")
             .select("*, items:order_items(*)")
@@ -79,10 +88,12 @@ export default function AdminOrderStatusPage() {
           supabase.from("suppliers").select("*"),
           supabase.from("riders").select("*").eq("active", true).order("name"),
           supabase.from("supply_requests").select("*"),
+          supabase.from("products").select("*"),
         ]);
       setOrders((ordersData as Order[]) ?? []);
       setSuppliers((suppliersData as Supplier[]) ?? []);
       setRiders((ridersData as Rider[]) ?? []);
+      setProducts((productsData as Product[]) ?? []);
       const map: Record<string, SupplyRequest[]> = {};
       for (const r of (supplyData as SupplyRequest[]) ?? []) {
         (map[r.order_id] ??= []).push(r);
@@ -348,6 +359,7 @@ export default function AdminOrderStatusPage() {
           suppliers={suppliers}
           riders={riders}
           ratings={ratings}
+          products={products}
           onRequestSupplier={onRequestSupplier}
           onRecordSupplierResponse={onRecordSupplierResponse}
           onConfirmBuyer={onConfirmBuyer}

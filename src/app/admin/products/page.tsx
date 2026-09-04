@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Pagination } from "@/components/admin/Pagination";
+import { ProductThumb } from "@/components/admin/ProductThumb";
 import { formatKes } from "@/lib/format";
 import { isDemoMode } from "@/lib/supabase/config";
 import { getDemoProducts, setDemoProductActive } from "@/lib/store/demo-store";
@@ -94,6 +95,7 @@ export default function AdminProductsPage() {
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="text-xs uppercase tracking-wide text-ink-soft">
             <tr>
+              <th className="pb-3 font-medium" />
               <th className="pb-3 font-medium">Name</th>
               <th className="pb-3 font-medium">Barcode</th>
               <th className="pb-3 font-medium">Price</th>
@@ -106,6 +108,11 @@ export default function AdminProductsPage() {
           <tbody className="divide-y divide-line">
             {products.map((p) => (
               <tr key={p.id}>
+                <td className="py-3">
+                  <Link href={`/admin/products/${p.id}`}>
+                    <ProductThumb product={p} size={36} />
+                  </Link>
+                </td>
                 <td className="py-3">
                   <Link href={`/admin/products/${p.id}`} className="hover:text-ember">
                     {p.name}

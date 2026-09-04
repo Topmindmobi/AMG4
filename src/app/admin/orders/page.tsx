@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Pagination } from "@/components/admin/Pagination";
+import { ProductThumb } from "@/components/admin/ProductThumb";
 import { SupplierCompareDialog } from "@/components/admin/SupplierCompareDialog";
 import { RiderDeliveryTracker } from "@/components/orders/RiderDeliveryTracker";
 import { listRiders } from "@/lib/data/delivery";
@@ -169,6 +170,11 @@ export default function AdminOrdersPage() {
     }
     return map;
   }, [orders, suppliers, products, addresses]);
+
+  const productsById = useMemo(
+    () => new Map(products.map((p) => [p.id, p])),
+    [products],
+  );
 
   async function openCompare(order: Order) {
     setCompareOrderId(order.id);
@@ -582,11 +588,17 @@ export default function AdminOrdersPage() {
                             (admin only — hidden from shoppers)
                           </span>
                         </p>
-                        <p className="mt-1 text-xs text-ink-soft">
-                          {group.items
-                            .map((i) => `${i.qty}× ${i.name_snapshot}`)
-                            .join(" · ")}
-                        </p>
+                        <ul className="mt-1.5 space-y-1">
+                          {group.items.map((i) => (
+                            <li key={i.id} className="flex items-center gap-2 text-xs text-ink-soft">
+                              <ProductThumb
+                                product={i.product_id ? productsById.get(i.product_id) : null}
+                                size={28}
+                              />
+                              {i.qty}× {i.name_snapshot}
+                            </li>
+                          ))}
+                        </ul>
                         <p className="mt-1 text-xs text-ember">
                           Subtotal {formatKes(group.total_kes)}
                         </p>

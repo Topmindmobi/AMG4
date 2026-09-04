@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { OrderRatingForm } from "@/components/admin/OrderRatingForm";
+import { ProductThumb } from "@/components/admin/ProductThumb";
 import { RiderDeliveryTracker } from "@/components/orders/RiderDeliveryTracker";
 import {
   formatKes,
@@ -24,6 +25,7 @@ import { rankRidersByDistance } from "@/lib/rider-selection";
 import type {
   Order,
   OrderStatus,
+  Product,
   RatingScores,
   RatingSubject,
   Rider,
@@ -55,6 +57,7 @@ export function OrderStatusKanban({
   suppliers,
   riders,
   ratings,
+  products,
   onRequestSupplier,
   onRecordSupplierResponse,
   onConfirmBuyer,
@@ -68,6 +71,7 @@ export function OrderStatusKanban({
   suppliers: Supplier[];
   riders: Rider[];
   ratings: ServiceRating[];
+  products: Product[];
   onRequestSupplier: (orderId: string, supplierId: string) => void | Promise<void>;
   onRecordSupplierResponse: (orderId: string) => void | Promise<void>;
   onConfirmBuyer: (orderId: string) => void | Promise<void>;
@@ -93,6 +97,11 @@ export function OrderStatusKanban({
   const [pickRiderFor, setPickRiderFor] = useState<string | null>(null);
   const [rateOrderId, setRateOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const productsById = useMemo(
+    () => new Map(products.map((p) => [p.id, p])),
+    [products],
+  );
 
   const byColumn = useMemo(() => {
     const map = Object.fromEntries(
@@ -306,13 +315,25 @@ export function OrderStatusKanban({
                           <p className="mt-0.5 text-xs text-ink-soft">
                             {order.town} · {ORDER_STATUS_LABELS[order.status]}
                           </p>
-                          <p className="mt-1 text-xs text-charcoal/80">
-                            {(order.items ?? [])
-                              .slice(0, 3)
-                              .map((i) => `${i.qty}× ${i.name_snapshot}`)
-                              .join(" · ")}
-                            {(order.items?.length ?? 0) > 3 ? "…" : ""}
-                          </p>
+                          <ul className="mt-1 space-y-1">
+                            {(order.items ?? []).slice(0, 3).map((i) => (
+                              <li
+                                key={i.id}
+                                className="flex items-center gap-1.5 text-xs text-charcoal/80"
+                              >
+                                <ProductThumb
+                                  product={i.product_id ? productsById.get(i.product_id) : null}
+                                  size={22}
+                                />
+                                {i.qty}× {i.name_snapshot}
+                              </li>
+                            ))}
+                            {(order.items?.length ?? 0) > 3 && (
+                              <li className="text-xs text-ink-soft">
+                                +{(order.items?.length ?? 0) - 3} more
+                              </li>
+                            )}
+                          </ul>
                           {srs.length > 0 && (
                             <p className="mt-1 text-[13px] text-ink-soft">
                               {srs
